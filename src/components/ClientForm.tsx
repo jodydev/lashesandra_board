@@ -409,7 +409,7 @@ export default function ClientForm({ clientId, onSuccess, onCancel }: ClientForm
                 </div>
               </form>
             </motion.div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </LocalizationProvider>
