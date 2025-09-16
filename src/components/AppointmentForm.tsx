@@ -59,7 +59,8 @@ const quickAmounts = [40, 50, 60, 70, 80, 100, 120, 150];
 export default function AppointmentForm({ 
   appointment, 
   selectedDate, 
-  onSuccess
+  onSuccess,
+  onCancel
 }: AppointmentFormProps) {
   const [formData, setFormData] = useState({
     client_id: '',
@@ -90,6 +91,7 @@ export default function AppointmentForm({
       setIsEditing(true);
     }
   }, [appointment]);
+
 
   const loadClients = async () => {
     try {
@@ -128,6 +130,7 @@ export default function AppointmentForm({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    console.log('handleSubmit chiamato', { formData, activeStep });
     
     if (!formData.client_id || !formData.data || formData.importo <= 0) {
       setError('Tutti i campi sono obbligatori e l\'importo deve essere maggiore di 0');
@@ -137,6 +140,7 @@ export default function AppointmentForm({
     try {
       setLoading(true);
       setError(null);
+      console.log('Inizio salvataggio...');
 
       const appointmentData = {
         ...formData,
@@ -145,14 +149,20 @@ export default function AppointmentForm({
         importo: Number(formData.importo),
       };
 
+      console.log('Dati appuntamento:', appointmentData);
+
       if (isEditing && appointment) {
+        console.log('Aggiornamento appuntamento...');
         await appointmentService.update(appointment.id, appointmentData);
       } else {
+        console.log('Creazione nuovo appuntamento...');
         await appointmentService.create(appointmentData);
       }
 
+      console.log('Appuntamento salvato con successo!');
       onSuccess();
     } catch (err) {
+      console.error('Errore nel salvataggio:', err);
       setError('Errore nel salvataggio dell\'appuntamento');
     } finally {
       setLoading(false);
@@ -222,7 +232,7 @@ export default function AppointmentForm({
               </div>
 
               {/* Clients Grid with Enhanced Cards */}
-              <div className="space-y-2 sm:space-y-3 max-h-[50vh] sm:max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-pink-200 scrollbar-track-transparent">
+              <div className="space-y-2 sm:space-y-3 max-h-[50vh] sm:max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-pink-200 dark:scrollbar-thumb-pink-600 scrollbar-track-transparent">
                 <AnimatePresence>
                   {filteredClients.map((client, index) => (
                     <motion.div
@@ -448,7 +458,7 @@ export default function AppointmentForm({
                 </h2>
               </div>
               
-              <div className="space-y-2 sm:space-y-4 max-h-[50vh] sm:max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-pink-200 scrollbar-track-transparent">
+              <div className="space-y-2 sm:space-y-4 max-h-[50vh] sm:max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-pink-200 dark:scrollbar-thumb-pink-600 scrollbar-track-transparent">
                 {/* Generic Option */}
                 <button
                   type="button"
@@ -535,16 +545,17 @@ export default function AppointmentForm({
       case 3:
         return (
           <motion.div 
-            className="space-y-6 sm:space-y-8"
+            className="space-y-4 sm:space-y-6 h-full flex flex-col overflow-y-scroll"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            {/* Confirmation Section */}
+            {/* Confirmation Header */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
+              className="flex-shrink-0"
             >
               <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
                 <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
@@ -554,99 +565,109 @@ export default function AppointmentForm({
                   Conferma Appuntamento
                 </h2>
               </div>
-              
-              {/* Enhanced Summary Card */}
-              <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-pink-50 via-white to-pink-50 dark:from-pink-900/20 dark:via-gray-900 dark:to-pink-900/20 border-2 border-pink-100 dark:border-pink-800/30 shadow-2xl shadow-pink-500/10">
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-5">
-                  <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-pink-600" />
-                </div>
-                
-                <div className="relative p-4 sm:p-8">
-                  {/* Client Header */}
-                  <div className="flex items-center gap-3 sm:gap-6 mb-6 sm:mb-8">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white font-bold text-xl sm:text-2xl shadow-lg shadow-pink-500/30">
-                      {selectedClient ? selectedClient.nome.charAt(0).toUpperCase() : '?'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
-                        {selectedClient ? `${selectedClient.nome} ${selectedClient.cognome}` : 'Cliente non selezionato'}
-                      </h3>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-gray-600 dark:text-gray-400">
-                        {selectedClient?.email && (
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                            <span className="font-medium text-xs sm:text-sm truncate">{selectedClient.email}</span>
-                          </div>
-                        )}
-                        {selectedClient?.telefono && (
-                          <div className="flex items-center gap-2">
-                            <Phone className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                            <span className="font-medium text-xs sm:text-sm">{selectedClient.telefono}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+            </motion.div>
+            
+            {/* Scrollable Summary Card */}
+            <div className="space-y-2 sm:space-y-4 max-h-[50vh] sm:max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-pink-200 dark:scrollbar-thumb-pink-600 scrollbar-track-transparent">
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                className="pb-4"
+              >
+                {/* Enhanced Summary Card */}
+                <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-pink-50 via-white to-pink-50 dark:from-pink-900/20 dark:via-gray-900 dark:to-pink-900/20 border-2 border-pink-100 dark:border-pink-800/30 shadow-2xl shadow-pink-500/10">
+                  {/* Background Pattern */}
+                  <div className="absolute inset-0 opacity-5">
+                    <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-pink-600" />
                   </div>
-
-                  {/* Details Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                    <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg shadow-black/5 border border-gray-100 dark:border-gray-700">
-                      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
-                          <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600 dark:text-pink-400" />
-                        </div>
-                        <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</span>
+                  
+                  <div className="relative p-4 sm:p-6">
+                    {/* Client Header */}
+                    <div className="flex items-center gap-3 sm:gap-6 mb-6 sm:mb-8">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white font-bold text-xl sm:text-2xl shadow-lg shadow-pink-500/30">
+                        {selectedClient ? selectedClient.nome.charAt(0).toUpperCase() : '?'}
                       </div>
-                      <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-                        {formatDateForDisplay(formData.data)}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
+                          {selectedClient ? `${selectedClient.nome} ${selectedClient.cognome}` : 'Cliente non selezionato'}
+                        </h3>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-gray-600 dark:text-gray-400">
+                          {selectedClient?.email && (
+                            <div className="flex items-center gap-2">
+                              <Mail className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                              <span className="font-medium text-xs sm:text-sm truncate">{selectedClient.email}</span>
+                            </div>
+                          )}
+                          {selectedClient?.telefono && (
+                            <div className="flex items-center gap-2">
+                              <Phone className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                              <span className="font-medium text-xs sm:text-sm">{selectedClient.telefono}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
-                    {formData.ora && (
+                    {/* Details Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                       <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg shadow-black/5 border border-gray-100 dark:border-gray-700">
                         <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
                           <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
-                            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600 dark:text-pink-400" />
+                            <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600 dark:text-pink-400" />
                           </div>
-                          <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Orario</span>
+                          <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</span>
                         </div>
                         <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-                          {formData.ora}
+                          {formatDateForDisplay(formData.data)}
                         </p>
                       </div>
-                    )}
 
-                    <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg shadow-black/5 border border-gray-100 dark:border-gray-700">
-                      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
-                          <Euro className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600 dark:text-pink-400" />
+                      {formData.ora && (
+                        <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg shadow-black/5 border border-gray-100 dark:border-gray-700">
+                          <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
+                              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600 dark:text-pink-400" />
+                            </div>
+                            <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Orario</span>
+                          </div>
+                          <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                            {formData.ora}
+                          </p>
                         </div>
-                        <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Importo</span>
-                      </div>
-                      <p className="text-lg sm:text-xl font-bold text-pink-600">
-                        {new Intl.NumberFormat('it-IT', {
-                          style: 'currency',
-                          currency: 'EUR',
-                        }).format(formData.importo)}
-                      </p>
-                    </div>
+                      )}
 
-                    <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg shadow-black/5 border border-gray-100 dark:border-gray-700">
-                      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
-                          <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600 dark:text-pink-400" />
+                      <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg shadow-black/5 border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
+                            <Euro className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600 dark:text-pink-400" />
+                          </div>
+                          <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Importo</span>
                         </div>
-                        <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trattamento</span>
+                        <p className="text-lg sm:text-xl font-bold text-pink-600">
+                          {new Intl.NumberFormat('it-IT', {
+                            style: 'currency',
+                            currency: 'EUR',
+                          }).format(formData.importo)}
+                        </p>
                       </div>
-                      <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-                        {formData.tipo_trattamento || 'Generico'}
-                      </p>
+
+                      <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg shadow-black/5 border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
+                            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600 dark:text-pink-400" />
+                          </div>
+                          <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trattamento</span>
+                        </div>
+                        <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                          {formData.tipo_trattamento || 'Generico'}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           </motion.div>
         );
 
@@ -656,13 +677,7 @@ export default function AppointmentForm({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full max-w-4xl bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
-      >
+    <div className="w-full h-full flex flex-col overflow-hidden">
         {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -670,18 +685,26 @@ export default function AppointmentForm({
           transition={{ duration: 0.6, delay: 0.1 }}
           className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-800 flex-shrink-0"
         >
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/25">
-              <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/25">
+                <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                  {isEditing ? 'Modifica Appuntamento' : 'Nuovo Appuntamento'}
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
+                  {isEditing ? 'Aggiorna le informazioni dell\'appuntamento' : 'Crea un nuovo appuntamento nel sistema'}
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                {isEditing ? 'Modifica Appuntamento' : 'Nuovo Appuntamento'}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
-                {isEditing ? 'Aggiorna le informazioni dell\'appuntamento' : 'Crea un nuovo appuntamento nel sistema'}
-              </p>
-            </div>
+            <button
+              onClick={onCancel}
+              className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl flex items-center justify-center transition-colors duration-200"
+            >
+              <X className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 dark:text-gray-400" />
+            </button>
           </div>
         </motion.div>
 
@@ -742,79 +765,89 @@ export default function AppointmentForm({
           </div>
         </div>
 
-        {/* Form Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto">
-          <form onSubmit={handleSubmit} className="p-4 sm:p-6">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeStep}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                {renderStepContent()}
-              </motion.div>
-            </AnimatePresence>
-          </form>
-        </div>
+         {/* Form Content - Scrollable */}
+         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+           <form onSubmit={handleSubmit} className="p-4 sm:p-6 h-full flex flex-col">
+             <div className="flex-1">
+            
+                 <motion.div
+                   key={activeStep}
+                   initial={{ opacity: 0, x: 20 }}
+                   animate={{ opacity: 1, x: 0 }}
+                   exit={{ opacity: 0, x: -20 }}
+                   transition={{ duration: 0.3 }}
+                 >
+                   {renderStepContent()}
+                 </motion.div>
+         
+             </div>
 
-        {/* Action Buttons - Fixed at bottom */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.7 }}
-          className="flex flex-col sm:flex-row gap-3 sm:gap-4 p-4 sm:p-6 border-t border-gray-100 dark:border-gray-800 flex-shrink-0"
-        >
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleBack();
-            }}
-            disabled={activeStep === 0}
-            className="flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl sm:rounded-2xl font-medium transition-all duration-200 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-          >
-            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-            Indietro
-          </button>
+             {/* Action Buttons - Fixed at bottom */}
+             <motion.div
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ duration: 0.5, delay: 0.7 }}
+               className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-100 dark:border-gray-800 flex-shrink-0"
+             >
+               <button
+                 type="button"
+                 onClick={onCancel}
+                 className="hidden sm:flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl sm:rounded-2xl font-medium transition-all duration-200 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm sm:text-base"
+               >
+                 <X className="w-4 h-4 sm:w-5 sm:h-5" />
+                 Annulla
+               </button>
 
-          {activeStep === steps.length - 1 ? (
-            <button
-              type="submit"
-              disabled={loading || !canProceed()}
-              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl sm:rounded-2xl font-medium transition-all duration-200 hover:from-pink-600 hover:to-pink-700 shadow-lg shadow-pink-500/25 disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base"
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Salvando...
-                </>
+               <button
+                 type="button"
+                 onClick={(e) => {
+                   e.preventDefault();
+                   e.stopPropagation();
+                   handleBack();
+                 }}
+                 disabled={activeStep === 0}
+                 className="flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl sm:rounded-2xl font-medium transition-all duration-200 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+               >
+                 <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                 Indietro
+               </button>
+
+              {activeStep === steps.length - 1 ? (
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl sm:rounded-2xl font-medium transition-all duration-200 hover:from-pink-600 hover:to-pink-700 shadow-lg shadow-pink-500/25 disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 sm:w-5 sm:h-5" />
+                      {isEditing ? 'Aggiorna Appuntamento' : 'Salva Appuntamento'}
+                    </>
+                  )}
+                </button>
               ) : (
-                <>
-                  <Check className="w-4 h-4 sm:w-5 sm:h-5" />
-                  {isEditing ? 'Aggiorna Appuntamento' : 'Salva Appuntamento'}
-                </>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleNext();
+                  }}
+                  disabled={!canProceed()}
+                  className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl sm:rounded-2xl font-medium transition-all duration-200 hover:from-pink-600 hover:to-pink-700 shadow-lg shadow-pink-500/25 disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base"
+                >
+                  Continua
+                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
               )}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleNext();
-              }}
-              disabled={!canProceed()}
-              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl sm:rounded-2xl font-medium transition-all duration-200 hover:from-pink-600 hover:to-pink-700 shadow-lg shadow-pink-500/25 disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base"
-            >
-              Continua
-              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-          )}
-        </motion.div>
-      </motion.div>
-    </div>
-  );
+             </motion.div>
+           </form>
+         </div>
+     </div>
+   );
 }
