@@ -1,0 +1,450 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Euro,
+  Users,
+  TrendingUp,
+  Star,
+  Calendar,
+  Activity,
+} from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
+import dayjs from 'dayjs';
+import type { MonthlyStats } from '../types';
+import { statsService } from '../lib/supabase';
+import { formatCurrency } from '../lib/utils';
+
+
+// Modern metric card component with glass morphism effect
+const MetricCard = ({ icon: Icon, title, value, trend, delay = 0 }: {
+  icon: any;
+  title: string;
+  value: string | number;
+  trend?: string;
+  delay?: number;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay }}
+    className="group relative overflow-hidden rounded-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:border-pink-200 dark:hover:border-pink-800 transition-all duration-300 hover:shadow-xl hover:shadow-pink-500/10"
+  >
+    <div className="absolute inset-0 bg-gradient-to-br from-pink-50/50 to-transparent dark:from-pink-900/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    <div className="relative p-6">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-lg shadow-pink-500/25">
+              <Icon size={20} />
+            </div>
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</span>
+          </div>
+          <div className="space-y-1">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">{value}</div>
+            {trend && (
+              <div className="text-xs text-green-600 dark:text-green-400 font-medium">
+                {trend}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  </motion.div>
+);
+
+// Modern chart container with enhanced styling
+const ChartContainer = ({ title, children, actions }: {
+  title: string;
+  children: React.ReactNode;
+  actions?: React.ReactNode;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.6 }}
+    className="rounded-2xl bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 shadow-xl shadow-black/5 overflow-hidden"
+  >
+    <div className="p-6 border-b border-gray-100 dark:border-gray-800">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
+        {actions}
+      </div>
+    </div>
+    <div className="p-6">
+      {children}
+    </div>
+  </motion.div>
+);
+
+// Enhanced loading skeleton
+const LoadingSkeleton = () => (
+  <div className="space-y-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="h-32 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
+      ))}
+    </div>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2 h-96 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
+      <div className="h-96 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
+    </div>
+  </div>
+);
+
+export default function MonthlyOverview() {
+  const [currentDate, setCurrentDate] = useState(dayjs());
+  const [stats, setStats] = useState<MonthlyStats | null>(null);
+  const [dailyStats, setDailyStats] = useState<Array<{ day: number; revenue: number; clients: number }>>([]);
+  const [treatmentDistribution, setTreatmentDistribution] = useState<Array<{ name: string; value: number; color: string }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [chartType, setChartType] = useState<'revenue' | 'clients'>('revenue');
+
+  useEffect(() => {
+    loadStats();
+  }, [currentDate]);
+
+  const loadStats = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const [monthlyData, dailyData, treatmentData] = await Promise.all([
+        statsService.getMonthlyStats(currentDate.year(), currentDate.month() + 1),
+        statsService.getDailyStats(currentDate.year(), currentDate.month() + 1),
+        statsService.getTreatmentDistribution(currentDate.year(), currentDate.month() + 1)
+      ]);
+      
+      setStats(monthlyData);
+      setDailyStats(dailyData);
+      setTreatmentDistribution(treatmentData);
+    } catch (err) {
+      setError('Errore nel caricamento delle statistiche');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePreviousMonth = () => {
+    setCurrentDate(currentDate.subtract(1, 'month'));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(currentDate.add(1, 'month'));
+  };
+
+
+  const getRevenueChartData = () => {
+    return dailyStats;
+  };
+
+  const getTreatmentDistribution = () => {
+    return treatmentDistribution;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-6">
+        <div className="max-w-7xl mx-auto">
+          <LoadingSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-pink-50/30 to-gray-100 dark:from-gray-900 dark:via-pink-900/10 dark:to-gray-800">
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
+        {/* Header with enhanced navigation */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+        >
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+              Panoramica Mensile
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Analisi dettagliata delle performance del mese
+            </p>
+          </div>
+          
+          {/* Enhanced month navigation */}
+          <div className="flex items-center gap-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-2 shadow-lg">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handlePreviousMonth}
+              className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <ChevronLeft size={20} className="text-gray-600 dark:text-gray-400" />
+            </motion.button>
+            
+            <div className="flex items-center gap-2 px-4 py-2 min-w-[200px] justify-center">
+              <Calendar size={16} className="text-pink-500" />
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {currentDate.format('MMMM YYYY')}
+              </span>
+            </div>
+            
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleNextMonth}
+              className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <ChevronRight size={20} className="text-gray-600 dark:text-gray-400" />
+            </motion.button>
+          </div>
+        </motion.div>
+
+        {/* Error state with better styling */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="p-4 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"
+            >
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Enhanced metrics grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <MetricCard
+            icon={Users}
+            title="Clienti Totali"
+            value={stats?.totalClients || 0}
+            trend="+12% vs mese scorso"
+            delay={0.1}
+          />
+          <MetricCard
+            icon={Euro}
+            title="Fatturato Totale"
+            value={formatCurrency(stats?.totalRevenue || 0)}
+            trend="+8% vs mese scorso"
+            delay={0.2}
+          />
+          <MetricCard
+            icon={TrendingUp}
+            title="Media per Cliente"
+            value={formatCurrency(stats?.averageRevenuePerClient || 0)}
+            trend="+5% vs mese scorso"
+            delay={0.3}
+          />
+          <MetricCard
+            icon={Star}
+            title="Top Clienti"
+            value={stats?.topClients.length || 0}
+            delay={0.4}
+          />
+        </div>
+
+        {/* Charts section with improved layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Enhanced revenue chart */}
+          <div className="lg:col-span-2">
+            <ChartContainer
+              title="Andamento Mensile"
+              actions={
+                <div className="flex items-center gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setChartType('revenue')}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      chartType === 'revenue'
+                        ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/25'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <Euro size={16} className="inline mr-1" />
+                    Fatturato
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setChartType('clients')}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      chartType === 'clients'
+                        ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/25'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <Users size={16} className="inline mr-1" />
+                    Clienti
+                  </motion.button>
+                </div>
+              }
+            >
+              <div className="h-80">
+                {getRevenueChartData().length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={getRevenueChartData()}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis 
+                        dataKey="day" 
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                      />
+                      <YAxis 
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                      />
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                          border: 'none',
+                          borderRadius: '12px',
+                          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+                        }}
+                        formatter={(value) => [
+                          chartType === 'revenue' ? formatCurrency(Number(value)) : value,
+                          chartType === 'revenue' ? 'Fatturato' : 'Clienti'
+                        ]}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey={chartType === 'revenue' ? 'revenue' : 'clients'} 
+                        stroke="#E91E63" 
+                        strokeWidth={3}
+                        dot={{ fill: '#E91E63', strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6, stroke: '#E91E63', strokeWidth: 2 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                    <div className="text-center">
+                      <Activity size={48} className="mx-auto mb-4 opacity-50" />
+                      <p>Nessun dato disponibile per questo mese</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </ChartContainer>
+          </div>
+
+          {/* Enhanced pie chart */}
+          <ChartContainer title="Distribuzione Trattamenti">
+            <div className="h-80">
+              {getTreatmentDistribution().length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={getTreatmentDistribution()}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${((percent as number) * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {getTreatmentDistribution().map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        border: 'none',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+                      }}
+                      formatter={(value) => [formatCurrency(Number(value)), 'Fatturato']}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                  <div className="text-center">
+                    <Activity size={48} className="mx-auto mb-4 opacity-50" />
+                    <p>Nessun dato disponibile per questo mese</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </ChartContainer>
+        </div>
+
+        {/* Enhanced top clients table */}
+        <ChartContainer title="Top Clienti per Fatturato">
+          <div className="space-y-4">
+            {stats?.topClients.map((item, index) => (
+              <motion.div
+                key={item.client.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    {index < 3 && (
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white ${
+                        index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' :
+                        index === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500' :
+                        'bg-gradient-to-r from-orange-400 to-orange-500'
+                      }`}>
+                        {index + 1}
+                      </div>
+                    )}
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white font-semibold">
+                      {item.client.nome.charAt(0)}{item.client.cognome.charAt(0)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900 dark:text-white">
+                      {item.client.nome} {item.client.cognome}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    item.client.tipo_cliente === 'nuovo' 
+                      ? 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300'
+                      : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                  }`}>
+                    {item.client.tipo_cliente === 'nuovo' ? 'Nuovo' : 'Abituale'}
+                  </span>
+                  <div className="text-right">
+                    <div className="font-bold text-pink-600 dark:text-pink-400">
+                      {formatCurrency(item.revenue)}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+            {(!stats?.topClients || stats.topClients.length === 0) && (
+              <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                <Activity size={48} className="mx-auto mb-4 opacity-50" />
+                <p>Nessun dato disponibile per questo mese</p>
+              </div>
+            )}
+          </div>
+        </ChartContainer>
+      </div>
+    </div>
+  );
+}
