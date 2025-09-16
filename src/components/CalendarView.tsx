@@ -235,6 +235,7 @@ export default function ModernCalendarView() {
                     .slice(0, 4)
                     .map((apt) => {
                       const client = getClientById(apt.client_id);
+                      const isCompleted = apt.status === 'completed';
                       return (
                         <Box
                           key={apt.id}
@@ -258,6 +259,7 @@ export default function ModernCalendarView() {
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
                               lineHeight: 1,
+                              textDecoration: isCompleted ? 'line-through' : 'none',
                             }}
                           >
                             {apt.ora?.slice(0, 5) || '00:00'}
@@ -272,6 +274,7 @@ export default function ModernCalendarView() {
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
                               lineHeight: 1,
+                              textDecoration: isCompleted ? 'line-through' : 'none',
                             }}
                           >
                             {client ? `${client.nome} ${client.cognome}` : 'Cliente'}
