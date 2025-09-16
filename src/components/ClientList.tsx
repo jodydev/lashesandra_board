@@ -140,8 +140,8 @@ export default function ClientList() {
   // Loading skeleton
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-pink-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-pink-950/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen">
+        <div className="max-w-7xl mx-auto px-0 sm:px-0 lg:px-8 py-0">
           {/* Header Skeleton */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
             <div className="space-y-3">
@@ -188,7 +188,7 @@ export default function ClientList() {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-0 sm:px-0 lg:px-8 py-0">
         {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

@@ -173,7 +173,7 @@ export default function MonthlyOverview() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-start justify-between gap-4"
+          className="flex flex-col sm:flex-row items-start justify-between gap-4"
         >
           <div className="space-y-1 w-full">
             <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">

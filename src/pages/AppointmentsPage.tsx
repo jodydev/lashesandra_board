@@ -153,26 +153,26 @@ export default function AppointmentsPage() {
   // Loading skeleton
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-pink-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-pink-950/20">
+      <div className="min-h-screen rounded-3xl">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
           {/* Header Skeleton */}
           <div className="flex flex-col space-y-4 mb-6 sm:mb-8">
             <div className="space-y-2 sm:space-y-3">
-              <div className="h-6 sm:h-8 bg-gray-200 dark:bg-gray-800 rounded-lg w-48 sm:w-64 animate-pulse" />
-              <div className="h-4 sm:h-5 bg-gray-200 dark:bg-gray-800 rounded-lg w-64 sm:w-96 animate-pulse" />
+              <div className="h-6 sm:h-8 bg-gray-200 dark:bg-gray-800 rounded-2xl w-48 sm:w-64 animate-pulse" />
+              <div className="h-4 sm:h-5 bg-gray-200 dark:bg-gray-800 rounded-2xl w-64 sm:w-96 animate-pulse" />
             </div>
-            <div className="h-10 sm:h-12 bg-gray-200 dark:bg-gray-800 rounded-xl w-full sm:w-48 animate-pulse" />
+            <div className="h-10 sm:h-12 bg-gray-200 dark:bg-gray-800 rounded-2xl w-full sm:w-48 animate-pulse" />
           </div>
 
           {/* Stats Skeleton */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+              <div key={i} className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl p-3 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-800">
                 <div className="flex items-center space-x-2 sm:space-x-4">
-                  <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gray-200 dark:bg-gray-800 rounded-lg sm:rounded-xl animate-pulse" />
+                  <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gray-200 dark:bg-gray-800 rounded-2xl sm:rounded-2xl animate-pulse" />
                   <div className="space-y-1 sm:space-y-2 flex-1">
-                    <div className="h-4 sm:h-6 bg-gray-200 dark:bg-gray-800 rounded w-12 sm:w-16 animate-pulse" />
-                    <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-800 rounded w-16 sm:w-24 animate-pulse" />
+                    <div className="h-4 sm:h-6 bg-gray-200 dark:bg-gray-800 rounded-xl w-12 sm:w-16 animate-pulse" />
+                    <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-800 rounded-xl w-16 sm:w-24 animate-pulse" />
                   </div>
                 </div>
               </div>
@@ -180,14 +180,14 @@ export default function AppointmentsPage() {
           </div>
 
           {/* Content Skeleton */}
-          <div className="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-3 sm:p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 p-3 sm:p-6">
             <div className="space-y-3 sm:space-y-4">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-gray-50 dark:bg-gray-800/50 animate-pulse">
+                <div key={i} className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-2xl sm:rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 dark:bg-gray-700 rounded-full" />
                   <div className="flex-1 space-y-1 sm:space-y-2">
-                    <div className="h-4 sm:h-5 bg-gray-200 dark:bg-gray-700 rounded w-32 sm:w-48" />
-                    <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 sm:w-32" />
+                    <div className="h-4 sm:h-5 bg-gray-200 dark:bg-gray-700 rounded-xl w-32 sm:w-48" />
+                    <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded-xl w-24 sm:w-32" />
                   </div>
                   <div className="w-16 sm:w-20 h-5 sm:h-6 bg-gray-200 dark:bg-gray-700 rounded-full" />
                 </div>
@@ -200,14 +200,14 @@ export default function AppointmentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-pink-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-pink-950/20">
+    <div className="min-h-screen rounded-3xl">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
         {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-col space-y-4 mb-6 sm:mb-8"
+          className="flex space-y-4 mb-6 sm:mb-8 flex-col sm:flex-row items-center justify-between"
         >
           <div className="space-y-1 sm:space-y-2">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-pink-600 to-gray-900 dark:from-white dark:via-pink-400 dark:to-white bg-clip-text text-transparent">
@@ -222,11 +222,11 @@ export default function AppointmentsPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleAddAppointment}
-            className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold rounded-xl shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 transition-all duration-300"
+            className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold rounded-2xl shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 transition-all duration-300"
           >
             <Plus className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:rotate-90 duration-300" />
             <span className="text-sm sm:text-base">Nuovo Appuntamento</span>
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </motion.button>
         </motion.div>
 
@@ -276,7 +276,7 @@ export default function AppointmentsPage() {
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.5, delay: stat.delay, ease: [0.22, 1, 0.36, 1] }}
-              className={`relative overflow-hidden bg-gradient-to-br ${stat.bgGradient} backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-white/20 dark:border-gray-800/50 shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer`}
+              className={`relative overflow-hidden bg-gradient-to-br ${stat.bgGradient} backdrop-blur-sm rounded-2xl sm:rounded-3xl p-3 sm:p-6 border border-white/20 dark:border-gray-800/50 shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer`}
             >
               <div className="flex items-center justify-between">
                 <div className="space-y-1 sm:space-y-2 flex-1 min-w-0">
@@ -287,7 +287,7 @@ export default function AppointmentsPage() {
                     {stat.value}
                   </p>
                 </div>
-                <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br ${stat.gradient} shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0`}>
+                <div className={`p-2 sm:p-3 rounded-2xl sm:rounded-2xl bg-gradient-to-br ${stat.gradient} shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0`}>
                   <stat.icon className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
                 </div>
               </div>
@@ -306,7 +306,7 @@ export default function AppointmentsPage() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
               transition={{ duration: 0.3 }}
-              className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-xl"
+              className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-2xl"
             >
               <p className="text-red-800 dark:text-red-200 font-medium text-sm sm:text-base">{error}</p>
             </motion.div>
@@ -318,7 +318,7 @@ export default function AppointmentsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-800/50 shadow-sm mb-6 sm:mb-8"
+          className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-800/50 shadow-sm mb-6 sm:mb-8"
         >
           <div className="space-y-4">
             {/* Search Bar */}
@@ -329,7 +329,7 @@ export default function AppointmentsPage() {
                 placeholder="Cerca appuntamenti..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 text-sm sm:text-base"
+                className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl sm:rounded-2xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 text-sm sm:text-base"
               />
             </div>
 
@@ -343,7 +343,7 @@ export default function AppointmentsPage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowFilters(!showFilters)}
-                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                className="p-2 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
                 <Menu className="w-4 h-4" />
               </motion.button>
@@ -373,7 +373,7 @@ export default function AppointmentsPage() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => setFilterType(filter.key as any)}
-                      className={`px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm transition-all duration-200 ${
+                      className={`px-3 sm:px-4 py-2 rounded-2xl sm:rounded-2xl font-medium text-xs sm:text-sm transition-all duration-200 ${
                         filterType === filter.key
                           ? 'bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-lg shadow-pink-500/25'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -413,7 +413,7 @@ export default function AppointmentsPage() {
                     delay: index * 0.05,
                     ease: [0.22, 1, 0.36, 1]
                   }}
-                  className={`group relative backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border shadow-sm transition-all duration-300 ${
+                  className={`group relative backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border shadow-sm transition-all duration-300 ${
                     statusInfo.isCompleted 
                       ? 'bg-gray-50/80 dark:bg-gray-800/50 border-gray-200/50 dark:border-gray-700/50 opacity-75 hover:opacity-90' 
                       : 'bg-white/80 dark:bg-gray-900/80 border-gray-200/50 dark:border-gray-800/50 hover:shadow-xl hover:shadow-pink-500/10'
@@ -421,7 +421,7 @@ export default function AppointmentsPage() {
                 >
                   <div className="flex items-start sm:items-center gap-3 sm:gap-4">
                     {/* Client Avatar */}
-                    <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center text-white font-bold text-base sm:text-xl shadow-lg relative flex-shrink-0 ${
+                    <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl flex items-center justify-center text-white font-bold text-base sm:text-xl shadow-lg relative flex-shrink-0 ${
                       statusInfo.isCompleted 
                         ? 'bg-gradient-to-br from-gray-400 to-gray-500' 
                         : 'bg-gradient-to-br from-pink-500 to-pink-600'
@@ -495,7 +495,7 @@ export default function AppointmentsPage() {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => handleEditAppointment(appointment)}
-                        className={`p-2 sm:p-3 rounded-lg sm:rounded-xl transition-colors duration-200 group/btn ${
+                        className={`p-2 sm:p-3 rounded-2xl sm:rounded-2xl transition-colors duration-200 group/btn ${
                           statusInfo.isCompleted 
                             ? 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600' 
                             : 'bg-gray-100 dark:bg-gray-800 hover:bg-pink-100 dark:hover:bg-pink-900/30'
@@ -512,7 +512,7 @@ export default function AppointmentsPage() {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => handleDeleteAppointment(appointment)}
-                        className={`p-2 sm:p-3 rounded-lg sm:rounded-xl transition-colors duration-200 group/btn ${
+                        className={`p-2 sm:p-3 rounded-2xl sm:rounded-2xl transition-colors duration-200 group/btn ${
                           statusInfo.isCompleted 
                             ? 'bg-gray-100 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-900/30' 
                             : 'bg-gray-100 dark:bg-gray-800 hover:bg-red-100 dark:hover:bg-red-900/30'
@@ -528,7 +528,7 @@ export default function AppointmentsPage() {
                   </div>
 
                   {/* Hover overlay */}
-                  <div className={`absolute inset-0 rounded-xl sm:rounded-2xl pointer-events-none transition-opacity duration-300 ${
+                  <div className={`absolute inset-0 rounded-2xl sm:rounded-3xl pointer-events-none transition-opacity duration-300 ${
                     statusInfo.isCompleted 
                       ? 'bg-gradient-to-r from-gray-500/5 to-transparent opacity-0 group-hover:opacity-100' 
                       : 'bg-gradient-to-r from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100'
@@ -547,7 +547,7 @@ export default function AppointmentsPage() {
             transition={{ duration: 0.5 }}
             className="text-center py-12 sm:py-16"
           >
-            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
               <Calendar className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
             </div>
             <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -564,7 +564,7 @@ export default function AppointmentsPage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleAddAppointment}
-                className="inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-semibold rounded-lg sm:rounded-xl shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 transition-all duration-300 text-sm sm:text-base"
+                className="inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-semibold rounded-2xl sm:rounded-2xl shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 transition-all duration-300 text-sm sm:text-base"
               >
                 <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                 Aggiungi Appuntamento
@@ -589,7 +589,7 @@ export default function AppointmentsPage() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+                className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
               >
                 <AppointmentForm
@@ -618,11 +618,11 @@ export default function AppointmentsPage() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6"
+                className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-2xl max-w-md w-full p-4 sm:p-6"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="text-center">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-100 dark:bg-red-900/30 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-100 dark:bg-red-900/30 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
                     <Trash2 className="w-6 h-6 sm:w-8 sm:h-8 text-red-600 dark:text-red-400" />
                   </div>
                   
@@ -643,7 +643,7 @@ export default function AppointmentsPage() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setShowDeleteDialog(false)}
-                      className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-lg sm:rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 text-sm sm:text-base"
+                      className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-2xl sm:rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 text-sm sm:text-base"
                     >
                       Annulla
                     </motion.button>
@@ -651,7 +651,7 @@ export default function AppointmentsPage() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={confirmDelete}
-                      className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-lg sm:rounded-xl shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition-all duration-200 text-sm sm:text-base"
+                      className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-2xl sm:rounded-2xl shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition-all duration-200 text-sm sm:text-base"
                     >
                       Elimina
                     </motion.button>

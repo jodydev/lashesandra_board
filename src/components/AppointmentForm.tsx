@@ -198,7 +198,7 @@ export default function AppointmentForm({
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-lg sm:rounded-xl flex items-center justify-center">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
                   <User className="w-3 h-3 sm:w-4 sm:h-4 text-pink-600 dark:text-pink-400" />
                 </div>
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
@@ -222,7 +222,7 @@ export default function AppointmentForm({
               </div>
 
               {/* Clients Grid with Enhanced Cards */}
-              <div className="space-y-2 sm:space-y-3 max-h-[300px] sm:max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-pink-200 scrollbar-track-transparent">
+              <div className="space-y-2 sm:space-y-3 max-h-[50vh] sm:max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-pink-200 scrollbar-track-transparent">
                 <AnimatePresence>
                   {filteredClients.map((client, index) => (
                     <motion.div
@@ -320,7 +320,7 @@ export default function AppointmentForm({
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-lg sm:rounded-xl flex items-center justify-center">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
                   <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-pink-600 dark:text-pink-400" />
                 </div>
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
@@ -371,7 +371,7 @@ export default function AppointmentForm({
               transition={{ duration: 0.5, delay: 0.4 }}
             >
               <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-lg sm:rounded-xl flex items-center justify-center">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
                   <Euro className="w-3 h-3 sm:w-4 sm:h-4 text-pink-600 dark:text-pink-400" />
                 </div>
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
@@ -440,7 +440,7 @@ export default function AppointmentForm({
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-lg sm:rounded-xl flex items-center justify-center">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
                   <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-pink-600 dark:text-pink-400" />
                 </div>
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
@@ -448,7 +448,7 @@ export default function AppointmentForm({
                 </h2>
               </div>
               
-              <div className="space-y-2 sm:space-y-4 max-h-[300px] sm:max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-pink-200 scrollbar-track-transparent">
+              <div className="space-y-2 sm:space-y-4 max-h-[50vh] sm:max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-pink-200 scrollbar-track-transparent">
                 {/* Generic Option */}
                 <button
                   type="button"
@@ -547,7 +547,7 @@ export default function AppointmentForm({
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-lg sm:rounded-xl flex items-center justify-center">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
                   <Check className="w-3 h-3 sm:w-4 sm:h-4 text-pink-600 dark:text-pink-400" />
                 </div>
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
@@ -593,7 +593,7 @@ export default function AppointmentForm({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg shadow-black/5 border border-gray-100 dark:border-gray-700">
                       <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-lg sm:rounded-xl flex items-center justify-center">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
                           <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600 dark:text-pink-400" />
                         </div>
                         <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</span>
@@ -606,7 +606,7 @@ export default function AppointmentForm({
                     {formData.ora && (
                       <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg shadow-black/5 border border-gray-100 dark:border-gray-700">
                         <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-lg sm:rounded-xl flex items-center justify-center">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
                             <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600 dark:text-pink-400" />
                           </div>
                           <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Orario</span>
@@ -619,7 +619,7 @@ export default function AppointmentForm({
 
                     <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg shadow-black/5 border border-gray-100 dark:border-gray-700">
                       <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-lg sm:rounded-xl flex items-center justify-center">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
                           <Euro className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600 dark:text-pink-400" />
                         </div>
                         <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Importo</span>
@@ -634,7 +634,7 @@ export default function AppointmentForm({
 
                     <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg shadow-black/5 border border-gray-100 dark:border-gray-700">
                       <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-lg sm:rounded-xl flex items-center justify-center">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
                           <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600 dark:text-pink-400" />
                         </div>
                         <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trattamento</span>
@@ -656,61 +656,55 @@ export default function AppointmentForm({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className="w-full mx-auto p-4 sm:p-6 lg:p-10"
-    >
-      {/* Header Section */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.6, delay: 0.1 }}
-        className="mb-6 sm:mb-8"
-      >
-        <div className="flex items-center gap-3 sm:gap-4 mb-2">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/25">
-            <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-              {isEditing ? 'Modifica Appuntamento' : 'Nuovo Appuntamento'}
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm sm:text-base">
-              {isEditing ? 'Aggiorna le informazioni dell\'appuntamento' : 'Crea un nuovo appuntamento nel sistema'}
-            </p>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Error Alert */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3 }}
-            className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl sm:rounded-2xl flex items-center gap-3"
-          >
-            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center">
-              <X className="w-3 h-3 sm:w-4 sm:h-4 text-red-600 dark:text-red-400" />
-            </div>
-            <p className="text-red-700 dark:text-red-300 font-medium text-sm sm:text-base">{error}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Main Form Card */}
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-        className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-gray-900/50 border border-gray-100 dark:border-gray-800 overflow-hidden"
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full max-w-4xl bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
       >
+        {/* Header Section */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-800 flex-shrink-0"
+        >
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/25">
+              <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                {isEditing ? 'Modifica Appuntamento' : 'Nuovo Appuntamento'}
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
+                {isEditing ? 'Aggiorna le informazioni dell\'appuntamento' : 'Crea un nuovo appuntamento nel sistema'}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Error Alert */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+              className="mx-4 sm:mx-6 mt-4 p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl sm:rounded-2xl flex items-center gap-3 flex-shrink-0"
+            >
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center">
+                <X className="w-3 h-3 sm:w-4 sm:h-4 text-red-600 dark:text-red-400" />
+              </div>
+              <p className="text-red-700 dark:text-red-300 font-medium text-sm sm:text-base">{error}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Progress Steps */}
-        <div className="px-4 sm:px-8 py-4 sm:py-6 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+        <div className="px-4 sm:px-6 py-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
           <div className="flex items-center justify-between max-w-2xl mx-auto">
             {steps.map((step, index) => {
               const Icon = step.icon;
@@ -721,7 +715,7 @@ export default function AppointmentForm({
                 <div key={step.id} className="flex items-center">
                   <div className="flex flex-col items-center">
                     <div 
-                      className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-300 shadow-lg ${
+                      className={`w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-xl flex items-center justify-center transition-all duration-300 shadow-lg ${
                         isActive 
                           ? 'bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-pink-500/30' 
                           : isCompleted 
@@ -729,16 +723,16 @@ export default function AppointmentForm({
                             : 'bg-white dark:bg-gray-700 text-gray-400 dark:text-gray-500 shadow-black/5'
                       }`}
                     >
-                      <Icon className="w-4 h-4 sm:w-6 sm:h-6" />
+                      <Icon className="w-3 h-3 sm:w-5 sm:h-5" />
                     </div>
-                    <p className={`mt-2 sm:mt-3 text-xs sm:text-sm font-bold transition-colors duration-300 ${
+                    <p className={`mt-1 sm:mt-2 text-xs sm:text-sm font-bold transition-colors duration-300 ${
                       isActive ? 'text-pink-600 dark:text-pink-400' : isCompleted ? 'text-pink-500 dark:text-pink-400' : 'text-gray-400 dark:text-gray-500'
                     }`}>
                       {step.title}
                     </p>
                   </div>
                   {index < steps.length - 1 && (
-                    <div className={`w-8 sm:w-16 h-1 mx-2 sm:mx-4 rounded-full transition-all duration-300 ${
+                    <div className={`w-4 sm:w-12 h-1 mx-1 sm:mx-3 rounded-full transition-all duration-300 ${
                       isCompleted ? 'bg-gradient-to-r from-pink-400 to-pink-500' : 'bg-gray-200 dark:bg-gray-600'
                     }`} />
                   )}
@@ -748,69 +742,79 @@ export default function AppointmentForm({
           </div>
         </div>
 
-        {/* Form Content */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-8">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeStep}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {renderStepContent()}
-            </motion.div>
-          </AnimatePresence>
+        {/* Form Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeStep}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {renderStepContent()}
+              </motion.div>
+            </AnimatePresence>
+          </form>
+        </div>
 
-          {/* Action Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.7 }}
-            className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-100 dark:border-gray-800"
+        {/* Action Buttons - Fixed at bottom */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.7 }}
+          className="flex flex-col sm:flex-row gap-3 sm:gap-4 p-4 sm:p-6 border-t border-gray-100 dark:border-gray-800 flex-shrink-0"
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleBack();
+            }}
+            disabled={activeStep === 0}
+            className="flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl sm:rounded-2xl font-medium transition-all duration-200 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
           >
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+            Indietro
+          </button>
+
+          {activeStep === steps.length - 1 ? (
+            <button
+              type="submit"
+              disabled={loading || !canProceed()}
+              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl sm:rounded-2xl font-medium transition-all duration-200 hover:from-pink-600 hover:to-pink-700 shadow-lg shadow-pink-500/25 disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base"
+            >
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4 sm:w-5 sm:h-5" />
+                  {isEditing ? 'Aggiorna Appuntamento' : 'Salva Appuntamento'}
+                </>
+              )}
+            </button>
+          ) : (
             <button
               type="button"
-              onClick={handleBack}
-              disabled={activeStep === 0}
-              className="flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl sm:rounded-2xl font-medium transition-all duration-200 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleNext();
+              }}
+              disabled={!canProceed()}
+              className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl sm:rounded-2xl font-medium transition-all duration-200 hover:from-pink-600 hover:to-pink-700 shadow-lg shadow-pink-500/25 disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base"
             >
-              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-              Indietro
+              Continua
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
-
-            {activeStep === steps.length - 1 ? (
-              <button
-                type="submit"
-                disabled={loading || !canProceed()}
-                className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl sm:rounded-2xl font-medium transition-all duration-200 hover:from-pink-600 hover:to-pink-700 shadow-lg shadow-pink-500/25 disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base"
-              >
-                {loading ? (
-                  <>
-                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-4 h-4 sm:w-5 sm:h-5" />
-                    {isEditing ? 'Aggiorna Appuntamento' : 'Salva Appuntamento'}
-                  </>
-                )}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleNext}
-                disabled={!canProceed()}
-                className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-xl sm:rounded-2xl font-medium transition-all duration-200 hover:from-pink-600 hover:to-pink-700 shadow-lg shadow-pink-500/25 disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base"
-              >
-                Continua
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-            )}
-          </motion.div>
-        </form>
+          )}
+        </motion.div>
       </motion.div>
-    </motion.div>
+    </div>
   );
 }

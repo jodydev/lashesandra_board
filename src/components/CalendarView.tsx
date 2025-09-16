@@ -1,42 +1,20 @@
 import { useState, useEffect } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  IconButton,
-  Alert,
-  Dialog,
-  DialogContent,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  Avatar,
-  Paper,
-  Button,
-  Stack,
-  Container,
-  alpha,
-  Chip,
-  CircularProgress,
-} from '@mui/material';
-import {
-  ChevronLeft as ChevronLeftIcon,
-  ChevronRight as ChevronRightIcon,
-  Add as AddIcon,
-  Euro as EuroIcon,
-  CalendarToday as CalendarTodayIcon,
-  People as PeopleIcon,
-  Event as EventIcon,
-  Close as CloseIcon,
-  MoreHoriz as MoreHorizIcon,
-} from '@mui/icons-material';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Plus, 
+  Calendar, 
+  Users, 
+  Euro,
+  Clock,
+  X,
+  MoreHorizontal,
+  Loader2,
+  Check
+} from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/it';
-import { motion, AnimatePresence } from 'framer-motion';
 import { clientService, appointmentService } from '../lib/supabase';
 import type { Client, Appointment } from '../types';
 import AppointmentForm from './AppointmentForm';
@@ -167,147 +145,100 @@ export default function ModernCalendarView() {
             key={day.format('YYYY-MM-DD')}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            transition={{ duration: 0.15 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="relative"
           >
-            <Paper
-              elevation={0}
-              sx={{
-                height: { xs: 80, sm: 100, md: 120 },
-                p: { xs: 0.75, sm: 1 },
-                cursor: 'pointer',
-                backgroundColor: isCurrentMonth 
-                  ? (isToday ? alpha('#EC4899', 0.05) : '#FFFFFF')
-                  : alpha('#000000', 0.01),
-                border: isToday 
-                  ? '2px solid #EC4899' 
-                  : `1px solid ${alpha('#000000', 0.06)}`,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
-                '&:hover': {
-                  backgroundColor: isCurrentMonth 
-                    ? alpha('#EC4899', 0.03) 
-                    : alpha('#000000', 0.02),
-                  borderColor: alpha('#EC4899', 0.2),
-                  boxShadow: `0 4px 12px ${alpha('#EC4899', 0.08)}`,
-                },
-              }}
+            <div
+              className={`
+                h-16 sm:h-24 md:h-28 lg:h-32 p-1 sm:p-2 md:p-3 cursor-pointer rounded-xl sm:rounded-xl border transition-all duration-300
+                ${isCurrentMonth 
+                  ? isToday 
+                    ? 'bg-pink-50 dark:bg-pink-950/20 border-pink-500 shadow-lg shadow-pink-500/20' 
+                    : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-600'
+                  : 'bg-gray-50/50 dark:bg-gray-800/30 border-gray-100 dark:border-gray-800'
+                }
+                hover:shadow-lg hover:shadow-pink-500/10 dark:hover:shadow-pink-500/5
+                flex flex-col justify-between
+              `}
               onClick={() => handleDateClick(day)}
             >
               {/* Day number */}
-              <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                    fontWeight: isToday ? 600 : 500,
-                    color: isCurrentMonth 
-                      ? (isToday ? '#EC4899' : '#1F2937')
-                      : '#9CA3AF',
-                    lineHeight: 1,
-                  }}
+              <div className="flex items-start justify-between">
+                <span
+                  className={`
+                    text-xs sm:text-sm md:text-base font-semibold leading-none
+                    ${isCurrentMonth 
+                      ? isToday 
+                        ? 'text-pink-600 dark:text-pink-400' 
+                        : 'text-gray-900 dark:text-gray-100'
+                      : 'text-gray-400 dark:text-gray-600'
+                    }
+                  `}
                 >
                   {day.format('D')}
-                </Typography>
+                </span>
                 
                 {hasAppointments && (
-                  <Box
-                    sx={{
-                      width: { xs: 6, sm: 8 },
-                      height: { xs: 6, sm: 8 },
-                      borderRadius: '50%',
-                      backgroundColor: '#EC4899',
-                    }}
-                  />
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-pink-500 rounded-full animate-pulse" />
                 )}
-              </Box>
+              </div>
               
-              {/* Appointments indicator */}
+              {/* Appointments preview */}
               {hasAppointments && (
-                <Stack spacing={0.25} sx={{ mt: 'auto' }}>
+                <div className="space-y-0.5 sm:space-y-1 mt-auto">
                   {dayAppointments
                     .sort((a, b) => {
                       const timeA = a.ora || '00:00';
                       const timeB = b.ora || '00:00';
                       return timeA.localeCompare(timeB);
                     })
-                    .slice(0, 4)
+                    .slice(0, window.innerWidth < 640 ? 2 : 3)
                     .map((apt) => {
                       const client = getClientById(apt.client_id);
                       const isCompleted = apt.status === 'completed';
                       return (
-                        <Box
+                        <div
                           key={apt.id}
-                          sx={{
-                            height: { xs: 12, sm: 16 },
-                            backgroundColor: alpha('#EC4899', 0.12),
-                            borderRadius: 0.5,
-                            px: 0.5,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                          }}
+                          className={`
+                            h-2 sm:h-3 md:h-4 px-1 sm:px-1.5 rounded-sm sm:rounded-md bg-pink-100 dark:bg-pink-900/30 
+                            flex items-center text-xs font-medium overflow-hidden
+                            ${isCompleted ? 'opacity-60 line-through' : ''}
+                          `}
                         >
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              fontSize: { xs: '0.5rem', sm: '0.625rem' },
-                              color: '#EC4899',
-                              fontWeight: 500,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                              lineHeight: 1,
-                              textDecoration: isCompleted ? 'line-through' : 'none',
-                            }}
-                          >
-                            {apt.ora?.slice(0, 5) || '00:00'}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              fontSize: { xs: '0.5rem', sm: '0.625rem' },
-                              color: '#EC4899',
-                              fontWeight: 500,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                              lineHeight: 1,
-                              textDecoration: isCompleted ? 'line-through' : 'none',
-                            }}
-                          >
-                            {client ? `${client.nome} ${client.cognome}` : 'Cliente'}
-                          </Typography>
-                        </Box>
+                          {/* Mobile: solo nome e cognome */}
+                          <span className="text-pink-600 dark:text-pink-400 whitespace-nowrap text-xs sm:hidden">
+                            {client ? `${client.nome} ${client.cognome}` : '?'}
+                          </span>
+                          
+                          {/* Desktop: orario + nome e cognome */}
+                          <div className="hidden sm:flex items-center justify-between w-full">
+                            <span className="text-pink-700 dark:text-pink-300 whitespace-nowrap text-xs">
+                              {apt.ora?.slice(0, 5) || '00:00'}
+                            </span>
+                            <span className="text-pink-600 dark:text-pink-400 whitespace-nowrap ml-1 text-xs">
+                              {client ? `${client.nome} ${client.cognome}` : '?'}
+                            </span>
+                          </div>
+                        </div>
                       );
                     })}
                   
-                  {dayAppointments.length > 4 && (
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontSize: { xs: '0.5rem', sm: '0.625rem' },
-                        color: '#6B7280',
-                        fontWeight: 500,
-                        textAlign: 'center',
-                        lineHeight: 1,
-                      }}
-                    >
-                      +{dayAppointments.length - 4}
-                    </Typography>
+                  {dayAppointments.length > (window.innerWidth < 640 ? 2 : 3) && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400 text-center font-medium">
+                      +{dayAppointments.length - (window.innerWidth < 640 ? 2 : 3)}
+                    </div>
                   )}
-                </Stack>
+                </div>
               )}
-            </Paper>
+            </div>
           </motion.div>
         );
       }
       
       weeks.push(
-        <Box key={currentWeek.format('YYYY-MM-DD')} display="grid" gridTemplateColumns="repeat(7, 1fr)" gap={{ xs: 0.5, sm: 1 }}>
+        <div key={currentWeek.format('YYYY-MM-DD')} className="grid grid-cols-7 gap-1 sm:gap-2 md:gap-3">
           {weekDays}
-        </Box>
+        </div>
       );
       
       currentWeek = currentWeek.add(1, 'week');
@@ -321,534 +252,440 @@ export default function ModernCalendarView() {
   // Loading state
   if (loading) {
     return (
-      <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="it">
-        <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
-          <Box 
-            display="flex" 
-            justifyContent="center" 
-            alignItems="center" 
-            minHeight="400px"
-            flexDirection="column"
-            gap={2}
-          >
-            <CircularProgress size={48} sx={{ color: '#EC4899' }} />
-            <Typography variant="h6" sx={{ color: '#6B7280' }}>
-              Caricamento calendario...
-            </Typography>
-          </Box>
-        </Container>
-      </LocalizationProvider>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center space-y-4"
+        >
+          <Loader2 className="w-8 h-8 text-pink-500 animate-spin" />
+          <p className="text-gray-600 dark:text-gray-400 font-medium">Caricamento calendario...</p>
+        </motion.div>
+      </div>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="it">
-        <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
-          <Alert 
-            severity="error" 
-            sx={{ 
-              borderRadius: 2,
-              '& .MuiAlert-message': {
-                fontSize: '1rem'
-              }
-            }}
-          >
-            {error}
-          </Alert>
-        </Container>
-      </LocalizationProvider>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-2xl p-6 max-w-md"
+        >
+          <p className="text-red-800 dark:text-red-200 font-medium">{error}</p>
+        </motion.div>
+      </div>
     );
   }
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="it">
-      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8"
         >
-          <Box 
-            display="flex" 
-            flexDirection={{ xs: 'column', sm: 'row' }}
-            justifyContent="space-between" 
-            alignItems={{ xs: 'flex-start', sm: 'center' }} 
-            gap={2}
-            mb={4}
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white tracking-tight">
+              Calendario
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
+              Gestisci i tuoi appuntamenti con eleganza
+            </p>
+          </div>
+          
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleNewAppointment}
+            className="
+              inline-flex items-center gap-2 px-6 py-3 bg-pink-500 hover:bg-pink-600 
+              text-white font-semibold rounded-xl shadow-lg shadow-pink-500/25 
+              transition-all duration-200 hover:shadow-xl hover:shadow-pink-500/30
+            "
           >
-            <Box>
-              <Typography 
-                variant="h4" 
-                component="h1" 
-                sx={{ 
-                  fontWeight: 700,
-                  fontSize: { xs: '1.75rem', sm: '2.125rem' },
-                  color: '#111827',
-                  mb: 0.5,
-                  letterSpacing: '-0.025em',
-                }}
-              >
-                Calendario
-              </Typography>
-              <Typography 
-                variant="body1" 
-                sx={{ 
-                  color: '#6B7280',
-                  fontWeight: 400,
-                }}
-              >
-                Gestisci i tuoi appuntamenti
-              </Typography>
-            </Box>
-            
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleNewAppointment}
-              sx={{
-                backgroundColor: '#EC4899',
-                color: '#FFFFFF',
-                fontWeight: 600,
-                px: 3,
-                py: 1.5,
-                borderRadius: 2,
-                textTransform: 'none',
-                boxShadow: 'none',
-                '&:hover': {
-                  backgroundColor: '#DB2777',
-                  boxShadow: `0 4px 12px ${alpha('#EC4899', 0.25)}`,
-                },
-                '&:active': {
-                  transform: 'translateY(1px)',
-                },
-              }}
-            >
-              Nuovo Appuntamento
-            </Button>
-          </Box>
+            <Plus className="w-5 h-5" />
+            Nuovo Appuntamento
+          </motion.button>
         </motion.div>
 
         {/* Statistics Cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8"
         >
-          <Box 
-            display="grid" 
-            gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))" 
-            gap={2} 
-            mb={4}
-          >
-            {[
-              {
-                icon: EventIcon,
-                value: monthlyStats.totalAppointments,
-                label: 'Appuntamenti',
-                color: '#EC4899',
-              },
-              {
-                icon: PeopleIcon,
-                value: monthlyStats.uniqueClients,
-                label: 'Clienti',
-                color: '#111827',
-              },
-              {
-                icon: EuroIcon,
-                value: formatCurrency(monthlyStats.totalRevenue),
-                label: 'Fatturato',
-                color: '#EC4899',
-              },
-            ].map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.2 + index * 0.1 }}
-              >
-                <Card
-                  elevation={0}
-                  sx={{
-                    p: 3,
-                    backgroundColor: '#FFFFFF',
-                    border: `1px solid ${alpha('#000000', 0.06)}`,
-                    borderRadius: 2,
-                  }}
-                >
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <Avatar
-                      sx={{
-                        width: 44,
-                        height: 44,
-                        backgroundColor: alpha(stat.color, 0.1),
-                        color: stat.color,
-                      }}
-                    >
-                      <stat.icon sx={{ fontSize: 20 }} />
-                    </Avatar>
-                    <Box>
-                      <Typography
-                        variant="h5"
-                        sx={{
-                          fontWeight: 700,
-                          color: '#111827',
-                          lineHeight: 1.2,
-                          mb: 0.25,
-                        }}
-                      >
-                        {stat.value}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: '#6B7280',
-                          fontWeight: 500,
-                        }}
-                      >
-                        {stat.label}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Card>
-              </motion.div>
-            ))}
-          </Box>
+          {[
+            {
+              icon: Calendar,
+              value: monthlyStats.totalAppointments,
+              label: 'Appuntamenti',
+              color: 'pink',
+            },
+            {
+              icon: Users,
+              value: monthlyStats.uniqueClients,
+              label: 'Clienti',
+              color: 'gray',
+            },
+            {
+              icon: Euro,
+              value: formatCurrency(monthlyStats.totalRevenue),
+              label: 'Fatturato',
+              color: 'pink',
+            },
+          ].map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 + index * 0.1 }}
+              whileHover={{ y: -2 }}
+              className="
+                bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700
+                shadow-sm hover:shadow-lg transition-all duration-300
+              "
+            >
+              <div className="flex items-center gap-4">
+                <div className={`
+                  w-12 h-12 rounded-xl flex items-center justify-center
+                  ${stat.color === 'pink' 
+                    ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400' 
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                  }
+                `}>
+                  <stat.icon className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {stat.value}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                    {stat.label}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
         </motion.div>
 
         {/* Calendar */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden"
         >
-          <Card 
-            elevation={0}
-            sx={{ 
-              backgroundColor: '#FFFFFF',
-              border: `1px solid ${alpha('#000000', 0.06)}`,
-              borderRadius: 3,
-            }}
-          >
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              {/* Calendar Header */}
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-                <IconButton 
-                  onClick={handlePreviousMonth}
-                  sx={{
-                    width: 40,
-                    height: 40,
-                    color: '#6B7280',
-                    '&:hover': {
-                      backgroundColor: alpha('#EC4899', 0.08),
-                      color: '#EC4899',
-                    },
-                  }}
-                >
-                  <ChevronLeftIcon />
-                </IconButton>
-                
-                <Typography 
-                  variant="h6" 
-                  sx={{ 
-                    fontWeight: 600,
-                    color: '#111827',
-                    textTransform: 'capitalize',
-                  }}
-                >
-                  {currentDate.format('MMMM YYYY')}
-                </Typography>
-                
-                <IconButton 
-                  onClick={handleNextMonth}
-                  sx={{
-                    width: 40,
-                    height: 40,
-                    color: '#6B7280',
-                    '&:hover': {
-                      backgroundColor: alpha('#EC4899', 0.08),
-                      color: '#EC4899',
-                    },
-                  }}
-                >
-                  <ChevronRightIcon />
-                </IconButton>
-              </Box>
+          <div className="p-6 sm:p-8">
+            {/* Calendar Header */}
+            <div className="flex items-center justify-between mb-8">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={handlePreviousMonth}
+                className="
+                  w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-pink-100 dark:hover:bg-pink-900/30
+                  text-gray-600 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-400
+                  flex items-center justify-center transition-all duration-200
+                "
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </motion.button>
+              
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white capitalize">
+                {currentDate.format('MMMM YYYY')}
+              </h2>
+              
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={handleNextMonth}
+                className="
+                  w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-pink-100 dark:hover:bg-pink-900/30
+                  text-gray-600 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-400
+                  flex items-center justify-center transition-all duration-200
+                "
+              >
+                <ChevronRight className="w-5 h-5" />
+              </motion.button>
+            </div>
 
-              {/* Days of week header */}
-              <Box display="grid" gridTemplateColumns="repeat(7, 1fr)" gap={{ xs: 0.5, sm: 1 }} mb={2}>
-                {['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'].map((day) => (
-                  <Box
-                    key={day}
-                    sx={{
-                      textAlign: 'center',
-                      py: 1.5,
-                    }}
-                  >
-                    <Typography 
-                      variant="caption" 
-                      sx={{
-                        color: '#6B7280',
-                        fontWeight: 600,
-                        fontSize: '0.75rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                      }}
-                    >
-                      {day}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
+            {/* Days of week header */}
+            <div className="grid grid-cols-7 gap-2 sm:gap-3 mb-4">
+              {['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'].map((day) => (
+                <div key={day} className="text-center py-3">
+                  <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    {day}
+                  </span>
+                </div>
+              ))}
+            </div>
 
-              {/* Calendar Grid */}
-              <Stack spacing={{ xs: 0.5, sm: 1 }}>
-                {renderCalendar()}
-              </Stack>
-            </CardContent>
-          </Card>
+            {/* Calendar Grid */}
+            <div className="space-y-2 sm:space-y-3">
+              {renderCalendar()}
+            </div>
+          </div>
         </motion.div>
-
-        {/* Appointment Details Dialog */}
-        <Dialog
-          open={showAppointmentDetails}
-          onClose={() => setShowAppointmentDetails(false)}
-          maxWidth="sm"
-          fullWidth
-          PaperProps={{
-            sx: { 
-              borderRadius: 3,
-              border: `1px solid ${alpha('#000000', 0.06)}`,
-            }
-          }}
-        >
-          <DialogContent sx={{ p: 0 }}>
-            {selectedDate && (
-              <Box sx={{ p: 3 }}>
-                {/* Header */}
-                <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <Avatar
-                      sx={{
-                        backgroundColor: alpha('#EC4899', 0.1),
-                        color: '#EC4899',
-                        width: 48,
-                        height: 48,
-                      }}
-                    >
-                      <CalendarTodayIcon />
-                    </Avatar>
-                    <Box>
-                      <Typography 
-                        variant="h6" 
-                        sx={{ 
-                          fontWeight: 600,
-                          color: '#111827',
-                        }}
-                      >
-                        {formatDateForDisplay(selectedDate)}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: '#6B7280' }}>
-                        {selectedDateAppointments.length} appuntamenti
-                      </Typography>
-                    </Box>
-                  </Box>
-                  
-                  <IconButton
-                    onClick={() => setShowAppointmentDetails(false)}
-                    sx={{
-                      color: '#6B7280',
-                      '&:hover': {
-                        backgroundColor: alpha('#EC4899', 0.08),
-                        color: '#EC4899',
-                      },
-                    }}
-                  >
-                    <CloseIcon />
-                  </IconButton>
-                </Box>
+        {/* Appointment Details Modal - Redesigned with premium glass morphism */}
+        <AnimatePresence>
+          {showAppointmentDetails && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xl z-50 flex items-center justify-center p-4"
+              onClick={() => setShowAppointmentDetails(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 40 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 40 }}
+                transition={{ 
+                  type: "spring", 
+                  stiffness: 400, 
+                  damping: 30,
+                  mass: 0.8
+                }}
+                className="relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl rounded-3xl border border-white/20 dark:border-gray-700/30 w-full max-w-lg max-h-[85vh] overflow-hidden shadow-2xl shadow-black/10 dark:shadow-black/30"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Gradient overlay for depth */}
+                <div className="absolute inset-0 bg-gradient-to-br from-pink-50/30 via-transparent to-pink-100/20 dark:from-pink-950/20 dark:via-transparent dark:to-pink-900/10 pointer-events-none" />
                 
-                {/* Appointments List */}
-                {selectedDateAppointments.length === 0 ? (
-                  <Box textAlign="center" py={6}>
-                    <EventIcon 
-                      sx={{ 
-                        fontSize: 48, 
-                        color: '#D1D5DB',
-                        mb: 2,
-                      }} 
-                    />
-                    <Typography 
-                      variant="h6" 
-                      sx={{ 
-                        color: '#6B7280',
-                        fontWeight: 500,
-                        mb: 1,
-                      }}
-                    >
-                      Nessun appuntamento
-                    </Typography>
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        color: '#9CA3AF',
-                        mb: 3,
-                      }}
-                    >
-                      Aggiungi il tuo primo appuntamento
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      startIcon={<AddIcon />}
-                      onClick={handleNewAppointment}
-                      sx={{
-                        backgroundColor: '#EC4899',
-                        color: '#FFFFFF',
-                        fontWeight: 600,
-                        px: 3,
-                        py: 1.5,
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        boxShadow: 'none',
-                        '&:hover': {
-                          backgroundColor: '#DB2777',
-                        },
-                      }}
-                    >
-                      Aggiungi Appuntamento
-                    </Button>
-                  </Box>
-                ) : (
-                  <List sx={{ p: 0 }}>
-                    {selectedDateAppointments.map((appointment, index) => {
-                      const client = getClientById(appointment.client_id);
-                      return (
-                        <motion.div
-                          key={appointment.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.2, delay: index * 0.05 }}
+                {selectedDate && (
+                  <>
+                    {/* Premium Header with floating close button */}
+                    <div className="relative p-8 pb-6">
+                      <motion.button
+                        whileHover={{ scale: 1.1, rotate: 90 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setShowAppointmentDetails(false)}
+                        className="absolute top-6 right-6 w-10 h-10 rounded-2xl bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-pink-100 dark:hover:bg-pink-900/30 text-gray-500 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-400 flex items-center justify-center transition-all duration-300 shadow-lg shadow-black/5"
+                      >
+                        <X className="w-5 h-5" />
+                      </motion.button>
+                      
+                      <div className="flex items-start gap-4">
+                        <motion.div 
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.2, type: "spring", stiffness: 500 }}
+                          className="w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/25"
                         >
-                          <ListItem
-                            sx={{
-                              borderRadius: 2,
-                              mb: 1.5,
-                              p: 2.5,
-                              backgroundColor: alpha('#EC4899', 0.03),
-                              border: `1px solid ${alpha('#EC4899', 0.08)}`,
-                              '&:hover': {
-                                backgroundColor: alpha('#EC4899', 0.05),
-                              },
-                            }}
-                          >
-                            <Avatar
-                              sx={{
-                                backgroundColor: '#EC4899',
-                                color: '#FFFFFF',
-                                mr: 2,
-                                width: 44,
-                                height: 44,
-                                fontWeight: 600,
-                              }}
-                            >
-                              {client ? client.nome.charAt(0).toUpperCase() : '?'}
-                            </Avatar>
-                            
-                            <ListItemText
-                              primary={
-                                <Typography 
-                                  variant="subtitle1" 
-                                  sx={{ 
-                                    fontWeight: 600,
-                                    color: '#111827',
-                                    mb: 0.5,
-                                  }}
-                                >
-                                  {client 
-                                    ? `${client.nome} ${client.cognome}`
-                                    : 'Cliente sconosciuto'
-                                  }
-                                </Typography>
-                              }
-                              secondary={
-                                <Box>
-                                  <Typography 
-                                    variant="body2" 
-                                    sx={{ 
-                                      color: '#6B7280',
-                                      mb: 0.5,
-                                    }}
-                                  >
-                                    {appointment.tipo_trattamento || 'Nessun trattamento'}
-                                    {appointment.ora && (
-                                      <Box component="span" sx={{ ml: 1, color: '#EC4899', fontWeight: 600 }}>
-                                        • {appointment.ora.slice(0, 5)}
-                                      </Box>
-                                    )}
-                                  </Typography>
-                                  <Chip
-                                    label={formatCurrency(appointment.importo)}
-                                    size="small"
-                                    sx={{
-                                      backgroundColor: alpha('#EC4899', 0.1),
-                                      color: '#EC4899',
-                                      fontWeight: 600,
-                                      fontSize: '0.75rem',
-                                      height: 24,
-                                    }}
-                                  />
-                                </Box>
-                              }
-                            />
-                            
-                            <ListItemSecondaryAction>
-                              <IconButton
-                                size="small"
-                                sx={{
-                                  color: '#6B7280',
-                                  '&:hover': {
-                                    backgroundColor: alpha('#EC4899', 0.08),
-                                    color: '#EC4899',
-                                  },
-                                }}
-                              >
-                                <MoreHorizIcon />
-                              </IconButton>
-                            </ListItemSecondaryAction>
-                          </ListItem>
+                          <Calendar className="w-8 h-8" />
                         </motion.div>
-                      );
-                    })}
-                  </List>
+                        
+                        <div className="flex-1 pt-1">
+                          <motion.h3 
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="text-2xl font-bold text-gray-900 dark:text-white mb-1"
+                          >
+                            {formatDateForDisplay(selectedDate)}
+                          </motion.h3>
+                          <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.15 }}
+                            className="flex items-center gap-2"
+                          >
+                            <div className="w-2 h-2 rounded-full bg-pink-500" />
+                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                              {selectedDateAppointments.length} {selectedDateAppointments.length === 1 ? 'appuntamento' : 'appuntamenti'}
+                            </p>
+                          </motion.div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Content Area with custom scrollbar */}
+                    <div className="px-8 pb-8 max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-pink-200 dark:scrollbar-thumb-pink-800 scrollbar-track-transparent">
+                      {selectedDateAppointments.length === 0 ? (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.3 }}
+                          className="text-center py-16"
+                        >
+                          <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                            <Calendar className="w-10 h-10 text-gray-400 dark:text-gray-500" />
+                          </div>
+                          <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                            Giornata libera
+                          </h4>
+                          <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-xs mx-auto leading-relaxed">
+                            Nessun appuntamento programmato per questa data
+                          </p>
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={handleNewAppointment}
+                            className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold rounded-2xl transition-all duration-300 shadow-lg shadow-pink-500/25 hover:shadow-xl hover:shadow-pink-500/30"
+                          >
+                            <Plus className="w-5 h-5" />
+                            Aggiungi Appuntamento
+                          </motion.button>
+                        </motion.div>
+                      ) : (
+                        <div className="space-y-4">
+                          {selectedDateAppointments
+                            .sort((a, b) => (a.ora || '00:00').localeCompare(b.ora || '00:00'))
+                            .map((appointment, index) => {
+                              const client = getClientById(appointment.client_id);
+                              const isCompleted = appointment.status === 'completed';
+                              
+                              return (
+                                <motion.div
+                                  key={appointment.id}
+                                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  transition={{ 
+                                    duration: 0.4, 
+                                    delay: index * 0.1,
+                                    type: "spring",
+                                    stiffness: 300
+                                  }}
+                                  whileHover={{ scale: 1.02 }}
+                                  className={`
+                                    group relative overflow-hidden rounded-2xl border transition-all duration-300 cursor-pointer
+                                    ${isCompleted 
+                                      ? 'bg-gray-50/80 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 opacity-75' 
+                                      : 'bg-white/80 dark:bg-gray-800/80 border-pink-200/50 dark:border-pink-800/30 hover:border-pink-300 dark:hover:border-pink-700 hover:shadow-lg hover:shadow-pink-500/10'
+                                    }
+                                  `}
+                                  onClick={() => handleEditAppointment(appointment)}
+                                >
+                                  {/* Subtle gradient overlay */}
+                                  <div className="absolute inset-0 bg-gradient-to-r from-pink-50/20 via-transparent to-transparent dark:from-pink-950/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                  
+                                  <div className="relative p-5">
+                                    <div className="flex items-center gap-4">
+                                      {/* Avatar with status indicator */}
+                                      <div className="relative">
+                                        <div className={`
+                                          w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-white shadow-lg
+                                          ${isCompleted 
+                                            ? 'bg-gradient-to-t from-gray-400 to-gray-500' 
+                                            : 'bg-gradient-to-br from-pink-500 to-pink-600 shadow-pink-500/25'
+                                          }
+                                        `}>
+                                          {client ? client.nome.charAt(0).toUpperCase() : '?'}
+                                        </div>
+                                        {isCompleted && (
+                                          <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                            <Check className="w-3 h-3 text-white" />
+                                          </div>
+                                        )}
+                                      </div>
+                                      
+                                      {/* Content */}
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <h4 className={`
+                                            font-bold truncate
+                                            ${isCompleted 
+                                              ? 'text-gray-500 dark:text-gray-400 line-through' 
+                                              : 'text-gray-900 dark:text-white'
+                                            }
+                                          `}>
+                                            {client 
+                                              ? `${client.nome} ${client.cognome}`
+                                              : 'Cliente sconosciuto'
+                                            }
+                                          </h4>
+                                          {appointment.ora && (
+                                            <div className={`
+                                              inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold
+                                              ${isCompleted
+                                                ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 line-through'
+                                                : 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300'
+                                              }
+                                            `}>
+                                              <Clock className="w-3 h-3" />
+                                              {appointment.ora.slice(0, 5)}
+                                            </div>
+                                          )}
+                                        </div>
+                                        
+                                        <p className={`
+                                          text-sm mb-3 truncate
+                                          ${isCompleted 
+                                            ? 'text-gray-400 dark:text-gray-500 line-through' 
+                                            : 'text-gray-600 dark:text-gray-400'
+                                          }
+                                        `}>
+                                          {appointment.tipo_trattamento || 'Nessun trattamento specificato'}
+                                        </p>
+                                        
+                                        {/* Price tag with modern styling */}
+                                        <div className="flex items-center justify-between">
+                                          <div className={`
+                                            inline-flex items-center px-3 py-1.5 rounded-xl text-sm font-bold
+                                            ${isCompleted
+                                              ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 line-through'
+                                              : 'bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-lg shadow-pink-500/20'
+                                            }
+                                          `}>
+                                            {formatCurrency(appointment.importo)}
+                                          </div>
+                                          
+                                      
+                                        </div>
+                                      </div>
+                                      
+                       
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
+                        </div>
+                      )}
+                    </div>
+                  </>
                 )}
-              </Box>
-            )}
-          </DialogContent>
-        </Dialog>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Appointment Form Dialog */}
-        <Dialog
-          open={showAppointmentForm}
-          onClose={handleAppointmentFormCancel}
-          maxWidth="md"
-          fullWidth
-          PaperProps={{
-            sx: { 
-              borderRadius: 3,
-              border: `1px solid ${alpha('#000000', 0.06)}`,
-            }
-          }}
-        >
-          <AppointmentForm
-            appointment={editingAppointment}
-            selectedDate={selectedDate}
-            onSuccess={handleAppointmentFormSuccess}
-            onCancel={handleAppointmentFormCancel}
-          />
-        </Dialog>
-      </Container>
-    </LocalizationProvider>
+        {/* Appointment Form Modal */}
+        <AnimatePresence>
+          {showAppointmentForm && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={handleAppointmentFormCancel}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <AppointmentForm
+                  appointment={editingAppointment}
+                  selectedDate={selectedDate}
+                  onSuccess={handleAppointmentFormSuccess}
+                  onCancel={handleAppointmentFormCancel}
+                />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }

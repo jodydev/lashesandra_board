@@ -1,58 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Button,
-  Card,
-  CardContent,
-  FormControl,
-  FormControlLabel,
-  Grid,
-  InputLabel,
-  MenuItem,
-  Radio,
-  RadioGroup,
-  TextField,
-  Typography,
-  Alert,
   CircularProgress,
 } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
-import type { Client } from '../types';
 import { clientService } from '../lib/supabase';
 import { formatDateForDatabase, parseDateFromDatabase } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Phone, Mail, Sparkles, Euro, Calendar, ChevronDown, Check, Star } from 'lucide-react';
-import { X } from 'lucide-react';
+import { User, Phone, Check, Star, X } from 'lucide-react';
 
 interface ClientFormProps {
   clientId?: string;
   onSuccess: () => void;
   onCancel: () => void;
 }
-
-const treatmentTypes = [
-  'One to One',
-  'Volume Egiziano 3D',
-  'Volume Russo 2D-6D',
-  'Mega Volume 7D+',
-  'Laminazione Ciglia',
-  'Laminazione Sopracciglia',
-  'Refill One to One',
-  'Refill Volume 3D',
-  'Refill Volume Russo',
-  'Refill Mega Volume',
-  'Rimozione Extension Ciglia',
-  'Extension Effetto Wet',
-  'Extension Effetto Eyeliner',
-  'Extension Effetto Foxy Eye',
-  'Extension Effetto Cat Eye',
-  'Extension Effetto Doll Eye',
-  'Trattamento Rinforzante Ciglia',
-  'Trattamento Idratante Ciglia',
-];
 
 export default function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
   const [formData, setFormData] = useState({
@@ -97,20 +60,6 @@ export default function ClientForm({ clientId, onSuccess, onCancel }: ClientForm
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.value
-    }));
-  };
-
-  const handleDateChange = (date: dayjs.Dayjs | null) => {
-    setFormData(prev => ({
-      ...prev,
-      data_ultimo_appuntamento: date
-    }));
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -187,6 +136,15 @@ export default function ClientForm({ clientId, onSuccess, onCancel }: ClientForm
                     {isEditing ? 'Aggiorna le informazioni del cliente' : 'Aggiungi un nuovo cliente al sistema'}
                   </p>
                 </div>
+                <motion.button
+                  type="button"
+                  onClick={onCancel}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-200 group"
+                >
+                  <X className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200" />
+                </motion.button>
               </div>
             </motion.div>
 
@@ -224,7 +182,7 @@ export default function ClientForm({ clientId, onSuccess, onCancel }: ClientForm
                     transition={{ duration: 0.5, delay: 0.3 }}
                   >
                     <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-lg sm:rounded-xl flex items-center justify-center">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
                         <User className="w-3 h-3 sm:w-4 sm:h-4 text-pink-600 dark:text-pink-400" />
                       </div>
                       <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
@@ -278,7 +236,7 @@ export default function ClientForm({ clientId, onSuccess, onCancel }: ClientForm
                     transition={{ duration: 0.5, delay: 0.4 }}
                   >
                     <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-lg sm:rounded-xl flex items-center justify-center">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
                         <Phone className="w-3 h-3 sm:w-4 sm:h-4 text-pink-600 dark:text-pink-400" />
                       </div>
                       <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
@@ -314,7 +272,7 @@ export default function ClientForm({ clientId, onSuccess, onCancel }: ClientForm
                     transition={{ duration: 0.5, delay: 0.6 }}
                   >
                     <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-lg sm:rounded-xl flex items-center justify-center">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
                         <User className="w-3 h-3 sm:w-4 sm:h-4 text-pink-600 dark:text-pink-400" />
                       </div>
                       <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
@@ -341,7 +299,7 @@ export default function ClientForm({ clientId, onSuccess, onCancel }: ClientForm
                           } disabled:opacity-50`}
                         >
                           <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center ${
+                            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-xl flex items-center justify-center ${
                               formData.tipo_cliente === value
                                 ? 'bg-pink-500 text-white'
                                 : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'

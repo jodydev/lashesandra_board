@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CheckCircle,
+  CheckCircle2,
   Clock,
   XCircle,
-  Calendar,
-  User,
-  Euro,
-  Sparkles,
   Filter,
   Search,
   Check,
   X,
-  AlertCircle,
+  Activity,
+  Timer,
+  Banknote
 } from 'lucide-react';
 import type { Appointment, Client } from '../types';
 import { appointmentService, clientService } from '../lib/supabase';
@@ -20,6 +18,68 @@ import { formatDateForDisplay, formatCurrency } from '../lib/utils';
 import dayjs from 'dayjs';
 
 type StatusFilter = 'all' | 'pending' | 'completed' | 'cancelled';
+
+// Modern metric card component with glass morphism effect (from MonthlyOverview)
+const MetricCard = ({ icon: Icon, title, value, trend, delay = 0 }: {
+  icon: any;
+  title: string;
+  value: string | number;
+  trend?: string;
+  delay?: number;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay }}
+    className="group relative overflow-hidden rounded-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:border-pink-200 dark:hover:border-pink-800 transition-all duration-300 hover:shadow-xl hover:shadow-pink-500/10"
+  >
+    <div className="absolute inset-0 bg-gradient-to-br from-pink-50/50 to-transparent dark:from-pink-900/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    <div className="relative p-4 sm:p-6">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+            <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-lg shadow-pink-500/25">
+              <Icon size={16} className="sm:w-5 sm:h-5" />
+            </div>
+            <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">{title}</span>
+          </div>
+          <div className="space-y-1">
+            <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{value}</div>
+            {trend && (
+              <div className="text-xs text-green-600 dark:text-green-400 font-medium">
+                {trend}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  </motion.div>
+);
+
+// Modern chart container with enhanced styling (from MonthlyOverview)
+const ChartContainer = ({ title, children, actions }: {
+  title: string;
+  children: React.ReactNode;
+  actions?: React.ReactNode;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.6 }}
+    className="rounded-2xl bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 shadow-xl shadow-black/5 overflow-hidden"
+  >
+    <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-800">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
+        {actions}
+      </div>
+    </div>
+    <div className="p-4 sm:p-6">
+      {children}
+    </div>
+  </motion.div>
+);
 
 export default function AppointmentsConfirmationPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -77,36 +137,38 @@ export default function AppointmentsConfirmationPage() {
     return clients.find(client => client.id === clientId);
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusConfig = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
+        return {
+          icon: CheckCircle2,
+          color: 'emerald',
+          bg: 'bg-emerald-50 dark:bg-emerald-950/20',
+          text: 'text-emerald-700 dark:text-emerald-300',
+          border: 'border-emerald-200 dark:border-emerald-800',
+          label: 'Completato',
+          dot: 'bg-emerald-500'
+        };
       case 'cancelled':
-        return <XCircle className="w-5 h-5 text-red-500" />;
+        return {
+          icon: XCircle,
+          color: 'red',
+          bg: 'bg-red-50 dark:bg-red-950/20',
+          text: 'text-red-700 dark:text-red-300',
+          border: 'border-red-200 dark:border-red-800',
+          label: 'Cancellato',
+          dot: 'bg-red-500'
+        };
       default:
-        return <Clock className="w-5 h-5 text-yellow-500" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
-      default:
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'Completato';
-      case 'cancelled':
-        return 'Cancellato';
-      default:
-        return 'In Attesa';
+        return {
+          icon: Clock,
+          color: 'amber',
+          bg: 'bg-pink-50 dark:bg-pink-950/20',
+          text: 'text-pink-700 dark:text-pink-300',
+          border: 'border-pink-200 dark:border-pink-800',
+          label: 'In Attesa',
+          dot: 'bg-pink-500'
+        };
     }
   };
 
@@ -127,17 +189,33 @@ export default function AppointmentsConfirmationPage() {
   const pendingCount = appointments.filter(apt => apt.status === 'pending').length;
   const completedCount = appointments.filter(apt => apt.status === 'completed').length;
   const cancelledCount = appointments.filter(apt => apt.status === 'cancelled').length;
+  const totalRevenue = appointments
+    .filter(apt => apt.status === 'completed')
+    .reduce((sum, apt) => sum + (apt.importo || 0), 0);
 
+  // Enhanced loading state with skeleton matching MonthlyOverview
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-3 sm:p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="space-y-6">
-            <div className="h-32 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-96 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
+          <div className="space-y-4 sm:space-y-6">
+            {/* Header skeleton */}
+            <div className="space-y-3 sm:space-y-4">
+              <div className="h-8 sm:h-10 bg-gray-200 dark:bg-gray-800 rounded-2xl w-80 animate-pulse" />
+              <div className="h-5 sm:h-6 bg-gray-200 dark:bg-gray-800 rounded-lg w-96 animate-pulse" />
+            </div>
+            
+            {/* Stats skeleton */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-24 sm:h-32 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
               ))}
+            </div>
+            
+            {/* Content skeleton */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="lg:col-span-2 h-64 sm:h-96 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
+              <div className="h-64 sm:h-96 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
             </div>
           </div>
         </div>
@@ -147,259 +225,227 @@ export default function AppointmentsConfirmationPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-pink-50/30 to-gray-100 dark:from-gray-900 dark:via-pink-900/10 dark:to-gray-800">
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Header */}
+      <div className="max-w-7xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-8">
+        {/* Header with enhanced navigation matching MonthlyOverview */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+          className="flex flex-col sm:flex-row items-start justify-between gap-4"
         >
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-              Conferma Appuntamenti
+          <div className="space-y-1 w-full">
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+              Gestione Appuntamenti
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Gestisci lo stato degli appuntamenti e conferma i servizi completati
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+              Conferma e gestisci lo stato dei tuoi appuntamenti
             </p>
           </div>
         </motion.div>
 
-        {/* Error Alert */}
+        {/* Error state with better styling matching MonthlyOverview */}
         <AnimatePresence>
           {error && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="p-4 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 flex items-center gap-3"
+              className="p-3 sm:p-4 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 text-sm sm:text-base"
             >
-              <AlertCircle className="w-5 h-5" />
               {error}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 hover:shadow-xl hover:shadow-yellow-500/10 transition-all duration-300"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/25">
-                <Clock size={20} />
-              </div>
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">In Attesa</span>
-            </div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">{pendingCount}</div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 hover:shadow-xl hover:shadow-green-500/10 transition-all duration-300"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg shadow-green-500/25">
-                <CheckCircle size={20} />
-              </div>
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Completati</span>
-            </div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">{completedCount}</div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 hover:shadow-xl hover:shadow-red-500/10 transition-all duration-300"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/25">
-                <XCircle size={20} />
-              </div>
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Cancellati</span>
-            </div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">{cancelledCount}</div>
-          </motion.div>
+        {/* Enhanced metrics grid matching MonthlyOverview */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+          <MetricCard
+            icon={Timer}
+            title="In Attesa"
+            value={pendingCount}
+            delay={0.1}
+          />
+          <MetricCard
+            icon={CheckCircle2}
+            title="Completati"
+            value={completedCount}
+            delay={0.2}
+          />
+          <MetricCard
+            icon={XCircle}
+            title="Cancellati"
+            value={cancelledCount}
+            delay={0.3}
+          />
+          <MetricCard
+            icon={Banknote}
+            title="Ricavi Totali"
+            value={formatCurrency(totalRevenue)}
+            delay={0.4}
+          />
         </div>
 
-        {/* Filters and Search */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-xl shadow-black/5 p-6"
-        >
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
+        {/* Search and Filters using ChartContainer */}
+        <ChartContainer title="Filtri e Ricerca">
+          <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+            {/* Enhanced Search */}
             <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-pink-500 transition-colors duration-200">
+                  <Search className="w-5 h-5" />
+                </div>
                 <input
                   type="text"
-                  placeholder="Cerca per cliente, trattamento..."
+                  placeholder="Cerca cliente, trattamento, email o telefono..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-12 px-4 pl-12 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                  className="w-full h-12 sm:h-14 px-4 pl-12 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 font-medium"
                 />
               </div>
             </div>
 
-            {/* Status Filter */}
-            <div className="flex items-center gap-2">
-              <Filter className="w-5 h-5 text-gray-400" />
+            {/* Enhanced Filter */}
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+                  <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                <span className="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Stato</span>
+              </div>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                className="h-12 px-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white"
+                className="h-12 sm:h-14 px-4 sm:px-6 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white font-semibold min-w-[160px] sm:min-w-[180px]"
               >
-                <option value="all">Tutti</option>
+                <option value="all">Tutti gli stati</option>
                 <option value="pending">In Attesa</option>
                 <option value="completed">Completati</option>
                 <option value="cancelled">Cancellati</option>
               </select>
             </div>
           </div>
-        </motion.div>
+        </ChartContainer>
 
-        {/* Appointments List */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-xl shadow-black/5 overflow-hidden"
+        {/* Appointments List using ChartContainer */}
+        <ChartContainer 
+          title="Appuntamenti"
+          actions={
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-pink-500 rounded-full animate-pulse" />
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Live</span>
+              <div className="px-3 py-1.5 bg-gray-100 dark:bg-gray-900 rounded-xl">
+                <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                  {filteredAppointments.length} risultati
+                </span>
+              </div>
+            </div>
+          }
         >
-          <div className="p-6 border-b border-gray-100 dark:border-gray-800">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Appuntamenti ({filteredAppointments.length})
-            </h3>
-          </div>
-          
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
-            <AnimatePresence>
+          <div className="space-y-3 sm:space-y-4">
+            <AnimatePresence mode="popLayout">
               {filteredAppointments.map((appointment, index) => {
                 const client = getClientById(appointment.client_id);
                 if (!client) return null;
 
+                const statusConfig = getStatusConfig(appointment.status);
+
                 return (
                   <motion.div
                     key={appointment.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20, scale: 0.95 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-6">
-                        {/* Client Avatar */}
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                          {client.nome.charAt(0).toUpperCase()}
-                        </div>
-
-                        {/* Appointment Details */}
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-4">
-                            <h4 className="text-xl font-bold text-gray-900 dark:text-white">
-                              {client.nome} {client.cognome}
-                            </h4>
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
-                              {getStatusText(appointment.status)}
-                            </span>
-                          </div>
-                          
-                          <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-4 h-4" />
-                              <span className="font-medium">{formatDateForDisplay(dayjs(appointment.data))}</span>
-                            </div>
-                            
-                            {appointment.ora && (
-                              <div className="flex items-center gap-2">
-                                <Clock className="w-4 h-4" />
-                                <span className="font-medium">{appointment.ora.slice(0, 5)}</span>
-                              </div>
-                            )}
-                            
-                            <div className="flex items-center gap-2">
-                              <Euro className="w-4 h-4" />
-                              <span className="font-medium">{formatCurrency(appointment.importo)}</span>
-                            </div>
-                            
-                            {appointment.tipo_trattamento && (
-                              <div className="flex items-center gap-2">
-                                <Sparkles className="w-4 h-4" />
-                                <span className="font-medium">{appointment.tipo_trattamento}</span>
-                              </div>
-                            )}
-                          </div>
+                    <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white font-semibold text-xs sm:text-sm">
+                          {client.nome.charAt(0)}{client.cognome.charAt(0)}
                         </div>
                       </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex items-center gap-3">
-                        {appointment.status === 'pending' && (
-                          <>
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleStatusUpdate(appointment.id, 'completed')}
-                              disabled={updating === appointment.id}
-                              className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl font-medium transition-all duration-200 shadow-lg shadow-green-500/25 disabled:opacity-50"
-                            >
-                              {updating === appointment.id ? (
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                              ) : (
-                                <Check className="w-4 h-4" />
-                              )}
-                              Conferma
-                            </motion.button>
-                            
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleStatusUpdate(appointment.id, 'cancelled')}
-                              disabled={updating === appointment.id}
-                              className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-all duration-200 shadow-lg shadow-red-500/25 disabled:opacity-50"
-                            >
-                              <X className="w-4 h-4" />
-                              Cancella
-                            </motion.button>
-                          </>
-                        )}
-                        
-                        {appointment.status !== 'pending' && (
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(appointment.status)}
-                            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              {getStatusText(appointment.status)}
-                            </span>
-                          </div>
-                        )}
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
+                          {client.nome} {client.cognome}
+                        </div>
+                        <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                          {formatDateForDisplay(dayjs(appointment.data))} {appointment.ora && `• ${appointment.ora.slice(0, 5)}`}
+                        </div>
                       </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4 flex-shrink-0">
+                      <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${
+                        appointment.status === 'completed' 
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                          : appointment.status === 'cancelled'
+                          ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                          : 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300'
+                      }`}>
+                        {statusConfig.label}
+                      </span>
+                      <div className="text-right">
+                        <div className="font-bold text-pink-600 dark:text-pink-400 text-sm sm:text-base">
+                          {formatCurrency(appointment.importo)}
+                        </div>
+                      </div>
+                      {appointment.status === 'pending' && (
+                        <div className="flex items-center gap-2">
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleStatusUpdate(appointment.id, 'completed')}
+                            disabled={updating === appointment.id}
+                            className="p-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white transition-colors disabled:opacity-50"
+                          >
+                            {updating === appointment.id ? (
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                              <Check className="w-4 h-4" />
+                            )}
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleStatusUpdate(appointment.id, 'cancelled')}
+                            disabled={updating === appointment.id}
+                            className="p-2 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-colors disabled:opacity-50"
+                          >
+                            <X className="w-4 h-4" />
+                          </motion.button>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 );
               })}
             </AnimatePresence>
-          </div>
 
-          {filteredAppointments.length === 0 && (
-            <div className="text-center py-12">
-              <Calendar className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-500 dark:text-gray-400 font-medium">
-                {searchQuery || statusFilter !== 'all' 
-                  ? 'Nessun appuntamento trovato con i filtri selezionati'
-                  : 'Nessun appuntamento disponibile'
-                }
-              </p>
-            </div>
-          )}
-        </motion.div>
+            {/* Empty State matching MonthlyOverview */}
+            {filteredAppointments.length === 0 && (
+              <div className="text-center py-8 sm:py-12 text-gray-500 dark:text-gray-400">
+                <Activity size={32} className="sm:w-12 sm:h-12 mx-auto mb-4 opacity-50" />
+                <p className="text-sm sm:text-base">
+                  {searchQuery || statusFilter !== 'all' 
+                    ? 'Nessun appuntamento trovato con i filtri selezionati'
+                    : 'Nessun appuntamento disponibile al momento'
+                  }
+                </p>
+                {(searchQuery || statusFilter !== 'all') && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setSearchQuery('');
+                      setStatusFilter('all');
+                    }}
+                    className="mt-4 px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-xl font-medium transition-colors"
+                  >
+                    Cancella filtri
+                  </motion.button>
+                )}
+              </div>
+            )}
+          </div>
+        </ChartContainer>
       </div>
     </div>
   );
