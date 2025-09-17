@@ -44,3 +44,15 @@ export interface CalendarEvent {
   client: Client;
   appointment: Appointment;
 }
+
+export type CalendarView = 'month' | 'week' | 'day';
+
+export interface CalendarViewProps {
+  currentDate: import('dayjs').Dayjs;
+  appointments: Appointment[];
+  clients: Client[];
+  onDateClick: (date: import('dayjs').Dayjs) => void;
+  onAppointmentClick: (appointment: Appointment) => void;
+  onNewAppointment: () => void;
+  colors: ReturnType<typeof import('../hooks/useAppColors').useAppColors>;
+}
