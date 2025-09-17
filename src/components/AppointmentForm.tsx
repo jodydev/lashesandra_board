@@ -25,20 +25,21 @@ interface AppointmentFormProps {
   appointment?: Appointment | null;
   selectedDate?: Dayjs | null;
   onSuccess: () => void;
+  onCancel: () => void;
 }
 
 const treatmentTypes = [
   'One to One',
   'Volume Egiziano 3D',
-  'Volume Russo 2D-6D',
-  'Mega Volume 7D+',
   'Laminazione Ciglia',
   'Laminazione Sopracciglia',
+  'Rimozione Extension Ciglia',
+  'Volume Russo 2D-6D',
+  'Mega Volume 7D+',
   'Refill One to One',
   'Refill Volume 3D',
   'Refill Volume Russo',
   'Refill Mega Volume',
-  'Rimozione Extension Ciglia',
   'Extension Effetto Wet',
   'Extension Effetto Eyeliner',
   'Extension Effetto Foxy Eye',
@@ -60,7 +61,8 @@ const quickAmounts = [40, 50, 60, 70, 80, 100, 120, 150];
 export default function AppointmentForm({ 
   appointment, 
   selectedDate, 
-  onSuccess
+  onSuccess,
+  onCancel
 }: AppointmentFormProps) {
   const [formData, setFormData] = useState({
     client_id: '',
@@ -78,7 +80,6 @@ export default function AppointmentForm({
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobile, setIsMobile] = useState(false);
   const [viewType, setViewType] = useState<'list' | 'grid'>('list');
-  const [showAppointmentForm, setShowAppointmentForm] = useState(false);
   useEffect(() => {
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -145,8 +146,8 @@ export default function AppointmentForm({
     event.preventDefault();
     console.log('handleSubmit chiamato', { formData, activeStep });
     
-    if (!formData.client_id || !formData.data || formData.importo <= 0) {
-      setError('Tutti i campi sono obbligatori e l\'importo deve essere maggiore di 0');
+    if (!formData.client_id || !formData.data || formData.tipo_trattamento === '') {
+      setError('Tutti i campi sono obbligatori!');
       return;
     }
 
@@ -195,8 +196,8 @@ export default function AppointmentForm({
   const canProceed = () => {
     switch (activeStep) {
       case 0: return formData.client_id !== '';
-      case 1: return formData.data && formData.importo > 0;
-      case 2: return true;
+      case 1: return formData.data;
+      case 2: return formData.tipo_trattamento !== '' && formData.importo !== 0;
       case 3: return true;
       default: return false;
     }
@@ -239,7 +240,7 @@ export default function AppointmentForm({
                     whileTap={{ scale: 0.95 }}
                     className={`p-2 rounded-xl transition-all duration-200 ${
                       viewType === 'list'
-                        ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm'
+                        ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-lg'
                         : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                     }`}
                   >
@@ -252,7 +253,7 @@ export default function AppointmentForm({
                     whileTap={{ scale: 0.95 }}
                     className={`p-2 rounded-xl transition-all duration-200 ${
                       viewType === 'grid'
-                        ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm'
+                        ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-lg'
                         : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                     }`}
                   >
@@ -300,61 +301,29 @@ export default function AppointmentForm({
                             onClick={() => setFormData(prev => ({ ...prev, client_id: client.id }))}
                             className={`w-full p-5 sm:p-6 rounded-3xl border transition-all duration-500 text-left relative overflow-hidden backdrop-blur-sm ${
                               formData.client_id === client.id
-                                ? 'border-pink-500/50 bg-gradient-to-br from-pink-50/80 via-white/90 to-pink-100/60 dark:from-pink-950/40 dark:via-gray-900/90 dark:to-pink-900/30 shadow-2xl shadow-pink-500/20 ring-2 ring-pink-500/20'
-                                : 'border-gray-200/60 dark:border-gray-700/60 bg-white/80 dark:bg-gray-800/80 hover:border-pink-300/60 dark:hover:border-pink-400/40 hover:shadow-xl hover:shadow-black/5 hover:bg-gradient-to-br hover:from-white hover:to-pink-50/30 dark:hover:from-gray-800 dark:hover:to-pink-950/20'
+                                ? 'border-pink-500/50 bg-gradient-to-br from-pink-50/80 via-white/90 to-pink-100/60 dark:from-pink-950/40 dark:via-gray-900/90 dark:to-pink-900/30 shadow-lg shadow-pink-500/20 ring-2 ring-pink-500/20'
+                                : 'border-gray-200/60 dark:border-gray-700/60 bg-white/80 dark:bg-gray-800/80 hover:border-pink-300/60 dark:hover:border-pink-400/40 hover:shadow-lg hover:shadow-black/5 hover:bg-gradient-to-br hover:from-white hover:to-pink-50/30 dark:hover:from-gray-800 dark:hover:to-pink-950/20'
                             }`}
                           >
-                            {/* Subtle Background Pattern */}
-                            <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.05]">
-                              <div className="absolute inset-0 bg-gradient-to-br from-pink-500 via-transparent to-pink-600" />
-                            </div>
+             
 
-                            {/* Selection Indicator with Enhanced Animation */}
-                            <AnimatePresence>
-                              {formData.client_id === client.id && (
-                                <motion.div
-                                  initial={{ opacity: 0, scale: 0, rotate: -180 }}
-                                  animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                                  exit={{ opacity: 0, scale: 0, rotate: 180 }}
-                                  transition={{ 
-                                    type: "spring", 
-                                    stiffness: 300, 
-                                    damping: 20,
-                                    duration: 0.6
-                                  }}
-                                  className="absolute top-4 right-4 sm:top-5 sm:right-5 w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-pink-500 to-pink-600 rounded-full flex items-center justify-center shadow-lg shadow-pink-500/40 ring-2 ring-white/50 dark:ring-gray-900/50"
-                                >
-                                  <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" strokeWidth={3} />
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
+      
 
                             <div className="flex items-center gap-4 sm:gap-6 relative z-10">
                               {/* Enhanced Avatar with Multiple Layers */}
                               <div className="relative">
                                 <motion.div 
-                                  className={`relative w-14 h-14 sm:w-18 sm:h-18 rounded-2xl sm:rounded-3xl flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-xl transition-all duration-500 ${
+                                  className={`relative w-14 h-14 sm:w-18 sm:h-18 rounded-2xl sm:rounded-3xl flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-lg transition-all duration-500 ${
                                     formData.client_id === client.id
                                       ? 'bg-gradient-to-br from-pink-500 via-pink-600 to-pink-700 shadow-pink-500/40 scale-110'
                                       : 'bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600 group-hover:from-pink-400 group-hover:via-pink-500 group-hover:to-pink-600 group-hover:scale-105 shadow-gray-500/20'
                                   }`}
                                   whileHover={{ scale: formData.client_id === client.id ? 1.1 : 1.05 }}
                                 >
-                                  {/* Animated Background Ring */}
-                                  <motion.div 
-                                    className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white/20 to-transparent"
-                                    animate={{
-                                      opacity: formData.client_id === client.id ? [0.2, 0.4, 0.2] : 0
-                                    }}
-                                    transition={{
-                                      duration: 2,
-                                      repeat: Infinity,
-                                      ease: "easeInOut"
-                                    }}
-                                  />
+                
                                   
                                   {/* Client Initial */}
-                                  <span className="relative z-10 drop-shadow-sm">
+                                  <span className="relative z-10 drop-shadow-lg">
                                     {client.nome.charAt(0).toUpperCase()}
                                   </span>
                                   
@@ -386,7 +355,7 @@ export default function AppointmentForm({
                                       whileHover={{ x: 2 }}
                                       transition={{ type: "spring", stiffness: 400, damping: 25 }}
                                     >
-                                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 group-hover/info:bg-pink-100 dark:group-hover/info:bg-pink-900/30 transition-colors duration-200">
+                                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 group-hover/info:bg-pink-100 dark:group-hover/info:bg-pink-900/30 transition-colors duration-200">
                                         <Mail className="w-2.5 h-2.5 sm:w-3 sm:h-3" strokeWidth={2.5} />
                                       </div>
                                       <span className="text-xs sm:text-sm font-medium truncate group-hover/info:text-gray-700 dark:group-hover/info:text-gray-300 transition-colors duration-200">
@@ -400,7 +369,7 @@ export default function AppointmentForm({
                                       whileHover={{ x: 2 }}
                                       transition={{ type: "spring", stiffness: 400, damping: 25 }}
                                     >
-                                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 group-hover/info:bg-pink-100 dark:group-hover/info:bg-pink-900/30 transition-colors duration-200">
+                                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 group-hover/info:bg-pink-100 dark:group-hover/info:bg-pink-900/30 transition-colors duration-200">
                                         <Phone className="w-2.5 h-2.5 sm:w-3 sm:h-3" strokeWidth={2.5} />
                                       </div>
                                       <span className="text-xs sm:text-sm font-medium group-hover/info:text-gray-700 dark:group-hover/info:text-gray-300 transition-colors duration-200">
@@ -433,7 +402,7 @@ export default function AppointmentForm({
 
                             {/* Subtle Bottom Border Animation */}
                             <motion.div
-                              className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-pink-500 to-pink-600"
+                              className="absolute bottom-0 left-0 h-full bg-gradient-to-r from-pink-200 to-pink-300"
                               initial={{ width: 0 }}
                               animate={{ 
                                 width: formData.client_id === client.id ? '100%' : '0%'
@@ -462,16 +431,15 @@ export default function AppointmentForm({
                             stiffness: 300,
                             damping: 25
                           }}
-                          className="group"
+                          className="group m-2 "
                         >
                           <motion.button
                             type="button"
                             onClick={() => setFormData(prev => ({ ...prev, client_id: client.id }))}
-                            whileHover={{ scale: 1.02, y: -2 }}
                             className={`w-full p-4 rounded-3xl border transition-all duration-500 text-left relative overflow-hidden backdrop-blur-sm ${
                               formData.client_id === client.id
-                                ? 'border-pink-500/30 bg-gradient-to-br from-pink-50/90 via-white/95 to-pink-100/80 dark:from-pink-950/50 dark:via-gray-900/95 dark:to-pink-900/40 shadow-2xl shadow-pink-500/25 ring-2 ring-pink-500/20'
-                                : 'border-gray-200/50 dark:border-gray-700/50 bg-white/90 dark:bg-gray-800/90 hover:border-pink-300/50 dark:hover:border-pink-400/30 hover:shadow-xl hover:shadow-black/10 hover:bg-gradient-to-br hover:from-white hover:to-pink-50/40 dark:hover:from-gray-800 dark:hover:to-pink-950/30'
+                                ? 'border-pink-500/30 bg-gradient-to-br from-pink-50/90 via-white/95 to-pink-100/80 dark:from-pink-950/50 dark:via-gray-900/95 dark:to-pink-900/40 shadow-lg shadow-pink-500/25 ring-2 ring-pink-500/20'
+                                : 'border-gray-200/50 dark:border-gray-700/50 bg-white/90 dark:bg-gray-800/90 hover:border-pink-300/50 dark:hover:border-pink-400/30 hover:shadow-lg hover:shadow-black/10 hover:bg-gradient-to-br hover:from-white hover:to-pink-50/40 dark:hover:from-gray-800 dark:hover:to-pink-950/30'
                             }`}
                           >
                             {/* Animated Background Glow */}
@@ -484,31 +452,7 @@ export default function AppointmentForm({
                               }}
                             />
 
-                            {/* Selection Indicator with Premium Animation */}
-                            <AnimatePresence>
-                              {formData.client_id === client.id && (
-                                <motion.div
-                                  initial={{ opacity: 0, scale: 0, rotate: -180 }}
-                                  animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                                  exit={{ opacity: 0, scale: 0, rotate: 180 }}
-                                  transition={{ 
-                                    type: "spring", 
-                                    stiffness: 400, 
-                                    damping: 20,
-                                    duration: 0.6
-                                  }}
-                                  className="absolute top-4 right-4 w-8 h-8 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/30"
-                                >
-                                  <motion.div
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    transition={{ delay: 0.2, type: "spring", stiffness: 500 }}
-                                  >
-                                    <Check className="w-4 h-4 text-white" strokeWidth={3} />
-                                  </motion.div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
+                           
 
                             <div className="flex flex-col items-center text-center space-y-4 relative z-10">
                               {/* Premium Avatar with Layered Design */}
@@ -525,7 +469,7 @@ export default function AppointmentForm({
                                 }`} />
                                 
                                 {/* Main Avatar */}
-                                <div className={`relative w-20 h-20 rounded-3xl flex items-center justify-center text-white font-bold text-2xl shadow-xl transition-all duration-500 ${
+                                <div className={`relative w-20 h-20 rounded-3xl flex items-center justify-center text-white font-bold text-2xl shadow-lg transition-all duration-500 ${
                                   formData.client_id === client.id
                                     ? 'bg-gradient-to-br from-pink-500 to-pink-600 shadow-pink-500/30'
                                     : 'bg-gradient-to-br from-gray-400 to-gray-500 group-hover:from-pink-400 group-hover:to-pink-500 shadow-black/20'
@@ -563,7 +507,7 @@ export default function AppointmentForm({
                                       animate={{ opacity: 1, x: 0 }}
                                       transition={{ delay: index * 0.1 + 0.3 }}
                                     >
-                                      <div className="w-5 h-5 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover/contact:bg-pink-100 dark:group-hover/contact:bg-pink-900/30 transition-colors duration-200">
+                                      <div className="w-5 h-5 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover/contact:bg-pink-100 dark:group-hover/contact:bg-pink-900/30 transition-colors duration-200">
                                         <Mail className="w-3 h-3" strokeWidth={2.5} />
                                       </div>
                                       <span className="text-sm font-medium truncate max-w-[140px] group-hover/contact:text-gray-700 dark:group-hover/contact:text-gray-300 transition-colors duration-200">
@@ -579,7 +523,7 @@ export default function AppointmentForm({
                                       animate={{ opacity: 1, x: 0 }}
                                       transition={{ delay: index * 0.1 + 0.4 }}
                                     >
-                                      <div className="w-5 h-5 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover/contact:bg-pink-100 dark:group-hover/contact:bg-pink-900/30 transition-colors duration-200">
+                                      <div className="w-5 h-5 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover/contact:bg-pink-100 dark:group-hover/contact:bg-pink-900/30 transition-colors duration-200">
                                         <Phone className="w-3 h-3" strokeWidth={2.5} />
                                       </div>
                                       <span className="text-sm font-medium group-hover/contact:text-gray-700 dark:group-hover/contact:text-gray-300 transition-colors duration-200">
@@ -591,25 +535,8 @@ export default function AppointmentForm({
                               </div>
                             </div>
 
-                            {/* Subtle Bottom Accent Line */}
-                            <motion.div
-                              className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-pink-500 to-pink-600 rounded-full"
-                              initial={{ width: 0 }}
-                              animate={{ 
-                                width: formData.client_id === client.id ? '100%' : '0%'
-                              }}
-                              transition={{ duration: 0.5, ease: "easeOut" }}
-                            />
-
-                            {/* Hover State Indicator */}
-                            <motion.div
-                              className="absolute inset-0 rounded-3xl border-2 border-pink-500/0 group-hover:border-pink-500/20 transition-all duration-300"
-                              animate={{
-                                borderColor: formData.client_id === client.id 
-                                  ? 'rgba(236, 72, 153, 0.3)' 
-                                  : 'rgba(236, 72, 153, 0)'
-                              }}
-                            />
+                           
+                            <div className="absolute bottom-0 left-0 h-full bg-gradient-to-r  from-pink-400 to-pink-500" />
                           </motion.button>
                         </motion.div>
                       ))}
@@ -635,356 +562,584 @@ export default function AppointmentForm({
       case 1:
         return (
           <motion.div 
-            className="space-y-6 sm:space-y-8"
+            className="space-y-8  max-h-[50vh] overflow-y-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            {/* Date and Time Section */}
+            {/* Date and Time Card */}
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
+              className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-xl shadow-black/5 dark:shadow-black/20 overflow-hidden"
             >
-              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
-                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-pink-600 dark:text-pink-400" />
-                </div>
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                  Data e Ora
-                </h2>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                {/* Enhanced Date Input */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Data Appuntamento *
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      value={formData.data.format('YYYY-MM-DD')}
-                      onChange={(e) => handleDateChange(e.target.value)}
-                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pl-10 sm:pl-12 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white disabled:opacity-50 text-sm sm:text-base"
-                      required
-                    />
-                    <Calendar className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <div className="p-6 border-b border-gray-50 dark:border-gray-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-pink-50 dark:bg-pink-900/20 rounded-2xl flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-pink-600 dark:text-pink-400" strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Data e Orario
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Seleziona quando si svolgerà l'appuntamento
+                    </p>
                   </div>
                 </div>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {/* Enhanced Date Input with Modern Design */}
+                  <div className="space-y-3">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Data Appuntamento
+                      <span className="text-pink-500 ml-1">*</span>
+                    </label>
+                    <div className="relative group">
+                      <input
+                        type="date"
+                        value={formData.data.format('YYYY-MM-DD')}
+                        onChange={(e) => handleDateChange(e.target.value)}
+                        className="w-full px-4 py-4 pl-12 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 transition-all duration-300 text-gray-900 dark:text-white text-base font-medium group-hover:border-gray-300 dark:group-hover:border-gray-600"
+                        required
+                      />
+                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 bg-pink-100 dark:bg-pink-900/30 rounded-xl flex items-center justify-center">
+                        <Calendar className="w-3 h-3 text-pink-600 dark:text-pink-400" strokeWidth={3} />
+                      </div>
+                    </div>
+                  </div>
 
-                {/* Time Input */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Orario
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="time"
-                      value={formData.ora}
-                      onChange={handleChange('ora')}
-                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pl-10 sm:pl-12 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white disabled:opacity-50 text-sm sm:text-base"
-                    />
-                    <Clock className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  {/* Enhanced Time Input */}
+                  <div className="space-y-3">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Orario
+                      <span className="text-gray-400 ml-1 font-normal">(opzionale)</span>
+                    </label>
+                    <div className="relative group">
+                      <input
+                        type="time"
+                        value={formData.ora}
+                        onChange={handleChange('ora')}
+                        className="w-full px-4 py-4 pl-12 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 transition-all duration-300 text-gray-900 dark:text-white text-base font-medium group-hover:border-gray-300 dark:group-hover:border-gray-600"
+                      />
+                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 bg-pink-100 dark:bg-pink-900/30 rounded-xl flex items-center justify-center">
+                        <Clock className="w-3 h-3 text-pink-600 dark:text-pink-400" strokeWidth={3} />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </motion.div>
 
-            {/* Amount Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
-                  <Euro className="w-3 h-3 sm:w-4 sm:h-4 text-pink-600 dark:text-pink-400" />
+            {/* Visual Feedback for Current Selection */}
+            {(formData.data || formData.tipo_trattamento !== '') && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.6 }}
+                className="bg-gradient-to-r from-pink-50 to-pink-100/50 dark:from-pink-900/10 dark:to-pink-800/10 rounded-2xl p-4 border border-pink-200/50 dark:border-pink-800/30"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-pink-500 rounded-xl flex items-center justify-center">
+                    <Check className="w-4 h-4 text-white" strokeWidth={2.5} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-pink-900 dark:text-pink-100">
+                      Dettagli configurati
+                    </p>
+                    <div className="flex items-center gap-4 mt-1 text-xs text-pink-700 dark:text-pink-300">
+                      {formData.data && (
+                        <span>📅 {formData.data.format('DD/MM/YYYY')}</span>
+                      )}
+                      {formData.ora && (
+                        <span>🕐 {formData.ora}</span>
+                      )}
+                      {formData.tipo_trattamento !== '' && (
+                        <span>💰 €{formData.importo}</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                  Importo
-                </h2>
-              </div>
-              
-              {/* Enhanced Amount Input */}
-              <div className="space-y-2 mb-4 sm:mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Importo (€) *
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={formData.importo || ''}
-                    onChange={handleChange('importo')}
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pl-10 sm:pl-12 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50 text-sm sm:text-base"
-                    required
-                  />
-                  <Euro className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                </div>
-              </div>
-
-              {/* Enhanced Quick Amount Buttons */}
-              <div className="space-y-3 sm:space-y-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Importi Rapidi
-                </label>
-                <div className="grid grid-cols-4 gap-2 sm:gap-3">
-                  {quickAmounts.map((amount) => (
-                    <button
-                      key={amount}
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, importo: amount }))}
-                      className={`h-10 sm:h-14 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all duration-300 shadow-lg ${
-                        formData.importo === amount
-                          ? 'bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-pink-500/30'
-                          : 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-pink-200 dark:hover:border-pink-300 hover:shadow-pink-500/10'
-                      }`}
-                    >
-                      €{amount}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            )}
           </motion.div>
         );
 
       case 2:
         return (
           <motion.div 
-            className="space-y-4 sm:space-y-6"
+            className="space-y-6 sm:space-y-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            {/* Treatment Selection Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
-                  <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-pink-600 dark:text-pink-400" />
-                </div>
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                  Tipo Trattamento
-                </h2>
-              </div>
-              
-              <div className="space-y-2 sm:space-y-4 max-h-[50vh] sm:max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-pink-200 dark:scrollbar-thumb-pink-600 scrollbar-track-transparent">
-                {/* Generic Option */}
+            
+            {/* Treatment Grid */}
+            <div className="space-y-3 max-h-[50vh] overflow-y-auto scrollbar-thin scrollbar-thumb-pink-200 dark:scrollbar-thumb-pink-800 scrollbar-track-transparent">
+             
+             
+             
+              {/* Generic Option - Featured */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+              >
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, tipo_trattamento: '' }))}
-                  className={`w-full p-4 sm:p-6 rounded-2xl sm:rounded-3xl border-2 transition-all duration-300 text-left relative overflow-hidden ${
+                  className={`group w-full p-4 rounded-2xl border-2 transition-all duration-300 text-left relative overflow-hidden ${
                     formData.tipo_trattamento === ''
-                      ? 'border-pink-500 bg-gradient-to-br from-pink-50 to-pink-100/50 dark:from-pink-900/20 dark:to-pink-800/20 shadow-lg shadow-pink-500/20'
-                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-pink-200 dark:hover:border-pink-300 hover:shadow-lg hover:shadow-black/5'
+                      ? 'border-pink-500 bg-gradient-to-br from-pink-50 via-white to-pink-50 dark:from-pink-950/50 dark:via-gray-900 dark:to-pink-950/30 shadow-lg shadow-pink-500/20'
+                      : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-pink-300 dark:hover:border-pink-700 hover:shadow-lg hover:shadow-black/5'
                   }`}
                 >
-                  <div className="flex items-center gap-3 sm:gap-6">
-                    <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300 ${
+                  {/* Subtle gradient overlay */}
+                  <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
+                    formData.tipo_trattamento === '' 
+                      ? 'bg-gradient-to-r from-pink-500/5 to-pink-600/5' 
+                      : 'bg-gradient-to-r from-pink-500/3 to-pink-600/3'
+                  }`} />
+                  
+                  <div className="relative flex items-center gap-4">
+                    {/* Icon Container */}
+                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 ${
                       formData.tipo_trattamento === ''
-                        ? 'bg-gradient-to-br from-pink-500 to-pink-600 text-white'
-                        : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-gray-500 dark:text-gray-400'
+                        ? 'bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-pink-500/30'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 group-hover:bg-pink-100 dark:group-hover:bg-pink-950/50 group-hover:text-pink-600 dark:group-hover:text-pink-400'
                     }`}>
-                      <Clock className="w-5 h-5 sm:w-6 sm:h-6" />
+                      <Clock className="w-6 h-6" strokeWidth={2} />
                     </div>
+                    
+                    {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-1">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 group-hover:text-pink-900 dark:group-hover:text-pink-100 transition-colors">
                         Appuntamento Generico
                       </h3>
-                      <p className="text-gray-500 dark:text-gray-400 font-medium text-sm sm:text-base">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
                         Nessun trattamento specificato
                       </p>
                     </div>
-                    {formData.tipo_trattamento === '' && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-500 rounded-full flex items-center justify-center"
-                      >
-                        <Check className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                      </motion.div>
-                    )}
-                  </div>
-                </button>
-
-                {/* Treatment Options */}
-                {treatmentTypes.map((treatment, index) => (
-                  <motion.button
-                    key={treatment}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, tipo_trattamento: treatment }))}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.03 }}
-                    className={`w-full p-4 sm:p-6 rounded-2xl sm:rounded-3xl border-2 transition-all duration-300 text-left relative overflow-hidden ${
-                      formData.tipo_trattamento === treatment
-                        ? 'border-pink-500 bg-gradient-to-br from-pink-50 to-pink-100/50 dark:from-pink-900/20 dark:to-pink-800/20 shadow-lg shadow-pink-500/20'
-                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-pink-200 dark:hover:border-pink-300 hover:shadow-lg hover:shadow-black/5'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 sm:gap-6">
-                      <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300 ${
-                        formData.tipo_trattamento === treatment
-                          ? 'bg-gradient-to-br from-pink-500 to-pink-600 text-white'
-                          : 'bg-gradient-to-br from-pink-100 to-pink-200 dark:from-pink-900/30 dark:to-pink-800/30 text-pink-600 dark:text-pink-400'
-                      }`}>
-                        <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-                          {treatment}
-                        </h3>
-                      </div>
-                      {formData.tipo_trattamento === treatment && (
+                    
+                    {/* Selection Indicator */}
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                      formData.tipo_trattamento === ''
+                        ? 'border-pink-500 bg-pink-500'
+                        : 'border-gray-300 dark:border-gray-600 group-hover:border-pink-400'
+                    }`}>
+                      {formData.tipo_trattamento === '' && (
                         <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-500 rounded-full flex items-center justify-center"
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
                         >
-                          <Check className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                          <Check className="w-3 h-3 text-white" strokeWidth={3} />
                         </motion.div>
                       )}
                     </div>
-                  </motion.button>
+                  </div>
+                </button>
+              </motion.div>
+
+              {/* Treatment Options */}
+              <div className="space-y-2">
+                {treatmentTypes.map((treatment, index) => (
+                  <motion.div
+                    key={treatment}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.15 + (index * 0.02) }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, tipo_trattamento: treatment }))}
+                      className={`group w-full p-4 rounded-xl border transition-all duration-300 text-left relative overflow-hidden ${
+                        formData.tipo_trattamento === treatment
+                          ? 'border-pink-500 bg-gradient-to-r from-pink-50 to-white dark:from-pink-950/30 dark:to-gray-900 shadow-lg shadow-pink-500/10'
+                          : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-pink-200 dark:hover:border-pink-800 hover:shadow-md hover:shadow-black/5'
+                      }`}
+                    >
+                      {/* Hover gradient */}
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-pink-500/2 to-pink-600/2" />
+                      
+                      <div className="relative flex items-center gap-4">
+                        {/* Treatment Icon */}
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 ${
+                          formData.tipo_trattamento === treatment
+                            ? 'bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-pink-500/20'
+                            : 'bg-pink-50 dark:bg-pink-950/30 text-pink-600 dark:text-pink-400 group-hover:bg-pink-100 dark:group-hover:bg-pink-950/50'
+                        }`}>
+                          <Sparkles className="w-5 h-5" strokeWidth={2} />
+                        </div>
+                        
+                        {/* Treatment Name */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className={`font-semibold transition-colors duration-300 ${
+                            formData.tipo_trattamento === treatment
+                              ? 'text-pink-900 dark:text-pink-100'
+                              : 'text-gray-900 dark:text-white group-hover:text-pink-900 dark:group-hover:text-pink-100'
+                          }`}>
+                            {treatment}
+                          </h3>
+                        </div>
+                        
+                        {/* Selection Radio */}
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                          formData.tipo_trattamento === treatment
+                            ? 'border-pink-500 bg-pink-500'
+                            : 'border-gray-300 dark:border-gray-600 group-hover:border-pink-400'
+                        }`}>
+                          {formData.tipo_trattamento === treatment && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                              className="w-2 h-2 bg-white rounded-full"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  </motion.div>
                 ))}
               </div>
+            
+                        {/* Amount Card with Premium Design */}
+                        <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-xl shadow-black/5 dark:shadow-black/20 overflow-hidden"
+            >
+              <div className="p-6 border-b border-gray-50 dark:border-gray-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-pink-50 dark:bg-pink-900/20 rounded-2xl flex items-center justify-center">
+                    <Euro className="w-5 h-5 text-pink-600 dark:text-pink-400" strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Importo Servizio
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Definisci il prezzo del trattamento
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                {/* Premium Amount Input */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Importo in Euro
+                    <span className="text-pink-500 ml-1">*</span>
+                  </label>
+                  <div className="relative group">
+                    <input
+                      type="number"
+                      value={formData.importo || ''}
+                      onChange={handleChange('importo')}
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      className="w-full px-4 py-4 pl-12 pr-16 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 transition-all duration-300 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-base font-medium group-hover:border-gray-300 dark:group-hover:border-gray-600"
+                      required
+                    />
+                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 bg-pink-100 dark:bg-pink-900/30 rounded-xl flex items-center justify-center">
+                      <Euro className="w-3 h-3 text-pink-600 dark:text-pink-400" strokeWidth={3} />
+                    </div>
+                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-sm font-semibold text-gray-400 dark:text-gray-500">
+                      EUR
+                    </div>
+                  </div>
+                </div>
+
+                {/* Redesigned Quick Amount Buttons */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Importi Frequenti
+                    </label>
+                    <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
+                      Tocca per selezionare
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 gap-3">
+                    {quickAmounts.map((amount, index) => (
+                      <motion.button
+                        key={amount}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, importo: amount }))}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.05 + 0.5 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`relative h-16 rounded-2xl text-sm font-bold transition-all duration-300 shadow-lg overflow-hidden ${
+                          formData.importo === amount
+                            ? 'bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-pink-500/30 shadow-xl'
+                            : 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-pink-200 dark:hover:border-pink-300 hover:shadow-xl hover:shadow-pink-500/10'
+                        }`}
+                      >
+                        <div className="flex flex-col items-center justify-center h-full">
+                          <span className="text-lg font-bold">€{amount}</span>
+                        </div>
+                        {formData.importo === amount && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="absolute top-1 right-1 w-5 h-5 bg-white/20 rounded-full flex items-center justify-center"
+                          >
+                            <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                          </motion.div>
+                        )}
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </motion.div>
+            </div>
+
+            
+
+
           </motion.div>
         );
 
       case 3:
         return (
           <motion.div 
-            className="space-y-4 sm:space-y-6 h-full flex flex-col overflow-y-scroll"
+            className="space-y-6 h-full flex flex-col"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            {/* Confirmation Header */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="flex-shrink-0"
-            >
-              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
-                  <Check className="w-3 h-3 sm:w-4 sm:h-4 text-pink-600 dark:text-pink-400" />
-                </div>
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                  Conferma Appuntamento
-                </h2>
-              </div>
-            </motion.div>
             
-            {/* Scrollable Summary Card */}
-            <div className="space-y-2 sm:space-y-4 max-h-[50vh] sm:max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-pink-200 dark:scrollbar-thumb-pink-600 scrollbar-track-transparent">
+            {/* Premium Summary Card with Glass Morphism */}
             <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="pb-4"
-              >
-                {/* Enhanced Summary Card */}
-                <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-pink-50 via-white to-pink-50 dark:from-pink-900/20 dark:via-gray-900 dark:to-pink-900/20 border-2 border-pink-100 dark:border-pink-800/30 shadow-2xl shadow-pink-500/10">
-                  {/* Background Pattern */}
-                  <div className="absolute inset-0 opacity-5">
-                    <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-pink-600" />
-                  </div>
-                  
-                  <div className="relative p-4 sm:p-6">
-                    {/* Client Header */}
-                    <div className="flex items-center gap-3 sm:gap-6 mb-6 sm:mb-8">
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white font-bold text-xl sm:text-2xl shadow-lg shadow-pink-500/30">
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.4, type: "spring", stiffness: 300, damping: 30 }}
+              className="flex-1 max-h-[50vh] overflow-y-auto"
+            >
+
+              <div className="relative overflow-hidden rounded-3xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 shadow-2xl shadow-black/10 dark:shadow-black/30">
+                {/* Animated Background Gradient */}
+                <motion.div 
+                  className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-transparent to-pink-600/5"
+                  animate={{
+                    background: [
+                      "linear-gradient(135deg, rgba(236, 72, 153, 0.05) 0%, transparent 50%, rgba(236, 72, 153, 0.05) 100%)",
+                      "linear-gradient(135deg, rgba(236, 72, 153, 0.02) 0%, transparent 50%, rgba(236, 72, 153, 0.08) 100%)",
+                      "linear-gradient(135deg, rgba(236, 72, 153, 0.05) 0%, transparent 50%, rgba(236, 72, 153, 0.05) 100%)"
+                    ]
+                  }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                />
+                
+                <div className="relative p-8">
+                  {/* Client Profile Section */}
+                  <motion.div 
+                    className="flex items-center gap-6 mb-10 pb-8 border-b border-gray-100 dark:border-gray-800"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.6 }}
+                  >
+                    <motion.div 
+                      className="relative"
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    >
+                      {/* Avatar with Glow Effect */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-pink-600 rounded-3xl blur-lg opacity-30 scale-110" />
+                      <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white font-bold text-2xl shadow-xl">
                         {selectedClient ? selectedClient.nome.charAt(0).toUpperCase() : '?'}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
-                          {selectedClient ? `${selectedClient.nome} ${selectedClient.cognome}` : 'Cliente non selezionato'}
-                        </h3>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-gray-600 dark:text-gray-400">
-                          {selectedClient?.email && (
-                            <div className="flex items-center gap-2">
-                              <Mail className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                              <span className="font-medium text-xs sm:text-sm truncate">{selectedClient.email}</span>
+                    </motion.div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                        {selectedClient ? `${selectedClient.nome} ${selectedClient.cognome}` : 'Cliente non selezionato'}
+                      </h3>
+                      <div className="flex flex-col gap-2">
+                        {selectedClient?.email && (
+                          <motion.div 
+                            className="flex items-center gap-3 text-gray-600 dark:text-gray-400"
+                            whileHover={{ x: 4 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                          >
+                            <div className="w-5 h-5 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                              <Mail className="w-3 h-3" strokeWidth={2} />
                             </div>
-                          )}
-                          {selectedClient?.telefono && (
-                            <div className="flex items-center gap-2">
-                              <Phone className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                              <span className="font-medium text-xs sm:text-sm">{selectedClient.telefono}</span>
+                            <span className="font-medium text-sm">{selectedClient.email}</span>
+                          </motion.div>
+                        )}
+                        {selectedClient?.telefono && (
+                          <motion.div 
+                            className="flex items-center gap-3 text-gray-600 dark:text-gray-400"
+                            whileHover={{ x: 4 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                          >
+                            <div className="w-5 h-5 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                              <Phone className="w-3 h-3" strokeWidth={2} />
                             </div>
-                          )}
-                        </div>
+                            <span className="font-medium text-sm">{selectedClient.telefono}</span>
+                          </motion.div>
+                        )}
                       </div>
                     </div>
+                  </motion.div>
 
-                    {/* Details Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                      <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg shadow-black/5 border border-gray-100 dark:border-gray-700">
-                        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
-                            <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600 dark:text-pink-400" />
+                  {/* Details Grid with Enhanced Cards */}
+                  <div className="grid grid-cols-2 gap-6">
+                    {/* Date Card */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.7 }}
+                      whileHover={{ y: -4, scale: 1.02 }}
+                      className="group"
+                    >
+                      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg shadow-black/5 hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300">
+                        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        
+                        <div className="relative">
+                          <div className="flex items-center gap-3 mb-4">
+                            <motion.div 
+                              className="w-10 h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl flex items-center justify-center"
+                              whileHover={{ rotate: 10 }}
+                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                            >
+                              <Calendar className="w-5 h-5 text-pink-600 dark:text-pink-400" strokeWidth={2} />
+                            </motion.div>
+                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</span>
                           </div>
-                          <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</span>
-                        </div>
-                        <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-                          {formatDateForDisplay(formData.data)}
-                        </p>
-                      </div>
-
-                      {formData.ora && (
-                        <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg shadow-black/5 border border-gray-100 dark:border-gray-700">
-                          <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
-                              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600 dark:text-pink-400" />
-                            </div>
-                            <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Orario</span>
-                          </div>
-                          <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-                            {formData.ora}
+                          <p className="text-xl font-bold text-gray-900 dark:text-white">
+                            {formatDateForDisplay(formData.data)}
                           </p>
                         </div>
-                      )}
-
-                      <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg shadow-black/5 border border-gray-100 dark:border-gray-700">
-                        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
-                            <Euro className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600 dark:text-pink-400" />
-                          </div>
-                          <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Importo</span>
-                        </div>
-                        <p className="text-lg sm:text-xl font-bold text-pink-600">
-                          {new Intl.NumberFormat('it-IT', {
-                            style: 'currency',
-                            currency: 'EUR',
-                          }).format(formData.importo)}
-                        </p>
                       </div>
+                    </motion.div>
 
-                      <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg shadow-black/5 border border-gray-100 dark:border-gray-700">
-                        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
-                            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600 dark:text-pink-400" />
+                    {/* Time Card */}
+                    {formData.ora && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.8 }}
+                        whileHover={{ y: -4, scale: 1.02 }}
+                        className="group"
+                      >
+                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg shadow-black/5 hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300">
+                          <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          
+                          <div className="relative">
+                            <div className="flex items-center gap-3 mb-4">
+                              <motion.div 
+                                className="w-10 h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl flex items-center justify-center"
+                                whileHover={{ rotate: 10 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                              >
+                                <Clock className="w-5 h-5 text-pink-600 dark:text-pink-400" strokeWidth={2} />
+                              </motion.div>
+                              <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Orario</span>
+                            </div>
+                            <p className="text-xl font-bold text-gray-900 dark:text-white">
+                              {formData.ora.split(':')[0]}:{formData.ora.split(':')[1]}
+                            </p>
                           </div>
-                          <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trattamento</span>
                         </div>
-                        <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-                          {formData.tipo_trattamento || 'Generico'}
-                        </p>
+                      </motion.div>
+                    )}
+
+                    {/* Amount Card */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.9 }}
+                      whileHover={{ y: -4, scale: 1.02 }}
+                      className="group"
+                    >
+                      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg shadow-black/5 hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300">
+                        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        
+                        <div className="relative">
+                          <div className="flex items-center gap-3 mb-4">
+                            <motion.div 
+                              className="w-10 h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl flex items-center justify-center"
+                              whileHover={{ rotate: 10 }}
+                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                            >
+                              <Euro className="w-5 h-5 text-pink-600 dark:text-pink-400" strokeWidth={2} />
+                            </motion.div>
+                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Importo</span>
+                          </div>
+                          <p className="text-xl font-bold text-pink-600 dark:text-pink-400">
+                            {new Intl.NumberFormat('it-IT', {
+                              style: 'currency',
+                              currency: 'EUR',
+                            }).format(formData.importo)}
+                          </p>
+                        </div>
                       </div>
-                    </div>
+                    </motion.div>
+
+                    {/* Treatment Card */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 1.0 }}
+                      whileHover={{ y: -4, scale: 1.02 }}
+                      className="group"
+                    >
+                      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg shadow-black/5 hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300">
+                        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        
+                        <div className="relative">
+                          <div className="flex items-center gap-3 mb-4">
+                            <motion.div 
+                              className="w-10 h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl flex items-center justify-center"
+                              whileHover={{ rotate: 10 }}
+                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                            >
+                              <Sparkles className="w-5 h-5 text-pink-600 dark:text-pink-400" strokeWidth={2} />
+                            </motion.div>
+                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trattamento</span>
+                          </div>
+                          <p className="text-xl font-bold text-gray-900 dark:text-white">
+                            {formData.tipo_trattamento || 'Generico'}
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
                   </div>
+
+                  {/* Success Indicator */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 1.1, type: "spring", stiffness: 300, damping: 25 }}
+                    className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800"
+                  >
+                    <div className="flex items-center justify-center gap-3 text-pink-600 dark:text-pink-400">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        className="w-5 h-5"
+                      >
+                        <Sparkles className="w-5 h-5" strokeWidth={2} />
+                      </motion.div>
+                      <span className="font-semibold text-sm">Pronto per il salvataggio</span>
+                    </div>
+                  </motion.div>
                 </div>
-              </motion.div>
-            </div>
+              </div>
+            </motion.div>
           </motion.div>
         );
 
@@ -1016,15 +1171,15 @@ export default function AppointmentForm({
                 </p>
               </div>
             </div>
-
             <button
-              type="button"
-              onClick={() => setShowAppointmentForm(false)}
-              className="hidden sm:flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl sm:rounded-2xl font-medium transition-all duration-200 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm sm:text-base"
-            >
-              <X className="w-4 h-4 sm:w-5 sm:h-5" />
-              Annulla
-            </button>
+                 type="button"
+                 onClick={onCancel}
+                 className={`${isMobile ? 'px-4 py-3' : 'px-6 py-3'} bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 ${isMobile ? 'rounded-xl' : 'rounded-2xl'} font-medium transition-all duration-200 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm flex items-center justify-center gap-2`}
+               >
+                 <X className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                 Annulla
+               </button>
+
           </div>
         </motion.div>
 
@@ -1121,7 +1276,7 @@ export default function AppointmentForm({
                transition={{ duration: 0.5, delay: 0.7 }}
                className={`flex ${isMobile ? 'flex-col' : 'flex-row'} gap-3 ${isMobile ? 'pt-4' : 'pt-6'} border-t border-gray-100 dark:border-gray-800 flex-shrink-0`}
              >
-
+      
                <button
                  type="button"
                  onClick={(e) => {

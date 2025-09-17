@@ -291,7 +291,7 @@ export default function HomePage() {
                 <div className={`
                   relative p-6 rounded-2xl bg-white dark:bg-gray-800 
                   border border-gray-200 dark:border-gray-700
-                  shadow-sm hover:shadow-lg transition-all duration-300
+                  shadow-lg hover:shadow-lg transition-all duration-300
                   hover:border-${stat.color}-200 dark:hover:border-${stat.color}-800
                 `}>
                   <div className="flex items-center justify-between mb-3">
@@ -349,7 +349,7 @@ export default function HomePage() {
                 className="group cursor-pointer"
                 onClick={() => navigate(action.path)}
               >
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-500">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-lg transition-all duration-500">
                   {/* Gradient Header */}
                   <div className={`
                     relative p-6 bg-gradient-to-br ${action.gradient} text-white
@@ -425,7 +425,7 @@ export default function HomePage() {
                   <div className="absolute -inset-1 bg-gradient-to-r from-pink-500/20 via-transparent to-pink-500/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-700" />
                   
                   {/* Main Card */}
-                  <div className="relative h-full p-8 lg:p-10 rounded-3xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-700 overflow-hidden">
+                  <div className="relative h-full p-8 lg:p-10 rounded-3xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-lg hover:shadow-lg hover:shadow-pink-500/10 transition-all duration-700 overflow-hidden">
                     
                     {/* Top Accent Line */}
                     <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-${feature.color}-400 to-${feature.color}-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`} />
@@ -447,7 +447,7 @@ export default function HomePage() {
                           dark:from-${feature.color}-950/30 dark:to-${feature.color}-900/20
                           border border-${feature.color}-200/50 dark:border-${feature.color}-800/30
                           shadow-lg shadow-${feature.color}-500/10
-                          group-hover:shadow-xl group-hover:shadow-${feature.color}-500/20
+                          group-hover:shadow-lg group-hover:shadow-${feature.color}-500/20
                           transition-all duration-500
                         `}>
                           <feature.icon className={`w-8 h-8 text-${feature.color}-600 dark:text-${feature.color}-400`} />
@@ -515,7 +515,7 @@ export default function HomePage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowLoveDialog(true)}
-                className="inline-flex items-center gap-3 px-8 py-4 bg-white text-pink-600 rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                className="inline-flex items-center gap-3 px-8 py-4 bg-white text-pink-600 rounded-2xl font-semibold text-lg shadow-lg hover:shadow-lg transition-all duration-300"
               >
                 Clicca qui per ricordarti quanto il tuo fidanzato ti ama
                 <Heart className="w-5 h-5" />
@@ -548,7 +548,7 @@ export default function HomePage() {
           animate={{ scale: showLoveDialog ? 1 : 0.8, opacity: showLoveDialog ? 1 : 0 }}
           exit={{ scale: 0.8, opacity: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
-          className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-gray-100 dark:border-gray-800"
+          className="bg-white dark:bg-gray-900 rounded-3xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden border border-gray-100 dark:border-gray-800"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -582,7 +582,7 @@ export default function HomePage() {
               className="text-center space-y-6"
             >
               {/* Photo placeholder */}
-              <div className="relative mx-auto w-60 h-80 rounded-3xl overflow-hidden shadow-2xl shadow-pink-500/20">
+              <div className="relative mx-auto w-60 h-80 rounded-3xl overflow-hidden shadow-lg shadow-pink-500/20">
                 <img src="/IMG_3560.jpg" alt="Love" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
               </div>

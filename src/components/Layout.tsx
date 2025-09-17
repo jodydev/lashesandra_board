@@ -133,7 +133,7 @@ export default function Layout({ children }: LayoutProps) {
                 className={`w-full group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${
                   isSelected
                     ? 'bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-lg shadow-pink-500/25'
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-gray-700 hover:text-pink-600 dark:hover:text-pink-400 shadow-sm hover:shadow-md border border-gray-100 dark:border-gray-700'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-gray-700 hover:text-pink-600 dark:hover:text-pink-400 shadow-lg hover:shadow-lg border border-gray-100 dark:border-gray-700'
                 }`}
               >
                 {/* Selection indicator */}
@@ -176,7 +176,7 @@ export default function Layout({ children }: LayoutProps) {
                   </div>
                   
                   {item.badge && (
-                    <div className={`px-2 py-1 rounded-lg text-xs font-bold transition-all duration-300 ${
+                    <div className={`px-2 py-1 rounded-xl text-xs font-bold transition-all duration-300 ${
                       isSelected
                         ? 'bg-white/20 text-white'
                         : 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'

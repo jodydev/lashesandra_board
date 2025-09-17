@@ -166,7 +166,7 @@ export default function AppointmentsPage() {
           {/* Stats Skeleton */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl p-3 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+              <div key={i} className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl p-3 sm:p-6 shadow-lg border border-gray-100 dark:border-gray-800">
                 <div className="flex items-center space-x-2 sm:space-x-4">
                   <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gray-200 dark:bg-gray-800 rounded-2xl sm:rounded-2xl animate-pulse" />
                   <div className="space-y-1 sm:space-y-2 flex-1">
@@ -179,7 +179,7 @@ export default function AppointmentsPage() {
           </div>
 
           {/* Content Skeleton */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 p-3 sm:p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-lg border border-gray-100 dark:border-gray-800 p-3 sm:p-6">
             <div className="space-y-3 sm:space-y-4">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-2xl sm:rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse">
@@ -275,7 +275,7 @@ export default function AppointmentsPage() {
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.5, delay: stat.delay, ease: [0.22, 1, 0.36, 1] }}
-              className={`relative overflow-hidden bg-gradient-to-br ${stat.bgGradient} backdrop-blur-sm rounded-2xl sm:rounded-3xl p-3 sm:p-6 border border-white/20 dark:border-gray-800/50 shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer`}
+              className={`relative overflow-hidden bg-gradient-to-br ${stat.bgGradient} backdrop-blur-sm rounded-2xl sm:rounded-3xl p-3 sm:p-6 border border-white/20 dark:border-gray-800/50 shadow-lg hover:shadow-lg transition-all duration-300 group cursor-pointer`}
             >
               <div className="flex items-center justify-between">
                 <div className="space-y-1 sm:space-y-2 flex-1 min-w-0">
@@ -317,7 +317,7 @@ export default function AppointmentsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-800/50 shadow-sm mb-6 sm:mb-8"
+          className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-800/50 shadow-lg mb-6 sm:mb-8"
         >
           <div className="space-y-4">
             {/* Search Bar */}
@@ -412,10 +412,10 @@ export default function AppointmentsPage() {
                     delay: index * 0.05,
                     ease: [0.22, 1, 0.36, 1]
                   }}
-                  className={`group relative backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border shadow-sm transition-all duration-300 ${
+                  className={`group relative backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border shadow-lg transition-all duration-300 ${
                     statusInfo.isCompleted 
                       ? 'bg-gray-50/80 dark:bg-gray-800/50 border-gray-200/50 dark:border-gray-700/50 opacity-75 hover:opacity-90' 
-                      : 'bg-white/80 dark:bg-gray-900/80 border-gray-200/50 dark:border-gray-800/50 hover:shadow-xl hover:shadow-pink-500/10'
+                      : 'bg-white/80 dark:bg-gray-900/80 border-gray-200/50 dark:border-gray-800/50 hover:shadow-lg hover:shadow-pink-500/10'
                   }`}
                 >
                   <div className="flex items-start sm:items-center gap-3 sm:gap-4">
@@ -544,7 +544,7 @@ export default function AppointmentsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="text-center py-12 sm:py-16 bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-md"
+            className="text-center py-12 sm:py-16 bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-lg"
           >
             <div className="w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
               <Calendar className="w-8 h-8 sm:w-12 sm:h-12 text-white" />
@@ -604,6 +604,7 @@ export default function AppointmentsPage() {
               <AppointmentForm
                 appointment={selectedAppointment}
                 onSuccess={handleFormSuccess}
+                onCancel={handleFormCancel}
               />
             </div>
           </DialogContent>
@@ -625,7 +626,7 @@ export default function AppointmentsPage() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-2xl max-w-md w-full p-4 sm:p-6"
+                className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-lg max-w-md w-full p-4 sm:p-6"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="text-center">

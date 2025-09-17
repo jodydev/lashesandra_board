@@ -10,7 +10,10 @@ import {
   X,
   Activity,
   Timer,
-  Banknote
+  Banknote,
+  Calendar,
+  CalendarDays,
+  CalendarRange
 } from 'lucide-react';
 import type { Appointment, Client } from '../types';
 import { appointmentService, clientService } from '../lib/supabase';
@@ -18,6 +21,7 @@ import { formatDateForDisplay, formatCurrency } from '../lib/utils';
 import dayjs from 'dayjs';
 
 type StatusFilter = 'all' | 'pending' | 'completed' | 'cancelled';
+type DateFilter = 'all' | 'today' | 'tomorrow' | 'nextWeek';
 
 // Modern metric card component with glass morphism effect (from MonthlyOverview)
 const MetricCard = ({ icon: Icon, title, value, trend, delay = 0 }: {
@@ -31,7 +35,7 @@ const MetricCard = ({ icon: Icon, title, value, trend, delay = 0 }: {
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay }}
-    className="group relative overflow-hidden rounded-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:border-pink-200 dark:hover:border-pink-800 transition-all duration-300 hover:shadow-xl hover:shadow-pink-500/10"
+    className="group relative overflow-hidden rounded-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:border-pink-200 dark:hover:border-pink-800 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/10"
   >
     <div className="absolute inset-0 bg-gradient-to-br from-pink-50/50 to-transparent dark:from-pink-900/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
     <div className="relative p-4 sm:p-6">
@@ -67,7 +71,7 @@ const ChartContainer = ({ title, children, actions }: {
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.6 }}
-    className="rounded-2xl bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 shadow-xl shadow-black/5 overflow-hidden"
+    className="rounded-2xl bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg shadow-black/5 overflow-hidden"
   >
     <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-800">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
@@ -87,6 +91,7 @@ export default function AppointmentsConfirmationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [updating, setUpdating] = useState<string | null>(null);
 
@@ -174,6 +179,12 @@ export default function AppointmentsConfirmationPage() {
 
   const filteredAppointments = appointments.filter(appointment => {
     const client = getClientById(appointment.client_id);
+    const appointmentDate = dayjs(appointment.data);
+    const today = dayjs().startOf('day');
+    const tomorrow = today.add(1, 'day');
+    const nextWeekStart = today.add(1, 'week').startOf('week');
+    const nextWeekEnd = nextWeekStart.add(1, 'week');
+    
     const matchesStatus = statusFilter === 'all' || appointment.status === statusFilter;
     const matchesSearch = !searchQuery || 
       (client && (
@@ -183,7 +194,21 @@ export default function AppointmentsConfirmationPage() {
         appointment.tipo_trattamento?.toLowerCase().includes(searchQuery.toLowerCase())
       ));
     
-    return matchesStatus && matchesSearch;
+    const matchesDate = (() => {
+      switch (dateFilter) {
+        case 'today':
+          return appointmentDate.isSame(today, 'day');
+        case 'tomorrow':
+          return appointmentDate.isSame(tomorrow, 'day');
+        case 'nextWeek':
+          return appointmentDate.isAfter(nextWeekStart) && appointmentDate.isBefore(nextWeekEnd);
+        case 'all':
+        default:
+          return true;
+      }
+    })();
+    
+    return matchesStatus && matchesSearch && matchesDate;
   });
 
   const pendingCount = appointments.filter(apt => apt.status === 'pending').length;
@@ -202,7 +227,7 @@ export default function AppointmentsConfirmationPage() {
             {/* Header skeleton */}
             <div className="space-y-3 sm:space-y-4">
               <div className="h-8 sm:h-10 bg-gray-200 dark:bg-gray-800 rounded-2xl w-80 animate-pulse" />
-              <div className="h-5 sm:h-6 bg-gray-200 dark:bg-gray-800 rounded-lg w-96 animate-pulse" />
+              <div className="h-5 sm:h-6 bg-gray-200 dark:bg-gray-800 rounded-xl w-96 animate-pulse" />
             </div>
             
             {/* Stats skeleton */}
@@ -325,6 +350,101 @@ export default function AppointmentsConfirmationPage() {
           </div>
         </ChartContainer>
 
+        {/* Quick Date Filters */}
+        <ChartContainer title="Filtri Rapidi per Data">
+          <div className="flex flex-wrap gap-3 sm:gap-4">
+            {[
+              { 
+                key: 'all', 
+                label: 'Tutti', 
+                icon: Calendar, 
+                description: 'Mostra tutti gli appuntamenti',
+                count: appointments.length
+              },
+              { 
+                key: 'today', 
+                label: 'Oggi', 
+                icon: Calendar, 
+                description: `Appuntamenti di oggi (${dayjs().format('DD/MM/YYYY')})`,
+                count: appointments.filter(apt => dayjs(apt.data).isSame(dayjs(), 'day')).length
+              },
+              { 
+                key: 'tomorrow', 
+                label: 'Domani', 
+                icon: CalendarDays, 
+                description: `Appuntamenti di domani (${dayjs().add(1, 'day').format('DD/MM/YYYY')})`,
+                count: appointments.filter(apt => dayjs(apt.data).isSame(dayjs().add(1, 'day'), 'day')).length
+              },
+              { 
+                key: 'nextWeek', 
+                label: 'Settimana Prossima', 
+                icon: CalendarRange, 
+                description: 'Appuntamenti della prossima settimana',
+                count: appointments.filter(apt => {
+                  const nextWeekStart = dayjs().add(1, 'week').startOf('week');
+                  const nextWeekEnd = nextWeekStart.add(1, 'week');
+                  return dayjs(apt.data).isAfter(nextWeekStart) && dayjs(apt.data).isBefore(nextWeekEnd);
+                }).length
+              }
+            ].map((filter, index) => (
+              <motion.button
+                key={filter.key}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setDateFilter(filter.key as DateFilter)}
+                className={`group relative flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl border-2 transition-all duration-300 ${
+                  dateFilter === filter.key
+                    ? 'border-pink-500 bg-gradient-to-r from-pink-50 to-pink-100/50 dark:from-pink-900/30 dark:to-pink-800/20 shadow-lg shadow-pink-500/20'
+                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-pink-300 dark:hover:border-pink-600 hover:shadow-lg hover:shadow-pink-500/10'
+                }`}
+                title={filter.description}
+              >
+                {/* Icon */}
+                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                  dateFilter === filter.key
+                    ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/30'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 group-hover:bg-pink-100 dark:group-hover:bg-pink-900/30 group-hover:text-pink-600 dark:group-hover:text-pink-400'
+                }`}>
+                  <filter.icon className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
+                </div>
+                
+                {/* Content */}
+                <div className="flex flex-col items-start">
+                  <span className={`text-sm sm:text-base font-semibold transition-colors duration-300 ${
+                    dateFilter === filter.key
+                      ? 'text-pink-900 dark:text-pink-100'
+                      : 'text-gray-900 dark:text-white group-hover:text-pink-900 dark:group-hover:text-pink-100'
+                  }`}>
+                    {filter.label}
+                  </span>
+                  <span className={`text-xs font-medium transition-colors duration-300 ${
+                    dateFilter === filter.key
+                      ? 'text-pink-700 dark:text-pink-300'
+                      : 'text-gray-500 dark:text-gray-400 group-hover:text-pink-600 dark:group-hover:text-pink-400'
+                  }`}>
+                    {filter.count} appuntamenti
+                  </span>
+                </div>
+                
+                {/* Selection Indicator */}
+                {dateFilter === filter.key && (
+                  <motion.div
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center shadow-lg"
+                  >
+                    <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                  </motion.div>
+                )}
+              </motion.button>
+            ))}
+          </div>
+        </ChartContainer>
+
         {/* Appointments List using ChartContainer */}
         <ChartContainer 
           title="Appuntamenti"
@@ -424,18 +544,19 @@ export default function AppointmentsConfirmationPage() {
               <div className="text-center py-8 sm:py-12 text-gray-500 dark:text-gray-400">
                 <Activity size={32} className="sm:w-12 sm:h-12 mx-auto mb-4 opacity-50" />
                 <p className="text-sm sm:text-base">
-                  {searchQuery || statusFilter !== 'all' 
+                  {(searchQuery || statusFilter !== 'all' || dateFilter !== 'all')
                     ? 'Nessun appuntamento trovato con i filtri selezionati'
                     : 'Nessun appuntamento disponibile al momento'
                   }
                 </p>
-                {(searchQuery || statusFilter !== 'all') && (
+                {(searchQuery || statusFilter !== 'all' || dateFilter !== 'all') && (
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => {
                       setSearchQuery('');
                       setStatusFilter('all');
+                      setDateFilter('all');
                     }}
                     className="mt-4 px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-xl font-medium transition-colors"
                   >

@@ -306,7 +306,7 @@ export default function ModernCalendarView() {
             className="
               inline-flex items-center gap-2 px-6 py-3 bg-pink-500 hover:bg-pink-600 
               text-white font-semibold rounded-xl shadow-lg shadow-pink-500/25 
-              transition-all duration-200 hover:shadow-xl hover:shadow-pink-500/30
+              transition-all duration-200 hover:shadow-lg hover:shadow-pink-500/30
             "
           >
             <Plus className="w-5 h-5" />
@@ -349,7 +349,7 @@ export default function ModernCalendarView() {
               whileHover={{ y: -2 }}
               className="
                 bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700
-                shadow-sm hover:shadow-lg transition-all duration-300
+                shadow-lg hover:shadow-lg transition-all duration-300
               "
             >
               <div className="flex items-center gap-4">
@@ -380,7 +380,7 @@ export default function ModernCalendarView() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden"
+          className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden"
         >
           <div className="p-6 sm:p-8">
             {/* Calendar Header */}
@@ -434,8 +434,33 @@ export default function ModernCalendarView() {
           </div>
         </motion.div>
         {/* Appointment Details Modal - Redesigned with premium glass morphism */}
-        <AnimatePresence>
-          {showAppointmentDetails && (
+        <Dialog 
+          open={showAppointmentDetails} 
+          maxWidth="lg"
+          fullWidth
+          fullScreen={false}
+          PaperProps={{
+            sx: {
+              borderRadius: { xs: 0, sm: 3 },
+              maxHeight: { xs: '100vh', sm: '95vh' },
+              overflow: 'hidden',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              '@media (prefers-color-scheme: dark)': {
+                background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
+              }
+            }
+          }}
+        >
+          <DialogContent 
+            sx={{ 
+              p: 0, 
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%'
+            }}
+          >
+            <div className="flex-1 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -453,7 +478,7 @@ export default function ModernCalendarView() {
                   damping: 30,
                   mass: 0.8
                 }}
-                className="relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl rounded-3xl border border-white/20 dark:border-gray-700/30 w-full max-w-lg max-h-[85vh] overflow-hidden shadow-2xl shadow-black/10 dark:shadow-black/30"
+                className="relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl rounded-3xl border border-white/20 dark:border-gray-700/30 w-full max-w-lg max-h-[85vh] overflow-hidden shadow-lg shadow-black/10 dark:shadow-black/30"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Gradient overlay for depth */}
@@ -528,7 +553,7 @@ export default function ModernCalendarView() {
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={handleNewAppointment}
-                            className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold rounded-2xl transition-all duration-300 shadow-lg shadow-pink-500/25 hover:shadow-xl hover:shadow-pink-500/30"
+                            className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold rounded-2xl transition-all duration-300 shadow-lg shadow-pink-500/25 hover:shadow-lg hover:shadow-pink-500/30"
                           >
                             <Plus className="w-5 h-5" />
                             Aggiungi Appuntamento
@@ -603,7 +628,7 @@ export default function ModernCalendarView() {
                                           </h4>
                                           {appointment.ora && (
                                             <div className={`
-                                              inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold
+                                              inline-flex items-center gap-1 px-2 py-1 rounded-xl text-xs font-semibold
                                               ${isCompleted
                                                 ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 line-through'
                                                 : 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300'
@@ -625,8 +650,11 @@ export default function ModernCalendarView() {
                                           {appointment.tipo_trattamento || 'Nessun trattamento specificato'}
                                         </p>
                                         
-                                        {/* Price tag with modern styling */}
-                                        <div className="flex items-center justify-between">
+                               
+                                      </div>
+
+                                               {/* Price tag with modern styling */}
+                                               <div className="flex items-center justify-between">
                                           <div className={`
                                             inline-flex items-center px-3 py-1.5 rounded-xl text-sm font-bold
                                             ${isCompleted
@@ -639,7 +667,6 @@ export default function ModernCalendarView() {
                                           
                                       
                                         </div>
-                                      </div>
                                       
                        
                                     </div>
@@ -654,8 +681,11 @@ export default function ModernCalendarView() {
                 )}
               </motion.div>
             </motion.div>
-          )}
-        </AnimatePresence>
+    
+          </div>
+          </DialogContent>
+        </Dialog>
+     
 
         {/* Appointment Form Dialog */}
         <Dialog 
@@ -690,6 +720,7 @@ export default function ModernCalendarView() {
                 appointment={editingAppointment}
                 selectedDate={selectedDate}
                 onSuccess={handleAppointmentFormSuccess}
+                onCancel={handleAppointmentFormCancel}
               />
             </div>
           </DialogContent>

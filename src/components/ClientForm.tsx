@@ -183,7 +183,7 @@ export default function ClientForm({ clientId, onSuccess, onCancel }: ClientForm
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-gray-900/50 border border-gray-100 dark:border-gray-800 overflow-hidden"
+              className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-lg shadow-gray-200/50 dark:shadow-gray-900/50 border border-gray-100 dark:border-gray-800 overflow-hidden"
             >
               <form onSubmit={handleSubmit} className="p-4 sm:p-6 lg:p-8">
                 <div className="space-y-6 sm:space-y-8">

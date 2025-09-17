@@ -146,8 +146,8 @@ export default function ClientList() {
           {/* Header Skeleton */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
             <div className="space-y-3">
-              <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded-lg w-64 animate-pulse" />
-              <div className="h-5 bg-gray-200 dark:bg-gray-800 rounded-lg w-96 animate-pulse" />
+              <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded-xl w-64 animate-pulse" />
+              <div className="h-5 bg-gray-200 dark:bg-gray-800 rounded-xl w-96 animate-pulse" />
             </div>
             <div className="h-12 bg-gray-200 dark:bg-gray-800 rounded-xl w-40 animate-pulse mt-4 sm:mt-0" />
           </div>
@@ -155,7 +155,7 @@ export default function ClientList() {
           {/* Stats Skeleton */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+              <div key={i} className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-800">
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-gray-200 dark:bg-gray-800 rounded-xl animate-pulse" />
                   <div className="space-y-2">
@@ -168,7 +168,7 @@ export default function ClientList() {
           </div>
 
           {/* Content Skeleton */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800 p-6">
             <div className="space-y-4">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="flex items-center space-x-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 animate-pulse">
@@ -250,7 +250,7 @@ export default function ClientList() {
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.5, delay: stat.delay, ease: [0.22, 1, 0.36, 1] }}
-              className={`relative overflow-hidden bg-gradient-to-br ${stat.bgGradient} backdrop-blur-sm rounded-2xl p-6 border border-white/20 dark:border-gray-800/50 shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer`}
+              className={`relative overflow-hidden bg-gradient-to-br ${stat.bgGradient} backdrop-blur-sm rounded-2xl p-6 border border-white/20 dark:border-gray-800/50 shadow-lg hover:shadow-lg transition-all duration-300 group cursor-pointer`}
             >
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
@@ -301,7 +301,7 @@ export default function ClientList() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
-                  className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-800/50 shadow-sm hover:shadow-lg transition-all duration-300 group"
+                  className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-800/50 shadow-lg hover:shadow-lg transition-all duration-300 group"
                 >
                   <div className="flex items-center gap-4">
                     <div className="relative">
@@ -352,7 +352,7 @@ export default function ClientList() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-800/50 shadow-sm mb-8"
+          className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-800/50 shadow-lg mb-8"
         >
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
             {/* Search Bar */}
@@ -413,7 +413,7 @@ export default function ClientList() {
                   delay: index * 0.05,
                   ease: [0.22, 1, 0.36, 1]
                 }}
-                className="group relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-800/50 shadow-sm hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300 cursor-pointer"
+                className="group relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-800/50 shadow-lg hover:shadow-lg hover:shadow-pink-500/10 transition-all duration-300 cursor-pointer"
               >
                 {/* Client Avatar and Info */}
                 <div className="flex items-start justify-between mb-4">
@@ -470,7 +470,7 @@ export default function ClientList() {
                 <div className="space-y-3 mb-4">
                   {client.telefono && (
                     <div className="flex items-center space-x-3 text-sm">
-                      <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                      <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl">
                         <Phone className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </div>
                       <span className="text-gray-700 dark:text-gray-300 font-medium">{client.telefono}</span>
@@ -479,7 +479,7 @@ export default function ClientList() {
                   
                   {client.email && (
                     <div className="flex items-center space-x-3 text-sm">
-                      <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                      <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl">
                         <Mail className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </div>
                       <span className="text-gray-700 dark:text-gray-300 font-medium truncate">{client.email}</span>
@@ -488,7 +488,7 @@ export default function ClientList() {
 
                   {client.tipo_trattamento && (
                     <div className="flex items-center space-x-3 text-sm">
-                      <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                      <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl">
                         <Sparkles className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </div>
                       <span className="text-gray-700 dark:text-gray-300 font-medium">{client.tipo_trattamento}</span>
@@ -600,7 +600,7 @@ export default function ClientList() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6"
+                className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg max-w-md w-full p-6"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="text-center">
