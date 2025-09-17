@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Client, Appointment, ClientWithAppointments, MonthlyStats } from '../types';
 
-const supabaseUrl = 'https://bicabydtlprtbrzgujrz.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpY2FieWR0bHBydGJyemd1anJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNDc0MzEsImV4cCI6MjA2MjcyMzQzMX0.fWbyuEAxmpDlZqgltu4Ibja3RzgCLXSQ74Cp52dIBbs';
+const supabaseUrl = 'https://ufondjehytekkbrgrjgd.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmb25kamVoeXRla2ticmdyamdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwODkxOTAsImV4cCI6MjA3MzY2NTE5MH0.6hLsH3Z1rur1crqt4DKQ-3s4JMxD7kuFceroMVlYkd8';
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
