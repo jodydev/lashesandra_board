@@ -26,6 +26,7 @@ import dayjs from 'dayjs';
 import type { MonthlyStats } from '../types';
 import { useSupabaseServices } from '../lib/supabaseService';
 import { useAppColors } from '../hooks/useAppColors';
+import { useApp } from '../contexts/AppContext';
 import { formatCurrency } from '../lib/utils';
 
 
@@ -110,6 +111,7 @@ const LoadingSkeleton = () => (
 export default function MonthlyOverview() {
   const { statsService } = useSupabaseServices();
   const colors = useAppColors();
+  const { appType } = useApp();
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [stats, setStats] = useState<MonthlyStats | null>(null);
   const [dailyStats, setDailyStats] = useState<Array<{ day: number; revenue: number; clients: number }>>([]);
@@ -180,7 +182,7 @@ export default function MonthlyOverview() {
           className="flex flex-col sm:flex-row items-start justify-between gap-4"
         >
           <div className="space-y-1 w-full">
-            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+            <h1 className={`text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 via-${colors.primary} to-gray-600 dark:from-white dark:via-${colors.primaryLight} dark:to-gray-300 bg-clip-text text-transparent`}>
               Panoramica Mensile
             </h1>
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
@@ -200,7 +202,7 @@ export default function MonthlyOverview() {
             </motion.button>
             
             <div className="flex items-center gap-2 px-3 sm:px-4 py-2 min-w-[160px] sm:min-w-[200px] justify-center">
-              <Calendar size={14} className="sm:w-4 sm:h-4 text-pink-500" />
+              <Calendar size={14} className={`sm:w-4 sm:h-4 ${colors.textPrimary}`} />
               <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
                 {currentDate.format('MMMM YYYY')}
               </span>
@@ -280,7 +282,7 @@ export default function MonthlyOverview() {
                     onClick={() => setChartType('revenue')}
                     className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
                       chartType === 'revenue'
-                        ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/25'
+                        ? `${colors.bgGradient} text-white shadow-lg ${colors.shadowPrimary}`
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
@@ -294,7 +296,7 @@ export default function MonthlyOverview() {
                     onClick={() => setChartType('clients')}
                     className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
                       chartType === 'clients'
-                        ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/25'
+                        ? `${colors.bgGradient} text-white shadow-lg ${colors.shadowPrimary}`
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
@@ -339,10 +341,10 @@ export default function MonthlyOverview() {
                       <Line 
                         type="monotone" 
                         dataKey={chartType === 'revenue' ? 'revenue' : 'clients'} 
-                        stroke="#E91E63" 
+                        stroke={appType === 'lashesandra' ? '#E91E63' : '#9C27B0'}
                         strokeWidth={2}
-                        dot={{ fill: '#E91E63', strokeWidth: 2, r: 3 }}
-                        activeDot={{ r: 5, stroke: '#E91E63', strokeWidth: 2 }}
+                        dot={{ fill: appType === 'lashesandra' ? '#E91E63' : '#9C27B0', strokeWidth: 2, r: 3 }}
+                        activeDot={{ r: 5, stroke: appType === 'lashesandra' ? '#E91E63' : '#9C27B0', strokeWidth: 2 }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -425,7 +427,7 @@ export default function MonthlyOverview() {
                         {index + 1}
                       </div>
                     )}
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white font-semibold text-xs sm:text-sm">
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${colors.bgGradient} flex items-center justify-center text-white font-semibold text-xs sm:text-sm`}>
                       {item.client.nome.charAt(0)}{item.client.cognome.charAt(0)}
                     </div>
                   </div>
@@ -438,13 +440,13 @@ export default function MonthlyOverview() {
                 <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4 flex-shrink-0">
                   <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${
                     item.client.tipo_cliente === 'nuovo' 
-                      ? 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300'
+                      ? `${colors.bgPrimary} ${colors.textPrimary} dark:${colors.bgPrimaryDark} dark:${colors.textPrimaryDark}`
                       : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                   }`}>
                     {item.client.tipo_cliente === 'nuovo' ? 'Nuovo' : 'Abituale'}
                   </span>
                   <div className="text-right">
-                    <div className="font-bold text-pink-600 dark:text-pink-400 text-sm sm:text-base">
+                    <div className={`font-bold ${colors.textPrimary} dark:${colors.textPrimaryDark} text-sm sm:text-base`}>
                       {formatCurrency(item.revenue)}
                     </div>
                   </div>
