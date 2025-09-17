@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Dialog, DialogContent } from '@mui/material';
 import { 
   Calendar, 
   Clock, 
@@ -9,11 +10,9 @@ import {
   Filter, 
   Edit3, 
   Trash2, 
-  Users, 
   TrendingUp,
   Sparkles,
   Check,
-  X,
   Menu
 } from 'lucide-react';
 import type { Appointment, Client } from '../types';
@@ -270,7 +269,7 @@ export default function AppointmentsPage() {
               bgGradient: 'from-blue-50 to-blue-100/50 dark:from-blue-950/50 dark:to-blue-900/30',
               delay: 0.4
             }
-          ].map((stat, index) => (
+          ].map((stat) => (
             <motion.div
               key={stat.title}
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -545,10 +544,10 @@ export default function AppointmentsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="text-center py-12 sm:py-16"
+            className="text-center py-12 sm:py-16 bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-md"
           >
-            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
-              <Calendar className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
+            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <Calendar className="w-8 h-8 sm:w-12 sm:h-12 text-white" />
             </div>
             <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2">
               {searchTerm || filterType !== 'all' ? 'Nessun appuntamento trovato' : 'Nessun appuntamento ancora'}
@@ -567,40 +566,48 @@ export default function AppointmentsPage() {
                 className="inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-semibold rounded-2xl sm:rounded-2xl shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 transition-all duration-300 text-sm sm:text-base"
               >
                 <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                Aggiungi Appuntamento
+                Nuovo Appuntamento
               </motion.button>
             )}
           </motion.div>
         )}
 
-        {/* Appointment Form Modal */}
-        <AnimatePresence>
-          {showForm && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-[9999]"
-              onClick={handleFormCancel}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <AppointmentForm
-                  appointment={selectedAppointment}
-                  onSuccess={handleFormSuccess}
-                  onCancel={handleFormCancel}
-                />
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Appointment Form Dialog */}
+        <Dialog 
+          open={showForm} 
+          onClose={handleFormCancel}
+          maxWidth="lg"
+          fullWidth
+          fullScreen={false}
+          PaperProps={{
+            sx: {
+              borderRadius: { xs: 0, sm: 3 },
+              maxHeight: { xs: '100vh', sm: '95vh' },
+              overflow: 'hidden',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              '@media (prefers-color-scheme: dark)': {
+                background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
+              }
+            }
+          }}
+        >
+          <DialogContent 
+            sx={{ 
+              p: 0, 
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%'
+            }}
+          >
+            <div className="flex-1 overflow-y-auto">
+              <AppointmentForm
+                appointment={selectedAppointment}
+                onSuccess={handleFormSuccess}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Delete Confirmation Modal */}
         <AnimatePresence>

@@ -63,180 +63,173 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   const drawer = (
-    <motion.div
-      initial={false}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-    >
-      {/* Header Section */}
-      <Box
-        sx={{
-          p: 3,
-          background: 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)',
-          color: 'white',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-            <Typography variant="h5" component="div" sx={{ fontWeight: 700 }}>
-              LashesAndra Board
-            </Typography>
-            {isMobile && (
-              <IconButton
-                onClick={handleDrawerToggle}
-                sx={{ color: 'white' }}
-              >
-                <CloseIcon />
-              </IconButton>
-            )}
-          </Box>
-          <Typography variant="body2" sx={{ opacity: 0.9 }}>
-            Gestione Clienti & Appuntamenti
-          </Typography>
-        </motion.div>
+    <div className="h-full flex flex-col bg-gradient-to-br from-white via-pink-50/30 to-pink-100/20 dark:from-gray-900 dark:via-gray-900 dark:to-pink-950/20">
+      {/* Modern Header Section */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-pink-500 via-pink-600 to-pink-700 dark:from-pink-600 dark:via-pink-700 dark:to-pink-800">
+        {/* Animated Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-0 w-32 h-32 bg-white rounded-full -translate-x-16 -translate-y-16 animate-pulse" />
+          <div className="absolute top-8 right-8 w-24 h-24 bg-white/20 rounded-full animate-bounce" style={{ animationDelay: '1s' }} />
+          <div className="absolute bottom-4 left-1/3 w-16 h-16 bg-white/30 rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
+        </div>
         
-        {/* Decorative elements */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: -20,
-            right: -20,
-            width: 100,
-            height: 100,
-            borderRadius: '50%',
-            background: 'rgba(255, 255, 255, 0.1)',
-          }}
-        />
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: -30,
-            left: -30,
-            width: 80,
-            height: 80,
-            borderRadius: '50%',
-            background: 'rgba(255, 255, 255, 0.05)',
-          }}
-        />
-      </Box>
+        <div className="relative p-6">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="flex items-center justify-between mb-2"
+          >
+            <div className="flex items-center gap-3">
+              <div>
+                <h1 className="text-white font-bold text-xl tracking-tight">
+                  LashesAndra
+                </h1>
+                <p className="text-pink-100 text-sm font-medium">
+                  Workspace 
+                </p>
+              </div>
+            </div>
+            
+            {isMobile && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleDrawerToggle}
+                className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center text-white hover:bg-white/20 transition-colors duration-200"
+              >
+                <CloseIcon className="w-5 h-5" />
+              </motion.button>
+            )}
+          </motion.div>
+          
+        </div>
+        
+        {/* Subtle bottom wave */}
+        <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-r from-pink-500/20 to-pink-600/20 backdrop-blur-sm" />
+      </div>
 
       {/* Navigation Menu */}
-      <Box sx={{ flex: 1, py: 2 }}>
-        <List sx={{ px: 2 }}>
-          {menuItems.map((item, index) => {
-            const isSelected = location.pathname === item.path;
-            return (
-              <motion.div
-                key={item.text}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
+      <div className="flex-1 p-4 space-y-2">
+        {menuItems.map((item, index) => {
+          const isSelected = location.pathname === item.path;
+          const Icon = item.icon.type;
+          
+          return (
+            <motion.div
+              key={item.text}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ 
+                duration: 0.4, 
+                delay: index * 0.08,
+                ease: "easeOut"
+              }}
+            >
+              <motion.button
+                whileHover={{ scale: 1.02, x: 4 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleNavigation(item.path)}
+                className={`w-full group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${
+                  isSelected
+                    ? 'bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-lg shadow-pink-500/25'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-gray-700 hover:text-pink-600 dark:hover:text-pink-400 shadow-sm hover:shadow-md border border-gray-100 dark:border-gray-700'
+                }`}
               >
-                <ListItem disablePadding sx={{ mb: 0.5 }}>
-                  <ListItemButton
-                    selected={isSelected}
-                    onClick={() => handleNavigation(item.path)}
-                    sx={{
-                      borderRadius: 2,
-                      mb: 0.5,
-                      position: 'relative',
-                      overflow: 'hidden',
-                      '&.Mui-selected': {
-                        background: 'linear-gradient(135deg, rgba(233, 30, 99, 0.1) 0%, rgba(194, 24, 91, 0.1) 100%)',
-                        color: theme.palette.primary.main,
-                        '&:hover': {
-                          background: 'linear-gradient(135deg, rgba(233, 30, 99, 0.15) 0%, rgba(194, 24, 91, 0.15) 100%)',
-                        },
-                        '&::before': {
-                          content: '""',
-                          position: 'absolute',
-                          left: 0,
-                          top: 0,
-                          bottom: 0,
-                          width: 4,
-                          background: 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)',
-                          borderRadius: '0 4px 4px 0',
-                        },
-                      },
-                      '&:hover': {
-                        background: 'rgba(233, 30, 99, 0.05)',
-                        transform: 'translateX(4px)',
-                      },
-                      transition: 'all 0.2s ease-in-out',
-                    }}
-                  >
-                    <ListItemIcon
-                      sx={{
-                        color: isSelected ? theme.palette.primary.main : theme.palette.text.secondary,
-                        minWidth: 40,
-                      }}
-                    >
-                      {item.icon}
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary={item.text}
-                      primaryTypographyProps={{
-                        fontWeight: isSelected ? 600 : 500,
-                        fontSize: '0.9rem',
-                      }}
+                {/* Selection indicator */}
+                {isSelected && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute inset-0 bg-gradient-to-r from-pink-500 to-pink-600 rounded-2xl"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                
+                {/* Hover glow effect */}
+                <div className={`absolute inset-0 rounded-2xl transition-opacity duration-300 ${
+                  isSelected 
+                    ? 'opacity-0' 
+                    : 'opacity-0 group-hover:opacity-100 bg-gradient-to-r from-pink-500/5 to-pink-600/5'
+                }`} />
+                
+                <div className="relative flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                    isSelected
+                      ? 'bg-white/20 backdrop-blur-sm'
+                      : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-pink-100 dark:group-hover:bg-pink-900/30'
+                  }`}>
+                    <Icon className={`w-5 h-5 transition-colors duration-300 ${
+                      isSelected 
+                        ? 'text-white' 
+                        : 'text-gray-600 dark:text-gray-400 group-hover:text-pink-600 dark:group-hover:text-pink-400'
+                    }`} />
+                  </div>
+                  
+                  <div className="flex-1 text-left">
+                    <span className={`font-semibold text-sm transition-colors duration-300 ${
+                      isSelected 
+                        ? 'text-white' 
+                        : 'text-gray-900 dark:text-gray-100 group-hover:text-pink-600 dark:group-hover:text-pink-400'
+                    }`}>
+                      {item.text}
+                    </span>
+                  </div>
+                  
+                  {item.badge && (
+                    <div className={`px-2 py-1 rounded-lg text-xs font-bold transition-all duration-300 ${
+                      isSelected
+                        ? 'bg-white/20 text-white'
+                        : 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
+                    }`}>
+                      {item.badge}
+                    </div>
+                  )}
+                  
+                  {/* Arrow indicator for selected item */}
+                  {isSelected && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="w-2 h-2 bg-white rounded-full"
                     />
-                    {item.badge && (
-                      <Chip
-                        label={item.badge}
-                        size="small"
-                        sx={{
-                          height: 20,
-                          fontSize: '0.7rem',
-                          fontWeight: 600,
-                          background: 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)',
-                          color: 'white',
-                        }}
-                      />
-                    )}
-                  </ListItemButton>
-                </ListItem>
-              </motion.div>
-            );
-          })}
-        </List>
-      </Box>
+                  )}
+                </div>
+              </motion.button>
+            </motion.div>
+          );
+        })}
+      </div>
 
-      {/* User Profile Section */}
-      <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+      {/* Enhanced User Profile Section */}
+      <div className="p-4 border-t border-gray-100 dark:border-gray-800">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="bg-gradient-to-r from-gray-50 to-pink-50/50 dark:from-gray-800 dark:to-pink-900/20 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
         >
-          <Box display="flex" alignItems="center" gap={2}>
-            <Avatar
-              sx={{
-                background: 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)',
-                width: 40,
-                height: 40,
-              }}
-            >
-              A
-            </Avatar>
-            <Box>
-              <Typography variant="body2" fontWeight={600}>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/25">
+                <span className="text-white font-bold text-lg">A</span>
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
+            </div>
+            
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-gray-900 dark:text-white text-sm truncate">
                 LashesAndra
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                 Proprietaria
-              </Typography>
-            </Box>
-          </Box>
+              </p>
+            </div>
+  
+          </div>
         </motion.div>
-      </Box>
-    </motion.div>
+      </div>
+    </div>
   );
 
   return (

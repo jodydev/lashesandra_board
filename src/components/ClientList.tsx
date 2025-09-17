@@ -13,6 +13,7 @@ import {
   Calendar,
   Sparkles
 } from 'lucide-react';
+import { Dialog, DialogContent } from '@mui/material';
 import type { Client, Appointment } from '../types';
 import { clientService, appointmentService } from '../lib/supabase';
 import ClientForm from './ClientForm';
@@ -546,32 +547,42 @@ export default function ClientList() {
           </motion.div>
         )}
 
-        {/* Client Form Modal */}
-          {showForm && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
-              onClick={handleFormCancel}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <ClientForm
-                  clientId={selectedClient?.id}
-                  onSuccess={handleFormSuccess}
-                  onCancel={handleFormCancel}
-                />
-              </motion.div>
-            </motion.div>
-          )}
+        {/* Client Form Dialog */}
+        <Dialog 
+          open={showForm} 
+          onClose={handleFormCancel}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+              maxHeight: '90vh',
+              overflow: 'hidden',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              '@media (prefers-color-scheme: dark)': {
+                background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
+              }
+            }
+          }}
+        >
+          <DialogContent 
+            sx={{ 
+              p: 0, 
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%'
+            }}
+          >
+            <div className="flex-1 overflow-y-auto">
+              <ClientForm
+                clientId={selectedClient?.id}
+                onSuccess={handleFormSuccess}
+                onCancel={handleFormCancel}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Delete Confirmation Modal */}
         <AnimatePresence>

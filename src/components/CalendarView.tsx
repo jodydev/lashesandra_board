@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Dialog, DialogContent } from '@mui/material';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -9,7 +10,6 @@ import {
   Euro,
   Clock,
   X,
-  MoreHorizontal,
   Loader2,
   Check
 } from 'lucide-react';
@@ -657,34 +657,43 @@ export default function ModernCalendarView() {
           )}
         </AnimatePresence>
 
-        {/* Appointment Form Modal */}
-        <AnimatePresence>
-          {showAppointmentForm && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-              onClick={handleAppointmentFormCancel}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <AppointmentForm
-                  appointment={editingAppointment}
-                  selectedDate={selectedDate}
-                  onSuccess={handleAppointmentFormSuccess}
-                  onCancel={handleAppointmentFormCancel}
-                />
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Appointment Form Dialog */}
+        <Dialog 
+          open={showAppointmentForm} 
+          onClose={handleAppointmentFormCancel}
+          maxWidth="lg"
+          fullWidth
+          fullScreen={false}
+          PaperProps={{
+            sx: {
+              borderRadius: { xs: 0, sm: 3 },
+              maxHeight: { xs: '100vh', sm: '95vh' },
+              overflow: 'hidden',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              '@media (prefers-color-scheme: dark)': {
+                background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
+              }
+            }
+          }}
+        >
+          <DialogContent 
+            sx={{ 
+              p: 0, 
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%'
+            }}
+          >
+            <div className="flex-1 overflow-y-auto">
+              <AppointmentForm
+                appointment={editingAppointment}
+                selectedDate={selectedDate}
+                onSuccess={handleAppointmentFormSuccess}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

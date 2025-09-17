@@ -9,7 +9,7 @@ import dayjs from 'dayjs';
 import { clientService } from '../lib/supabase';
 import { formatDateForDatabase, parseDateFromDatabase } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Phone, Check, Star, X } from 'lucide-react';
+import { User, Phone, Check, Star } from 'lucide-react';
 
 interface ClientFormProps {
   clientId?: string;
@@ -49,7 +49,7 @@ export default function ClientForm({ clientId, onSuccess, onCancel }: ClientForm
           telefono: client.telefono || '',
           email: client.email || '',
           tipo_trattamento: client.tipo_trattamento || '',
-          data_ultimo_appuntamento: parseDateFromDatabase(client.data_ultimo_appuntamento),
+          data_ultimo_appuntamento: parseDateFromDatabase(client.data_ultimo_appuntamento || null),
           importo: client.importo?.toString() || '',
           tipo_cliente: client.tipo_cliente,
         });
@@ -81,7 +81,7 @@ export default function ClientForm({ clientId, onSuccess, onCancel }: ClientForm
 
       const clientData = {
         ...formData,
-        data_ultimo_appuntamento: formatDateForDatabase(formData.data_ultimo_appuntamento),
+        data_ultimo_appuntamento: formatDateForDatabase(formData.data_ultimo_appuntamento) || undefined,
         importo: formData.importo ? Number(formData.importo) : undefined,
       };
 
@@ -101,16 +101,37 @@ export default function ClientForm({ clientId, onSuccess, onCancel }: ClientForm
 
   if (loading && !isEditing) {
     return (
-      <Box display="flex" justifyContent="center" p={3}>
-        <CircularProgress />
-      </Box>
+      <div className="fixed inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <CircularProgress 
+            size={90}
+            thickness={4}
+            sx={{
+              color: '#ec4899', // pink-500
+              '& .MuiCircularProgress-circle': {
+                strokeLinecap: 'round',
+              }
+            }}
+          />
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-center"
+          >
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mt-5">
+              Caricamento in corso...
+            </h3>
+          </motion.div>
+        </div>
+      </div>
     );
   }
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 overflow-y-auto">
-        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <div className="w-full h-full overflow-y-auto bg-white dark:bg-gray-900">
+        <div className="w-full px-4 sm:px-6 py-4 sm:py-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -133,18 +154,9 @@ export default function ClientForm({ clientId, onSuccess, onCancel }: ClientForm
                     {isEditing ? 'Modifica Cliente' : 'Nuovo Cliente'}
                   </h1>
                   <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
-                    {isEditing ? 'Aggiorna le informazioni del cliente' : 'Aggiungi un nuovo cliente al sistema'}
+                    {isEditing ? 'Aggiorna le informazioni del cliente' : 'Aggiungi un nuovo cliente al tuo elenco'}
                   </p>
                 </div>
-                <motion.button
-                  type="button"
-                  onClick={onCancel}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-200 group"
-                >
-                  <X className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200" />
-                </motion.button>
               </div>
             </motion.div>
 
@@ -159,7 +171,7 @@ export default function ClientForm({ clientId, onSuccess, onCancel }: ClientForm
                   className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl sm:rounded-2xl flex items-start gap-3"
                 >
                   <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0">
-                    <X className="w-3 h-3 sm:w-4 sm:h-4 text-red-600 dark:text-red-400" />
+                    <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-600 dark:bg-red-400 rounded-full" />
                   </div>
                   <p className="text-sm sm:text-base text-red-700 dark:text-red-300 font-medium">{error}</p>
                 </motion.div>
@@ -315,7 +327,7 @@ export default function ClientForm({ clientId, onSuccess, onCancel }: ClientForm
                                 {label}
                               </p>
                               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
-                                {value === 'nuovo' ? 'Prima volta nel salone' : 'Cliente di fiducia'}
+                                {value === 'nuovo' ? 'Prima volta nel prenota' : 'Cliente di fiducia'}
                               </p>
                             </div>
                             {formData.tipo_cliente === value && (

@@ -267,7 +267,7 @@ export default function HomePage() {
         <motion.div  className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-pink-100 dark:bg-pink-950/30 rounded-full text-pink-600 dark:text-pink-400 text-sm font-medium mb-6">
             <Sparkles className="w-4 h-4" />
-            Benvenuto nel tuo spazio di lavoro
+            Benvenuta nel tuo spazio di lavoro amore mio
           </div>
           
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gray-900 via-pink-600 to-gray-900 dark:from-white dark:via-pink-400 dark:to-white bg-clip-text text-transparent mb-6 leading-tight">
