@@ -15,7 +15,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/it';
 import { useSupabaseServices } from '../lib/supabaseService';
 import { useAppColors } from '../hooks/useAppColors';
-import { useGestureDetection } from '../hooks/useGestureDetection';
+import { useHammerGestures } from '../hooks/useHammerGestures';
 import type { Client, Appointment, CalendarView } from '../types';
 import AppointmentForm from './AppointmentForm';
 import MonthView from './views/MonthView';
@@ -41,8 +41,8 @@ export default function CalendarViewWithZoom() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Gesture detection
-  const { containerRef, isGesturing, currentScale } = useGestureDetection(
+  // Gesture detection with Hammer.js
+  const { containerRef } = useHammerGestures(
     setCurrentView,
     currentView
   );
@@ -293,10 +293,6 @@ export default function CalendarViewWithZoom() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
           className="relative"
-          style={{
-            transform: isGesturing ? `scale(${Math.min(Math.max(currentScale, 0.95), 1.05)})` : 'scale(1)',
-            transition: isGesturing ? 'none' : 'transform 0.3s ease-out'
-          }}
         >
           <AnimatePresence mode="wait">
             <motion.div
@@ -365,7 +361,7 @@ export default function CalendarViewWithZoom() {
           className="mt-6 text-center"
         >
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            💡 Su mobile: pinch con due dita sul calendario. Su Mac: Cmd+scroll
+            💡 Su mobile: pinch con due dita per cambiare vista. Su desktop: Cmd+scroll
           </p>
         </motion.div>
 
