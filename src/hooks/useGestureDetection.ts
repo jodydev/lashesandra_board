@@ -60,6 +60,9 @@ export function useGestureDetection(
   // Touch event handlers
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (e.touches.length === 2) {
+      // Prevent browser zoom when starting pinch gesture
+      e.preventDefault();
+      
       const distance = getTouchDistance(e.touches);
       
       setGestureState({
@@ -115,8 +118,8 @@ export function useGestureDetection(
 
   // Wheel event handler for desktop
   const handleWheel = useCallback((e: WheelEvent) => {
-    // Only handle wheel events with Ctrl key (zoom gesture)
-    if (!e.ctrlKey) return;
+    // Only handle wheel events with Cmd key (Mac) or Ctrl key (Windows/Linux) - zoom gesture
+    if (!e.metaKey && !e.ctrlKey) return;
     
     e.preventDefault();
     
@@ -151,7 +154,7 @@ export function useGestureDetection(
     const container = containerRef.current;
     if (!container) return;
 
-    // Touch events
+    // Touch events - passive: false allows preventDefault to block browser zoom
     container.addEventListener('touchstart', handleTouchStart, { passive: false });
     container.addEventListener('touchmove', handleTouchMove, { passive: false });
     container.addEventListener('touchend', handleTouchEnd, { passive: false });

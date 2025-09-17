@@ -363,7 +363,7 @@ export default function CalendarViewWithZoom() {
           className="mt-6 text-center"
         >
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            💡 Usa il pinch-to-zoom su mobile o Ctrl+scroll su desktop per cambiare vista
+            💡 Su mobile: pinch con due dita sul calendario. Su Mac: Cmd+scroll
           </p>
         </motion.div>
 
