@@ -63,7 +63,7 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   const drawer = (
-    <div className={`h-screen flex flex-col bg-gradient-to-br from-white dark:from-gray-900 dark:via-gray-900 ${
+    <div className={`h-full flex flex-col bg-gradient-to-br from-white dark:from-gray-900 dark:via-gray-900 ${
       appType === 'isabellenails' 
         ? 'via-purple-50/30 to-purple-100/20 dark:to-purple-950/20' 
         : 'via-pink-50/30 to-pink-100/20 dark:to-pink-950/20'
