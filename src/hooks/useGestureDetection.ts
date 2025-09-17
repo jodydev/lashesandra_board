@@ -65,6 +65,8 @@ export function useGestureDetection(
       
       const distance = getTouchDistance(e.touches);
       
+      console.log('Pinch gesture started:', { touches: e.touches.length, distance });
+      
       setGestureState({
         isGesturing: true,
         startDistance: distance,
@@ -77,9 +79,12 @@ export function useGestureDetection(
   }, []);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (e.touches.length === 2 && gestureState.isGesturing) {
+    // Always prevent default for multi-touch to block browser zoom
+    if (e.touches.length > 1) {
       e.preventDefault();
-      
+    }
+    
+    if (e.touches.length === 2 && gestureState.isGesturing) {
       const distance = getTouchDistance(e.touches);
       const scale = distance / gestureState.startDistance;
       
@@ -92,19 +97,30 @@ export function useGestureDetection(
     }
   }, [gestureState.isGesturing, gestureState.startDistance]);
 
-  const handleTouchEnd = useCallback((e: TouchEvent) => {
+  const handleTouchEnd = useCallback(() => {
     if (gestureState.isGesturing) {
       const scaleChange = gestureState.currentScale - gestureState.startScale;
       const threshold = 0.3; // Minimum scale change to trigger view change
       
+      console.log('Pinch gesture ended:', { 
+        scaleChange, 
+        threshold, 
+        currentScale: gestureState.currentScale,
+        startScale: gestureState.startScale 
+      });
+      
       if (Math.abs(scaleChange) > threshold) {
         if (scaleChange > 0) {
           // Pinch out (zoom in)
+          console.log('Zooming IN - transitioning to next view');
           transitionToView('in');
         } else {
           // Pinch in (zoom out)
+          console.log('Zooming OUT - transitioning to previous view');
           transitionToView('out');
         }
+      } else {
+        console.log('Scale change too small, no view transition');
       }
       
       setGestureState({
@@ -162,11 +178,25 @@ export function useGestureDetection(
     // Wheel events
     container.addEventListener('wheel', handleWheel, { passive: false });
 
+    // Additional prevention of browser zoom on the entire document when touching our container
+    const preventZoom = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+
+    // Add document-level touch event prevention for extra safety
+    document.addEventListener('touchstart', preventZoom, { passive: false });
+    document.addEventListener('touchmove', preventZoom, { passive: false });
+
     return () => {
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
       container.removeEventListener('wheel', handleWheel);
+      
+      document.removeEventListener('touchstart', preventZoom);
+      document.removeEventListener('touchmove', preventZoom);
     };
   }, [handleTouchStart, handleTouchMove, handleTouchEnd, handleWheel]);
 

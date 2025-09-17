@@ -319,6 +319,7 @@ export default function CalendarViewWithZoom() {
                   clients={clients}
                   onDateClick={handleDateClick}
                   onAppointmentClick={handleEditAppointment}
+                  onNewAppointment={handleNewAppointment}
                   onPreviousMonth={handlePreviousMonth}
                   onNextMonth={handleNextMonth}
                   colors={colors}
@@ -332,6 +333,7 @@ export default function CalendarViewWithZoom() {
                   clients={clients}
                   onDateClick={handleDateClick}
                   onAppointmentClick={handleEditAppointment}
+                  onNewAppointment={handleNewAppointment}
                   onPreviousWeek={handlePreviousWeek}
                   onNextWeek={handleNextWeek}
                   colors={colors}
