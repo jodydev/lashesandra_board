@@ -360,7 +360,7 @@ export default function AppointmentsConfirmationPage() {
 
         {/* Quick Date Filters */}
         <ChartContainer title="Filtri Rapidi per Data">
-          <div className="flex flex-wrap gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {[
               { 
                 key: 'all', 
@@ -403,7 +403,7 @@ export default function AppointmentsConfirmationPage() {
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setDateFilter(filter.key as DateFilter)}
-                className={`group relative flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl border-2 transition-all duration-300 ${
+                className={`group relative flex items-center gap-2 sm:gap-3 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 rounded-2xl sm:rounded-2xl border-2 transition-all duration-300 ${
                   dateFilter === filter.key
                     ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimary}`
                     : `border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:${colors.borderPrimary} hover:shadow-lg ${colors.shadowPrimaryLight}`
@@ -411,24 +411,24 @@ export default function AppointmentsConfirmationPage() {
                 title={filter.description}
               >
                 {/* Icon */}
-                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                <div className={`w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
                   dateFilter === filter.key
                     ? `${colors.bgGradient} text-white shadow-lg ${colors.shadowPrimary}`
                     : `bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 ${colors.bgHover} dark:${colors.bgHoverDark} ${colors.textHover} dark:${colors.textHoverDark}`
                 }`}>
-                  <filter.icon className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
+                  <filter.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5" strokeWidth={2} />
                 </div>
                 
                 {/* Content */}
-                <div className="flex flex-col items-start">
-                  <span className={`text-sm sm:text-base font-semibold transition-colors duration-300 ${
+                <div className="flex flex-col items-start min-w-0 flex-1">
+                  <span className={`text-xs sm:text-sm lg:text-base font-semibold transition-colors duration-300 truncate w-full ${
                     dateFilter === filter.key
                       ? `${colors.textPrimary} dark:${colors.textPrimaryDark}`
                       : `text-gray-900 dark:text-white ${colors.textHover} dark:${colors.textHoverDark}`
                   }`}>
                     {filter.label}
                   </span>
-                  <span className={`text-xs font-medium transition-colors duration-300 ${
+                  <span className={`text-xs font-medium transition-colors duration-300 truncate w-full ${
                     dateFilter === filter.key
                       ? `${colors.textPrimary} dark:${colors.textPrimaryDark}`
                       : `text-gray-500 dark:text-gray-400 ${colors.textHover} dark:${colors.textHoverDark}`
@@ -443,9 +443,9 @@ export default function AppointmentsConfirmationPage() {
                     initial={{ scale: 0, rotate: -180 }}
                     animate={{ scale: 1, rotate: 0 }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    className={`w-6 h-6 ${colors.bgGradient} rounded-full flex items-center justify-center shadow-lg`}
+                    className={`w-5 h-5 sm:w-6 sm:h-6 ${colors.bgGradient} rounded-full flex items-center justify-center shadow-lg flex-shrink-0`}
                   >
-                    <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                    <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" strokeWidth={3} />
                   </motion.div>
                 )}
               </motion.button>

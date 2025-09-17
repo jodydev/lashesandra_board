@@ -18,12 +18,13 @@ import {
   Home as HomeIcon,
   Close as CloseIcon,
   CheckCircle as CheckCircleIcon,
-  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../contexts/AppContext';
 import { useAppColors } from '../hooks/useAppColors';
+import NotificationBadge from './NotificationBadge';
+import FloatingNotification from './FloatingNotification';
 
 const drawerWidth = 280;
 
@@ -37,7 +38,7 @@ const menuItems = [
   { text: 'Appuntamenti', icon: <CalendarIcon />, path: 'appointments', badge: null },
   { text: 'Calendario', icon: <CalendarIcon />, path: 'calendar', badge: null },
   { text: 'Statistiche', icon: <ChartIcon />, path: 'overview', badge: null },
-  { text: 'Conferma Appuntamenti', icon: <CheckCircleIcon />, path: 'confirmations', badge: null },
+  { text: 'Conferma Appuntamenti', icon: <CheckCircleIcon />, path: 'confirmations', badge: 'notification' },
 ];
 
 export default function Layout({ children }: LayoutProps) {
@@ -186,7 +187,9 @@ export default function Layout({ children }: LayoutProps) {
                     </span>
                   </div>
                   
-                  {item.badge && (
+                  {item.badge === 'notification' ? (
+                    <NotificationBadge variant="menu" showDetails={false} />
+                  ) : item.badge && (
                     <div className={`px-2 py-1 rounded-xl text-xs font-bold transition-all duration-300 ${
                       isSelected
                         ? 'bg-white/20 text-white'
@@ -289,6 +292,16 @@ export default function Layout({ children }: LayoutProps) {
             </Typography>
           </Box>
           
+          <Box display="flex" alignItems="center" gap={2}>
+            <NotificationBadge 
+              variant="header" 
+              onClick={() => {
+                const appPrefix = appType === 'isabellenails' ? '/isabellenails' : '/lashesandra';
+                navigate(`${appPrefix}/confirmations`);
+              }}
+            />
+          </Box>
+          
         </Toolbar>
       </AppBar>
       
@@ -357,6 +370,9 @@ export default function Layout({ children }: LayoutProps) {
           </motion.div>
         </AnimatePresence>
       </Box>
+      
+      {/* Floating Notification */}
+      <FloatingNotification />
     </Box>
   );
 }

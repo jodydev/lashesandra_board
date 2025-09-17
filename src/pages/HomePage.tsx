@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useSupabaseServices } from '../lib/supabaseService';
 import { useAppColors } from '../hooks/useAppColors';
 import { useApp } from '../contexts/AppContext';
+import { NotificationSummary } from '../components/NotificationBadge';
 import type { Client, Appointment } from '../types';
 import dayjs from 'dayjs';
 import {
@@ -201,28 +201,6 @@ export default function HomePage() {
     },
   ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-      },
-    },
-  };
-
   // Loading state
   if (loading) {
     return (
@@ -264,15 +242,12 @@ export default function HomePage() {
   }
 
   return (
-    <div>
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
+    <section>
+      <div
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12"
       >
         {/* Hero Section */}
-        <motion.div  className="text-center mb-16">
+        <div className="text-center mb-16">
           <div className={`inline-flex items-center gap-2 px-4 py-2 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-full ${colors.textPrimary} dark:${colors.textPrimaryDark} text-sm font-medium mb-6`}>
             <Sparkles className="w-4 h-4" />
            {appType === 'isabellenails' ? 'Benvenuta nel tuo spazio di lavoro migliore amica del mio amore' : 'Benvenuto nel tuo spazio di lavoro amore mio'}
@@ -290,10 +265,8 @@ export default function HomePage() {
           {/* Stats Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-12">
             {statsData.map((stat) => (
-              <motion.div
+              <div
                 key={stat.label}
-                variants={itemVariants}
-                whileHover={{ scale: 1.02 }}
                 className="group"
               >
                 <div className={`
@@ -331,13 +304,34 @@ export default function HomePage() {
                     {stat.description}
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
+
+        {/* Notifications Widget */}
+        <div className="mb-12">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                Notifiche Appuntamenti
+              </h3>
+              <button
+                onClick={() => {
+                  const appPrefix = appType === 'isabellenails' ? '/isabellenails' : '/lashesandra';
+                  navigate(`${appPrefix}/confirmations`);
+                }}
+                className={`px-4 py-2 ${colors.bgGradient} text-white rounded-xl font-medium hover:${colors.gradientFromLight} hover:${colors.gradientToLight} transition-colors`}
+              >
+                Vai alle conferme
+              </button>
+            </div>
+            <NotificationSummary />
+          </div>
+        </div>
 
         {/* Quick Actions */}
-        <motion.div variants={itemVariants} className="mb-16">
+        <div className="mb-16">
           <div className="flex items-center gap-3 mb-8">
             <div className={`p-2 rounded-xl ${colors.bgPrimary} dark:${colors.bgPrimaryDark}`}>
               <Zap className={`w-5 h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
@@ -349,12 +343,9 @@ export default function HomePage() {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {quickActions.map((action) => (
-              <motion.div
+              <div
                 key={action.title}
-                variants={itemVariants}
-                whileHover={{ scale: 1.02, y: -4 }}
-                whileTap={{ scale: 0.98 }}
-                className="group cursor-pointer"
+                className="group cursor-pointer hover:scale-105 hover:-translate-y-1 transition-all duration-300"
                 onClick={() => navigate(action.path)}
               >
                 <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-lg transition-all duration-500">
@@ -384,20 +375,15 @@ export default function HomePage() {
                   
      
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
 
         {/* Features Section */}
-        <motion.div variants={itemVariants} className="mb-20">
+        <div className="mb-20">
           <div className="text-center mb-16">
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="flex items-center justify-center gap-4 mb-6"
-            >
+            <div className="flex items-center justify-center gap-4 mb-6">
               <div className="relative">
                 <div className={`absolute inset-0 ${colors.primary}/20 rounded-2xl blur-xl`} />
                 <div className={`relative p-3 rounded-2xl ${colors.bgGradient} shadow-lg`}>
@@ -407,26 +393,17 @@ export default function HomePage() {
               <h2 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
                 Funzionalità Principali
               </h2>
-            </motion.div>
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed"
-            >
+            </div>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
               Scopri tutti gli strumenti avanzati che trasformeranno il modo di gestire il tuo business estetico
-            </motion.p>
+            </p>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
             {features.map((feature, index) => (
-              <motion.div
+              <div
                 key={feature.title}
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 * index }}
-                whileHover={{ y: -8 }}
-                className="group"
+                className="group hover:-translate-y-2 transition-all duration-300"
               >
                 <div className="relative h-full">
                   {/* Background Glow Effect */}
@@ -440,11 +417,7 @@ export default function HomePage() {
                     
                     <div className="flex items-start gap-6">
                       {/* Icon Container */}
-                      <motion.div 
-                        whileHover={{ scale: 1.1, rotate: 5 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                        className="relative flex-shrink-0"
-                      >
+                      <div className="relative flex-shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                         {/* Icon Background Glow */}
                         <div className={`absolute inset-0 bg-${feature.color}-500/20 rounded-2xl blur-lg scale-110 opacity-0 group-hover:opacity-100 transition-all duration-500`} />
                         
@@ -460,12 +433,11 @@ export default function HomePage() {
                         `}>
                           <feature.icon className={`w-8 h-8 text-${feature.color}-600 dark:text-${feature.color}-400`} />
                         </div>
-                      </motion.div>
+                      </div>
                       
                       {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <motion.h3 
-                          className={`
+                        <h3 className={`
                             text-xl lg:text-2xl font-bold mb-4
                             text-${feature.color}-600 dark:text-${feature.color}-400
                             group-hover:text-${feature.color}-700 dark:group-hover:text-${feature.color}-300
@@ -473,7 +445,7 @@ export default function HomePage() {
                           `}
                         >
                           {feature.title}
-                        </motion.h3>
+                        </h3>
                         
                         <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-base lg:text-lg group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-300">
                           {feature.description}
@@ -495,15 +467,15 @@ export default function HomePage() {
                     `} />
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
 
-        </motion.div>
+        </div>
 
         {/* Call to Action */}
         {appType !== 'isabellenails' && (
-        <motion.div variants={itemVariants}>
+        <div>
           <div className={`relative overflow-hidden rounded-3xl ${colors.bgGradient} p-12 text-center text-white`}>
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium mb-6">
@@ -520,15 +492,13 @@ export default function HomePage() {
                 Lui ci sarà sempre per te, dovrai solamente dargli la possibilità di farlo.
               </p>
               
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <button
                 onClick={() => setShowLoveDialog(true)}
-                className={`inline-flex items-center gap-3 px-8 py-4 bg-white ${colors.textPrimary} rounded-2xl font-semibold text-lg shadow-lg hover:shadow-lg transition-all duration-300`}
+                className={`inline-flex items-center gap-3 px-8 py-4 bg-white ${colors.textPrimary} rounded-2xl font-semibold text-lg shadow-lg hover:shadow-lg transition-all duration-300 hover:scale-105`}
               >
                 Clicca qui per ricordarti quanto il tuo fidanzato ti ama
                 <Heart className="w-5 h-5" />
-              </motion.button>
+              </button>
             </div>
             
             {/* Background Decorations */}
@@ -538,27 +508,21 @@ export default function HomePage() {
             <div className="absolute top-1/3 right-1/3 w-1 h-1 rounded-full bg-white/40" />
             <div className="absolute bottom-1/3 left-1/2 w-1.5 h-1.5 rounded-full bg-white/20" />
           </div>
-        </motion.div>
+        </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Love Dialog */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: showLoveDialog ? 1 : 0 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.3 }}
-        className={`fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[9999] ${
-          showLoveDialog ? 'block' : 'hidden'
+      <div
+        className={`fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[9999] transition-opacity duration-300 ${
+          showLoveDialog ? 'opacity-100 block' : 'opacity-0 hidden'
         }`}
         onClick={() => setShowLoveDialog(false)}
       >
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: showLoveDialog ? 1 : 0.8, opacity: showLoveDialog ? 1 : 0 }}
-          exit={{ scale: 0.8, opacity: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="bg-white dark:bg-gray-900 rounded-3xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden border border-gray-100 dark:border-gray-800"
+        <div
+          className={`bg-white dark:bg-gray-900 rounded-3xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden border border-gray-100 dark:border-gray-800 transition-all duration-400 ${
+            showLoveDialog ? 'scale-100 opacity-100' : 'scale-90 opacity-0'
+          }`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -585,12 +549,7 @@ export default function HomePage() {
 
           {/* Content */}
           <div className="p-8 overflow-y-auto max-h-[60vh]">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-center space-y-6"
-            >
+            <div className="text-center space-y-6">
               {/* Photo placeholder */}
               <div className="relative mx-auto w-60 h-80 rounded-3xl overflow-hidden shadow-lg shadow-pink-500/20">
                 <img src="/IMG_3560.jpg" alt="Love" className="w-full h-full object-cover" />
@@ -599,12 +558,7 @@ export default function HomePage() {
 
               {/* Love message */}
               <div className="space-y-4">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                  className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 rounded-2xl p-6 border border-pink-200 dark:border-pink-800/30"
-                >
+                <div className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 rounded-2xl p-6 border border-pink-200 dark:border-pink-800/30">
                   <h3 className="text-2xl font-bold text-pink-700 dark:text-pink-300 mb-4 flex items-center justify-center gap-2">
                     <Heart className="w-6 h-6" />
                     Ti amo più di ogni cosa
@@ -627,15 +581,10 @@ export default function HomePage() {
                       Grazie per essere tu, grazie per amarmi, grazie per rendere la mia vita così bella.
                     </p>
                   </div>
-                </motion.div>
+                </div>
 
                 {/* Special features */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.6 }}
-                  className="grid grid-cols-1 md:grid-cols-3 gap-4"
-                >
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 text-center">
                     <Smile className={`w-8 h-8 ${colors.textPrimary} mx-auto mb-2`} />
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Il tuo sorriso</p>
@@ -651,39 +600,32 @@ export default function HomePage() {
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300">La tua anima</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">È la mia stella polare</p>
                   </div>
-                </motion.div>
+                </div>
 
                 {/* Closing message */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5, delay: 0.8 }}
-                  className="text-center"
-                >
+                <div className="text-center">
                   <p className={`text-xl font-bold ${colors.textPrimary} dark:${colors.textPrimaryDark} mb-2`}>
                     Per sempre tuo,
                   </p>
                   <p className="text-lg text-gray-600 dark:text-gray-400">
                     Il tuo fidanzato che ti ama infinitamente
                   </p>
-                </motion.div>
+                </div>
               </div>
-            </motion.div>
+            </div>
           </div>
 
           {/* Footer */}
           <div className="p-6 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+            <button
               onClick={() => setShowLoveDialog(false)}
-              className={`w-full px-6 py-3 ${colors.bgGradient} text-white rounded-2xl font-semibold transition-all duration-200 hover:${colors.gradientFromLight} hover:${colors.gradientToLight} shadow-lg ${colors.shadowPrimary}`}
+              className={`w-full px-6 py-3 ${colors.bgGradient} text-white rounded-2xl font-semibold transition-all duration-200 hover:${colors.gradientFromLight} hover:${colors.gradientToLight} shadow-lg ${colors.shadowPrimary} hover:scale-105`}
             >
               Chiudi con amore
-            </motion.button>
+            </button>
           </div>
-        </motion.div>
-      </motion.div>
-    </div>
+        </div>
+      </div>
+    </section>
   );
 }
