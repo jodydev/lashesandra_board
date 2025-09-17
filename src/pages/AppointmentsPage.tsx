@@ -16,11 +16,14 @@ import {
   Menu
 } from 'lucide-react';
 import type { Appointment, Client } from '../types';
-import { appointmentService, clientService } from '../lib/supabase';
+import { useSupabaseServices } from '../lib/supabaseService';
+import { useAppColors } from '../hooks/useAppColors';
 import AppointmentForm from '../components/AppointmentForm';
 import { formatDate, formatCurrency } from '../lib/utils';
 
 export default function AppointmentsPage() {
+  const { appointmentService, clientService } = useSupabaseServices();
+  const colors = useAppColors();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -145,7 +148,7 @@ export default function AppointmentsPage() {
     } else if (isCompleted) {
       return { status: 'Completato', color: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300', isCompleted: true };
     } else {
-      return { status: 'Programmato', color: 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300', isCompleted: false };
+      return { status: 'Programmato', color: `${colors.bgPrimary} dark:${colors.bgPrimaryDark} ${colors.textPrimary} dark:${colors.textPrimaryDark}`, isCompleted: false };
     }
   };
 
@@ -209,7 +212,7 @@ export default function AppointmentsPage() {
           className="flex space-y-4 mb-6 sm:mb-8 flex-col sm:flex-row items-center justify-between"
         >
           <div className="space-y-1 sm:space-y-2">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-pink-600 to-gray-900 dark:from-white dark:via-pink-400 dark:to-white bg-clip-text text-transparent">
+            <h1 className={`text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-${colors.primary} to-gray-900 dark:from-white dark:via-${colors.primaryLight} dark:to-white bg-clip-text text-transparent`}>
               Gestione Appuntamenti
             </h1>
             <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base lg:text-lg">
@@ -221,7 +224,7 @@ export default function AppointmentsPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleAddAppointment}
-            className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold rounded-2xl shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 transition-all duration-300"
+            className={`group relative w-full sm:w-auto inline-flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 ${colors.bgGradient} hover:${colors.gradientFromLight} hover:${colors.gradientToLight} text-white font-semibold rounded-2xl shadow-lg ${colors.shadowPrimary} hover:${colors.shadowPrimary} transition-all duration-300`}
           >
             <Plus className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:rotate-90 duration-300" />
             <span className="text-sm sm:text-base">Nuovo Appuntamento</span>
@@ -241,32 +244,32 @@ export default function AppointmentsPage() {
               title: 'Appuntamenti Totali',
               value: totalAppointments,
               icon: Calendar,
-              gradient: 'from-pink-500 to-pink-600',
-              bgGradient: 'from-pink-50 to-pink-100/50 dark:from-pink-950/50 dark:to-pink-900/30',
+              gradient: `${colors.gradientFrom} ${colors.gradientTo}`,
+              bgGradient: `${colors.bgGradientHover} dark:${colors.bgPrimaryDark}`,
               delay: 0.1
             },
             {
               title: 'Appuntamenti Oggi',
               value: todayAppointments,
               icon: Clock,
-              gradient: 'from-amber-500 to-amber-600',
-              bgGradient: 'from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-amber-900/30',
+              gradient: `${colors.gradientFrom} ${colors.gradientTo}`,
+              bgGradient: `${colors.bgGradientHover} dark:${colors.bgPrimaryDark}`,
               delay: 0.2
             },
             {
               title: 'Fatturato Stimato',
               value: formatCurrency(totalRevenue),
               icon: Euro,
-              gradient: 'from-emerald-500 to-emerald-600',
-              bgGradient: 'from-emerald-50 to-emerald-100/50 dark:from-emerald-950/50 dark:to-emerald-900/30',
+              gradient: `${colors.gradientFrom} ${colors.gradientTo}`,
+              bgGradient: `${colors.bgGradientHover} dark:${colors.bgPrimaryDark}`,
               delay: 0.3
             },
             {
               title: 'Media per Appuntamento',
               value: formatCurrency(averageRevenue),
               icon: TrendingUp,
-              gradient: 'from-blue-500 to-blue-600',
-              bgGradient: 'from-blue-50 to-blue-100/50 dark:from-blue-950/50 dark:to-blue-900/30',
+              gradient: `${colors.gradientFrom} ${colors.gradientTo}`,
+              bgGradient: `${colors.bgGradientHover} dark:${colors.bgPrimaryDark}`,
               delay: 0.4
             }
           ].map((stat) => (
@@ -275,7 +278,7 @@ export default function AppointmentsPage() {
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.5, delay: stat.delay, ease: [0.22, 1, 0.36, 1] }}
-              className={`relative overflow-hidden bg-gradient-to-br ${stat.bgGradient} backdrop-blur-sm rounded-2xl sm:rounded-3xl p-3 sm:p-6 border border-white/20 dark:border-gray-800/50 shadow-lg hover:shadow-lg transition-all duration-300 group cursor-pointer`}
+              className={`relative overflow-hidden bg-gradient-to-br ${stat.bgGradient} backdrop-blur-sm rounded-2xl p-6 border border-white/20 dark:border-gray-800/50 shadow-lg hover:shadow-lg transition-all duration-300 group cursor-pointer`}
             >
               <div className="flex items-center justify-between">
                 <div className="space-y-1 sm:space-y-2 flex-1 min-w-0">
@@ -328,7 +331,7 @@ export default function AppointmentsPage() {
                 placeholder="Cerca appuntamenti..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl sm:rounded-2xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 text-sm sm:text-base"
+                className={`w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl sm:rounded-2xl focus:ring-2 ${colors.focusRing} focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 text-sm sm:text-base`}
               />
             </div>
 
@@ -374,7 +377,7 @@ export default function AppointmentsPage() {
                       onClick={() => setFilterType(filter.key as any)}
                       className={`px-3 sm:px-4 py-2 rounded-2xl sm:rounded-2xl font-medium text-xs sm:text-sm transition-all duration-200 ${
                         filterType === filter.key
-                          ? 'bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-lg shadow-pink-500/25'
+                          ? `${colors.bgGradient} text-white shadow-lg ${colors.shadowPrimary}`
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                       }`}
                     >
@@ -415,7 +418,7 @@ export default function AppointmentsPage() {
                   className={`group relative backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border shadow-lg transition-all duration-300 ${
                     statusInfo.isCompleted 
                       ? 'bg-gray-50/80 dark:bg-gray-800/50 border-gray-200/50 dark:border-gray-700/50 opacity-75 hover:opacity-90' 
-                      : 'bg-white/80 dark:bg-gray-900/80 border-gray-200/50 dark:border-gray-800/50 hover:shadow-lg hover:shadow-pink-500/10'
+                      : `bg-white/80 dark:bg-gray-900/80 border-gray-200/50 dark:border-gray-800/50 hover:shadow-lg ${colors.shadowPrimaryLight}`
                   }`}
                 >
                   <div className="flex items-start sm:items-center gap-3 sm:gap-4">
@@ -423,7 +426,7 @@ export default function AppointmentsPage() {
                     <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl flex items-center justify-center text-white font-bold text-base sm:text-xl shadow-lg relative flex-shrink-0 ${
                       statusInfo.isCompleted 
                         ? 'bg-gradient-to-br from-gray-400 to-gray-500' 
-                        : 'bg-gradient-to-br from-pink-500 to-pink-600'
+                        : colors.bgGradient
                     }`}>
                       {statusInfo.isCompleted && (
                         <div className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-emerald-500 rounded-full flex items-center justify-center">
@@ -497,13 +500,13 @@ export default function AppointmentsPage() {
                         className={`p-2 sm:p-3 rounded-2xl sm:rounded-2xl transition-colors duration-200 group/btn ${
                           statusInfo.isCompleted 
                             ? 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600' 
-                            : 'bg-gray-100 dark:bg-gray-800 hover:bg-pink-100 dark:hover:bg-pink-900/30'
+                            : `bg-gray-100 dark:bg-gray-800 ${colors.bgHover} dark:${colors.bgHoverDark}`
                         }`}
                       >
                         <Edit3 className={`w-3 h-3 sm:w-4 sm:h-4 ${
                           statusInfo.isCompleted 
                             ? 'text-gray-500 dark:text-gray-400' 
-                            : 'text-gray-600 dark:text-gray-400 group-hover/btn:text-pink-600 dark:group-hover/btn:text-pink-400'
+                            : `text-gray-600 dark:text-gray-400 ${colors.textHover} dark:${colors.textHoverDark}`
                         }`} />
                       </motion.button>
                       
@@ -530,7 +533,7 @@ export default function AppointmentsPage() {
                   <div className={`absolute inset-0 rounded-2xl sm:rounded-3xl pointer-events-none transition-opacity duration-300 ${
                     statusInfo.isCompleted 
                       ? 'bg-gradient-to-r from-gray-500/5 to-transparent opacity-0 group-hover:opacity-100' 
-                      : 'bg-gradient-to-r from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100'
+                      : `${colors.bgGradientLight} opacity-0 group-hover:opacity-100`
                   }`} />
                 </motion.div>
               );
@@ -546,7 +549,7 @@ export default function AppointmentsPage() {
             transition={{ duration: 0.5 }}
             className="text-center py-12 sm:py-16 bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-lg"
           >
-            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
+            <div className={`w-16 h-16 sm:w-24 sm:h-24 ${colors.bgGradient} rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6`}>
               <Calendar className="w-8 h-8 sm:w-12 sm:h-12 text-white" />
             </div>
             <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -563,7 +566,7 @@ export default function AppointmentsPage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleAddAppointment}
-                className="inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-semibold rounded-2xl sm:rounded-2xl shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 transition-all duration-300 text-sm sm:text-base"
+                className={`inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 ${colors.bgGradient} text-white font-semibold rounded-2xl sm:rounded-2xl shadow-lg ${colors.shadowPrimary} hover:${colors.shadowPrimary} transition-all duration-300 text-sm sm:text-base`}
               >
                 <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                 Nuovo Appuntamento

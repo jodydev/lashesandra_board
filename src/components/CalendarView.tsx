@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Dialog, DialogContent } from '@mui/material';
 import { 
   ChevronLeft, 
@@ -15,7 +15,8 @@ import {
 } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/it';
-import { clientService, appointmentService } from '../lib/supabase';
+import { useSupabaseServices } from '../lib/supabaseService';
+import { useAppColors } from '../hooks/useAppColors';
 import type { Client, Appointment } from '../types';
 import AppointmentForm from './AppointmentForm';
 
@@ -25,6 +26,8 @@ const formatCurrency = (amount: number) => `€${amount.toFixed(2)}`;
 const formatDateForDisplay = (date: Dayjs) => date.format('dddd, D MMMM YYYY');
 
 export default function ModernCalendarView() {
+  const { clientService, appointmentService } = useSupabaseServices();
+  const colors = useAppColors();
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -153,11 +156,11 @@ export default function ModernCalendarView() {
                 h-16 sm:h-24 md:h-28 lg:h-32 p-1 sm:p-2 md:p-3 cursor-pointer rounded-xl sm:rounded-xl border transition-all duration-300
                 ${isCurrentMonth 
                   ? isToday 
-                    ? 'bg-pink-50 dark:bg-pink-950/20 border-pink-500 shadow-lg shadow-pink-500/20' 
-                    : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-600'
+                    ? `${colors.bgPrimary} dark:${colors.bgPrimaryDark} ${colors.borderPrimary} shadow-lg ${colors.shadowPrimary}` 
+                    : `bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:${colors.borderPrimary} dark:hover:${colors.borderPrimary}`
                   : 'bg-gray-50/50 dark:bg-gray-800/30 border-gray-100 dark:border-gray-800'
                 }
-                hover:shadow-lg hover:shadow-pink-500/10 dark:hover:shadow-pink-500/5
+                hover:shadow-lg ${colors.shadowPrimaryLight} dark:hover:${colors.shadowPrimaryLight}
                 flex flex-col justify-between
               `}
               onClick={() => handleDateClick(day)}
@@ -169,7 +172,7 @@ export default function ModernCalendarView() {
                     text-xs sm:text-sm md:text-base font-semibold leading-none
                     ${isCurrentMonth 
                       ? isToday 
-                        ? 'text-pink-600 dark:text-pink-400' 
+                        ? `${colors.textPrimary} dark:${colors.textPrimaryDark}` 
                         : 'text-gray-900 dark:text-gray-100'
                       : 'text-gray-400 dark:text-gray-600'
                     }
@@ -179,7 +182,7 @@ export default function ModernCalendarView() {
                 </span>
                 
                 {hasAppointments && (
-                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-pink-500 rounded-full animate-pulse" />
+                  <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 ${colors.bgGradient} rounded-full animate-pulse`} />
                 )}
               </div>
               
@@ -200,22 +203,22 @@ export default function ModernCalendarView() {
                         <div
                           key={apt.id}
                           className={`
-                            h-2 sm:h-3 md:h-4 px-1 sm:px-1.5 rounded-sm sm:rounded-md bg-pink-100 dark:bg-pink-900/30 
+                            h-2 sm:h-3 md:h-4 px-1 sm:px-1.5 rounded-sm sm:rounded-md ${colors.bgPrimary} dark:${colors.bgPrimaryDark}
                             flex items-center text-xs font-medium overflow-hidden
                             ${isCompleted ? 'opacity-60 line-through' : ''}
                           `}
                         >
                           {/* Mobile: solo nome e cognome */}
-                          <span className="text-pink-600 dark:text-pink-400 whitespace-nowrap text-xs sm:hidden">
+                          <span className={`${colors.textPrimary} dark:${colors.textPrimaryDark} whitespace-nowrap text-xs sm:hidden`}>
                             {client ? `${client.nome} ${client.cognome}` : '?'}
                           </span>
                           
                           {/* Desktop: orario + nome e cognome */}
                           <div className="hidden sm:flex items-center justify-between w-full">
-                            <span className="text-pink-700 dark:text-pink-300 whitespace-nowrap text-xs">
+                            <span className={`${colors.textPrimary} dark:${colors.textPrimaryDark} whitespace-nowrap text-xs`}>
                               {apt.ora?.slice(0, 5) || '00:00'}
                             </span>
-                            <span className="text-pink-600 dark:text-pink-400 whitespace-nowrap ml-1 text-xs">
+                            <span className={`${colors.textPrimary} dark:${colors.textPrimaryDark} whitespace-nowrap ml-1 text-xs`}>
                               {client ? `${client.nome} ${client.cognome}` : '?'}
                             </span>
                           </div>
@@ -258,7 +261,7 @@ export default function ModernCalendarView() {
           animate={{ opacity: 1, scale: 1 }}
           className="flex flex-col items-center space-y-4"
         >
-          <Loader2 className="w-8 h-8 text-pink-500 animate-spin" />
+          <Loader2 className={`w-8 h-8 ${colors.textPrimary} animate-spin`} />
           <p className="text-gray-600 dark:text-gray-400 font-medium">Caricamento calendario...</p>
         </motion.div>
       </div>
@@ -291,7 +294,7 @@ export default function ModernCalendarView() {
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8"
         >
           <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white tracking-tight">
+            <h1 className={`text-3xl sm:text-4xl font-bold bg-gradient-to-r from-gray-900 via-${colors.primary} to-gray-900 dark:from-white dark:via-${colors.primaryLight} dark:to-white bg-clip-text text-transparent tracking-tight`}>
               Calendario
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
@@ -303,11 +306,11 @@ export default function ModernCalendarView() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleNewAppointment}
-            className="
-              inline-flex items-center gap-2 px-6 py-3 bg-pink-500 hover:bg-pink-600 
-              text-white font-semibold rounded-xl shadow-lg shadow-pink-500/25 
-              transition-all duration-200 hover:shadow-lg hover:shadow-pink-500/30
-            "
+            className={`
+              inline-flex items-center gap-2 px-6 py-3 ${colors.bgGradient} hover:${colors.gradientFromLight} hover:${colors.gradientToLight}
+              text-white font-semibold rounded-xl shadow-lg ${colors.shadowPrimary}
+              transition-all duration-200 hover:shadow-lg ${colors.shadowPrimary}
+            `}
           >
             <Plus className="w-5 h-5" />
             Nuovo Appuntamento
@@ -356,7 +359,7 @@ export default function ModernCalendarView() {
                 <div className={`
                   w-12 h-12 rounded-xl flex items-center justify-center
                   ${stat.color === 'pink' 
-                    ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400' 
+                    ? `${colors.bgPrimary} dark:${colors.bgPrimaryDark} ${colors.textPrimary} dark:${colors.textPrimaryDark}` 
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                   }
                 `}>
@@ -389,11 +392,11 @@ export default function ModernCalendarView() {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={handlePreviousMonth}
-                className="
-                  w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-pink-100 dark:hover:bg-pink-900/30
-                  text-gray-600 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-400
+                className={`
+                  w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 ${colors.bgHover} dark:${colors.bgHoverDark}
+                  text-gray-600 dark:text-gray-400 ${colors.textHover} dark:${colors.textHoverDark}
                   flex items-center justify-center transition-all duration-200
-                "
+                `}
               >
                 <ChevronLeft className="w-5 h-5" />
               </motion.button>
@@ -406,11 +409,11 @@ export default function ModernCalendarView() {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={handleNextMonth}
-                className="
-                  w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-pink-100 dark:hover:bg-pink-900/30
-                  text-gray-600 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-400
+                className={`
+                  w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 ${colors.bgHover} dark:${colors.bgHoverDark}
+                  text-gray-600 dark:text-gray-400 ${colors.textHover} dark:${colors.textHoverDark}
                   flex items-center justify-center transition-all duration-200
-                "
+                `}
               >
                 <ChevronRight className="w-5 h-5" />
               </motion.button>
@@ -482,7 +485,7 @@ export default function ModernCalendarView() {
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Gradient overlay for depth */}
-                <div className="absolute inset-0 bg-gradient-to-br from-pink-50/30 via-transparent to-pink-100/20 dark:from-pink-950/20 dark:via-transparent dark:to-pink-900/10 pointer-events-none" />
+                <div className={`absolute inset-0 bg-gradient-to-br from-${colors.primaryLight}/30 via-transparent to-${colors.primaryLight}/20 dark:from-${colors.primaryDark}/20 dark:via-transparent dark:to-${colors.primaryDark}/10 pointer-events-none`} />
                 
                 {selectedDate && (
                   <>
@@ -492,7 +495,7 @@ export default function ModernCalendarView() {
                         whileHover={{ scale: 1.1, rotate: 90 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => setShowAppointmentDetails(false)}
-                        className="absolute top-6 right-6 w-10 h-10 rounded-2xl bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-pink-100 dark:hover:bg-pink-900/30 text-gray-500 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-400 flex items-center justify-center transition-all duration-300 shadow-lg shadow-black/5"
+                        className={`absolute top-6 right-6 w-10 h-10 rounded-2xl bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm ${colors.bgHover} dark:${colors.bgHoverDark} text-gray-500 dark:text-gray-400 ${colors.textHover} dark:${colors.textHoverDark} flex items-center justify-center transition-all duration-300 shadow-lg shadow-black/5`}
                       >
                         <X className="w-5 h-5" />
                       </motion.button>
@@ -502,7 +505,7 @@ export default function ModernCalendarView() {
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
                           transition={{ delay: 0.2, type: "spring", stiffness: 500 }}
-                          className="w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/25"
+                          className={`w-16 h-16 ${colors.bgGradient} text-white rounded-2xl flex items-center justify-center shadow-lg ${colors.shadowPrimary}`}
                         >
                           <Calendar className="w-8 h-8" />
                         </motion.div>
@@ -522,7 +525,7 @@ export default function ModernCalendarView() {
                             transition={{ delay: 0.15 }}
                             className="flex items-center gap-2"
                           >
-                            <div className="w-2 h-2 rounded-full bg-pink-500" />
+                            <div className={`w-2 h-2 rounded-full ${colors.bgGradient}`} />
                             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {selectedDateAppointments.length} {selectedDateAppointments.length === 1 ? 'appuntamento' : 'appuntamenti'}
                             </p>
@@ -553,7 +556,7 @@ export default function ModernCalendarView() {
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={handleNewAppointment}
-                            className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold rounded-2xl transition-all duration-300 shadow-lg shadow-pink-500/25 hover:shadow-lg hover:shadow-pink-500/30"
+                            className={`inline-flex items-center gap-3 px-6 py-3 ${colors.bgGradient} hover:${colors.gradientFromLight} hover:${colors.gradientToLight} text-white font-semibold rounded-2xl transition-all duration-300 shadow-lg ${colors.shadowPrimary} hover:shadow-lg ${colors.shadowPrimary}`}
                           >
                             <Plus className="w-5 h-5" />
                             Aggiungi Appuntamento
@@ -583,13 +586,13 @@ export default function ModernCalendarView() {
                                     group relative overflow-hidden rounded-2xl border transition-all duration-300 cursor-pointer
                                     ${isCompleted 
                                       ? 'bg-gray-50/80 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 opacity-75' 
-                                      : 'bg-white/80 dark:bg-gray-800/80 border-pink-200/50 dark:border-pink-800/30 hover:border-pink-300 dark:hover:border-pink-700 hover:shadow-lg hover:shadow-pink-500/10'
+                                      : `bg-white/80 dark:bg-gray-800/80 ${colors.borderPrimary} dark:${colors.borderPrimary} hover:${colors.borderPrimary} dark:hover:${colors.borderPrimary} hover:shadow-lg ${colors.shadowPrimaryLight}`
                                     }
                                   `}
                                   onClick={() => handleEditAppointment(appointment)}
                                 >
                                   {/* Subtle gradient overlay */}
-                                  <div className="absolute inset-0 bg-gradient-to-r from-pink-50/20 via-transparent to-transparent dark:from-pink-950/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                  <div className={`absolute inset-0 bg-gradient-to-r from-${colors.primaryLight}/20 via-transparent to-transparent dark:from-${colors.primaryDark}/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
                                   
                                   <div className="relative p-5">
                                     <div className="flex items-center gap-4">
@@ -599,7 +602,7 @@ export default function ModernCalendarView() {
                                           w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-white shadow-lg
                                           ${isCompleted 
                                             ? 'bg-gradient-to-t from-gray-400 to-gray-500' 
-                                            : 'bg-gradient-to-br from-pink-500 to-pink-600 shadow-pink-500/25'
+                                            : `${colors.bgGradient} ${colors.shadowPrimary}`
                                           }
                                         `}>
                                           {client ? client.nome.charAt(0).toUpperCase() : '?'}
@@ -631,7 +634,7 @@ export default function ModernCalendarView() {
                                               inline-flex items-center gap-1 px-2 py-1 rounded-xl text-xs font-semibold
                                               ${isCompleted
                                                 ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 line-through'
-                                                : 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300'
+                                                : `${colors.bgPrimary} dark:${colors.bgPrimaryDark} ${colors.textPrimary} dark:${colors.textPrimaryDark}`
                                               }
                                             `}>
                                               <Clock className="w-3 h-3" />
@@ -659,7 +662,7 @@ export default function ModernCalendarView() {
                                             inline-flex items-center px-3 py-1.5 rounded-xl text-sm font-bold
                                             ${isCompleted
                                               ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 line-through'
-                                              : 'bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-lg shadow-pink-500/20'
+                                              : `${colors.bgGradient} text-white shadow-lg ${colors.shadowPrimary}`
                                             }
                                           `}>
                                             {formatCurrency(appointment.importo)}

@@ -17,10 +17,11 @@ import {
   X
 } from 'lucide-react';
 import type { Appointment, Client } from '../types';
-import { appointmentService, clientService } from '../lib/supabase';
+import { useSupabaseServices } from '../lib/supabaseService';
 import { formatDateForDatabase, formatDateForDisplay } from '../lib/utils';
+import { useAppColors } from '../hooks/useAppColors';
 import dayjs, { Dayjs } from 'dayjs';
-
+import { useApp } from '../contexts/AppContext';
 interface AppointmentFormProps {
   appointment?: Appointment | null;
   selectedDate?: Dayjs | null;
@@ -28,26 +29,86 @@ interface AppointmentFormProps {
   onCancel: () => void;
 }
 
-const treatmentTypes = [
-  'One to One',
-  'Volume Egiziano 3D',
-  'Laminazione Ciglia',
-  'Laminazione Sopracciglia',
-  'Rimozione Extension Ciglia',
-  'Volume Russo 2D-6D',
-  'Mega Volume 7D+',
+const treatmentTypesLashesAndra = [
+  // Extension Ciglia Classiche & Volume
+  'Extension One to One (Classiche)',
   'Refill One to One',
-  'Refill Volume 3D',
+  'Volume Russo 2D-6D',
   'Refill Volume Russo',
+  'Volume Egiziano 3D',
+  'Refill Volume 3D',
+  'Mega Volume 7D+',
   'Refill Mega Volume',
+
+  // Effetti Speciali
   'Extension Effetto Wet',
   'Extension Effetto Eyeliner',
   'Extension Effetto Foxy Eye',
   'Extension Effetto Cat Eye',
   'Extension Effetto Doll Eye',
+  'Extension Effetto Kim Kardashian (Wispy)',
+  'Extension Effetto Manga',
+  'Extension Effetto Hollywood',
+
+  // Laminazioni
+  'Laminazione Ciglia',
+  'Laminazione Ciglia con Colore',
+  'Laminazione Sopracciglia',
+  'Laminazione Sopracciglia con Tintura',
+  'Brow Lift & Styling',
+
+  // Trattamenti Cura Ciglia & Sopracciglia
+  'Rimozione Extension Ciglia',
   'Trattamento Rinforzante Ciglia',
   'Trattamento Idratante Ciglia',
+  'Trattamento Nutriente Ciglia con Cheratina',
+  'Trattamento Crescita Ciglia',
+  'Trattamento Styling Sopracciglia',
 ];
+
+
+const treatmentTypesIsabelle = [
+  // Manicure
+  'Manicure Classica',
+  'Manicure Spa',
+  'Manicure con Parafina',
+  'French Manicure',
+  'Manicure Giapponese (P-Shine)',
+
+  // Pedicure
+  'Pedicure Estetica',
+  'Pedicure Curativa',
+  'Pedicure Spa',
+  'Pedicure con Scrub e Maschera',
+
+  // Smalto
+  'Smalto Classico',
+  'Smalto Semipermanente',
+  'Rimozione Smalto',
+  'Rimozione Semipermanente',
+  
+  // Ricostruzione e Gel
+  'Ricostruzione in Gel',
+  'Ricostruzione in Acrilico',
+  'Copertura in Gel',
+  'Allungamento con Cartina',
+  'Refill Gel/Acrilico',
+
+  // Nail Art & Decorazioni
+  'French Gel',
+  'Babyboomer',
+  'Nail Art Base',
+  'Nail Art Avanzata',
+  'Applicazione Strass/Decorazioni',
+
+  // Trattamenti specifici
+  'Pulizia Profonda Unghie',
+  'Trattamento Rinforzante',
+  'Trattamento Idratante Mani',
+  'Trattamento Calli e Duroni',
+  'Scrub Mani e Piedi',
+];
+
 
 const steps = [
   { id: 'client', title: 'Cliente', icon: User, description: 'Seleziona il cliente per l\'appuntamento' },
@@ -56,14 +117,18 @@ const steps = [
   { id: 'confirm', title: 'Conferma', icon: Check, description: 'Verifica e salva l\'appuntamento' }
 ];
 
-const quickAmounts = [40, 50, 60, 70, 80, 100, 120, 150];
+const quickAmountsLashesAndra = [20, 30, 40, 50, 60, 70, 80, 90];
+const quickAmountsIsabelle = [10, 20, 30, 40, 50, 60, 70, 80];
 
 export default function AppointmentForm({ 
   appointment, 
   selectedDate, 
   onSuccess,
-  onCancel
+  onCancel 
 }: AppointmentFormProps) {
+  const { appointmentService, clientService } = useSupabaseServices();
+  const { appType } = useApp();
+  const colors = useAppColors();
   const [formData, setFormData] = useState({
     client_id: '',
     data: selectedDate || dayjs(),
@@ -223,8 +288,8 @@ export default function AppointmentForm({
             >
               <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-pink-100 dark:bg-pink-900/30 rounded-xl sm:rounded-xl flex items-center justify-center">
-                    <User className="w-3 h-3 sm:w-4 sm:h-4 text-pink-600 dark:text-pink-400" />
+                  <div className={`w-6 h-6 sm:w-8 sm:h-8 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl sm:rounded-xl flex items-center justify-center`}>
+                    <User className={`w-3 h-3 sm:w-4 sm:h-4 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
                   </div>
                   <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                     Seleziona Cliente
@@ -240,7 +305,7 @@ export default function AppointmentForm({
                     whileTap={{ scale: 0.95 }}
                     className={`p-2 rounded-xl transition-all duration-200 ${
                       viewType === 'list'
-                        ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-lg'
+                        ? `bg-white dark:bg-gray-700 ${colors.textPrimary} dark:${colors.textPrimaryDark} shadow-lg`
                         : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                     }`}
                   >
@@ -253,7 +318,7 @@ export default function AppointmentForm({
                     whileTap={{ scale: 0.95 }}
                     className={`p-2 rounded-xl transition-all duration-200 ${
                       viewType === 'grid'
-                        ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-lg'
+                        ? `bg-white dark:bg-gray-700 ${colors.textPrimary} dark:${colors.textPrimaryDark} shadow-lg`
                         : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                     }`}
                   >
@@ -264,15 +329,15 @@ export default function AppointmentForm({
               
               {/* Enhanced Search Input */}
               <div className="relative group mb-4 sm:mb-6">
-                <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 to-pink-600/20 rounded-2xl sm:rounded-3xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+                <div className={`absolute inset-0 ${colors.bgGradientLight} rounded-2xl sm:rounded-3xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500`} />
                 <div className="relative">
-                  <Search className="absolute left-4 sm:left-6 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-pink-500 transition-colors duration-200" />
+                  <Search className={`absolute left-4 sm:left-6 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 ${colors.textHover} transition-colors duration-200`} />
                   <input
                     type="text"
                     placeholder="Cerca cliente..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-12 sm:h-14 px-4 sm:px-6 pl-12 sm:pl-16 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl focus:border-pink-500 focus:bg-white dark:focus:bg-gray-800 transition-all duration-300 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-base sm:text-lg font-medium shadow-lg shadow-black/5 focus:shadow-pink-500/20"
+                    className={`w-full h-12 sm:h-14 px-4 sm:px-6 pl-12 sm:pl-16 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl focus:${colors.borderPrimary} focus:bg-white dark:focus:bg-gray-800 transition-all duration-300 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-base sm:text-lg font-medium shadow-lg shadow-black/5 ${colors.shadowPrimaryLight}`}
                   />
                 </div>
               </div>
@@ -301,8 +366,8 @@ export default function AppointmentForm({
                             onClick={() => setFormData(prev => ({ ...prev, client_id: client.id }))}
                             className={`w-full p-5 sm:p-6 rounded-3xl border transition-all duration-500 text-left relative overflow-hidden backdrop-blur-sm ${
                               formData.client_id === client.id
-                                ? 'border-pink-500/50 bg-gradient-to-br from-pink-50/80 via-white/90 to-pink-100/60 dark:from-pink-950/40 dark:via-gray-900/90 dark:to-pink-900/30 shadow-lg shadow-pink-500/20 ring-2 ring-pink-500/20'
-                                : 'border-gray-200/60 dark:border-gray-700/60 bg-white/80 dark:bg-gray-800/80 hover:border-pink-300/60 dark:hover:border-pink-400/40 hover:shadow-lg hover:shadow-black/5 hover:bg-gradient-to-br hover:from-white hover:to-pink-50/30 dark:hover:from-gray-800 dark:hover:to-pink-950/20'
+                                ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimary} ring-2 ${colors.borderPrimary}`
+                                : `border-gray-200/60 dark:border-gray-700/60 bg-white/80 dark:bg-gray-800/80 hover:${colors.borderPrimary} hover:shadow-lg hover:shadow-black/5 ${colors.bgGradientHover} dark:${colors.bgPrimaryDark}`
                             }`}
                           >
              
@@ -315,8 +380,8 @@ export default function AppointmentForm({
                                 <motion.div 
                                   className={`relative w-14 h-14 sm:w-18 sm:h-18 rounded-2xl sm:rounded-3xl flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-lg transition-all duration-500 ${
                                     formData.client_id === client.id
-                                      ? 'bg-gradient-to-br from-pink-500 via-pink-600 to-pink-700 shadow-pink-500/40 scale-110'
-                                      : 'bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600 group-hover:from-pink-400 group-hover:via-pink-500 group-hover:to-pink-600 group-hover:scale-105 shadow-gray-500/20'
+                                      ? `${colors.bgGradient} ${colors.shadowPrimary} scale-110`
+                                      : `bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600 group-hover:${colors.bgGradient} group-hover:scale-105 shadow-gray-500/20`
                                   }`}
                                   whileHover={{ scale: formData.client_id === client.id ? 1.1 : 1.05 }}
                                 >
@@ -384,8 +449,8 @@ export default function AppointmentForm({
                               <motion.div
                                 className={`w-6 h-6 sm:w-7 sm:h-7 rounded-xl flex items-center justify-center transition-all duration-300 ${
                                   formData.client_id === client.id
-                                    ? 'bg-pink-100 dark:bg-pink-900/40 text-pink-600 dark:text-pink-400'
-                                    : 'bg-gray-50 dark:bg-gray-700 text-gray-400 dark:text-gray-500 group-hover:bg-pink-50 dark:group-hover:bg-pink-900/20 group-hover:text-pink-500'
+                                    ? `${colors.bgPrimary} dark:${colors.bgPrimaryDark} ${colors.textPrimary} dark:${colors.textPrimaryDark}`
+                                    : `bg-gray-50 dark:bg-gray-700 text-gray-400 dark:text-gray-500 ${colors.bgHover} dark:${colors.bgHoverDark} ${colors.textHover}`
                                 }`}
                                 animate={{
                                   x: formData.client_id === client.id ? [0, 3, 0] : 0
@@ -438,8 +503,8 @@ export default function AppointmentForm({
                             onClick={() => setFormData(prev => ({ ...prev, client_id: client.id }))}
                             className={`w-full p-4 rounded-3xl border transition-all duration-500 text-left relative overflow-hidden backdrop-blur-sm ${
                               formData.client_id === client.id
-                                ? 'border-pink-500/30 bg-gradient-to-br from-pink-50/90 via-white/95 to-pink-100/80 dark:from-pink-950/50 dark:via-gray-900/95 dark:to-pink-900/40 shadow-lg shadow-pink-500/25 ring-2 ring-pink-500/20'
-                                : 'border-gray-200/50 dark:border-gray-700/50 bg-white/90 dark:bg-gray-800/90 hover:border-pink-300/50 dark:hover:border-pink-400/30 hover:shadow-lg hover:shadow-black/10 hover:bg-gradient-to-br hover:from-white hover:to-pink-50/40 dark:hover:from-gray-800 dark:hover:to-pink-950/30'
+                                ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimary} ring-2 ${colors.borderPrimary}`
+                                : `border-gray-200/50 dark:border-gray-700/50 bg-white/90 dark:bg-gray-800/90 hover:${colors.borderPrimary} hover:shadow-lg hover:shadow-black/10 ${colors.bgGradientHover} dark:${colors.bgPrimaryDark}`
                             }`}
                           >
                             {/* Animated Background Glow */}
@@ -471,8 +536,8 @@ export default function AppointmentForm({
                                 {/* Main Avatar */}
                                 <div className={`relative w-20 h-20 rounded-3xl flex items-center justify-center text-white font-bold text-2xl shadow-lg transition-all duration-500 ${
                                   formData.client_id === client.id
-                                    ? 'bg-gradient-to-br from-pink-500 to-pink-600 shadow-pink-500/30'
-                                    : 'bg-gradient-to-br from-gray-400 to-gray-500 group-hover:from-pink-400 group-hover:to-pink-500 shadow-black/20'
+                                    ? `${colors.bgGradient} ${colors.shadowPrimary}`
+                                    : `bg-gradient-to-br from-gray-400 to-gray-500 group-hover:${colors.bgGradient} shadow-black/20`
                                 }`}>
                                   <motion.span
                                     initial={{ scale: 0.8 }}
@@ -576,8 +641,8 @@ export default function AppointmentForm({
             >
               <div className="p-6 border-b border-gray-50 dark:border-gray-800">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-pink-50 dark:bg-pink-900/20 rounded-2xl flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-pink-600 dark:text-pink-400" strokeWidth={2.5} />
+                  <div className={`w-10 h-10 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-2xl flex items-center justify-center`}>
+                    <Calendar className={`w-5 h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={2.5} />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -603,11 +668,11 @@ export default function AppointmentForm({
                         type="date"
                         value={formData.data.format('YYYY-MM-DD')}
                         onChange={(e) => handleDateChange(e.target.value)}
-                        className="w-full px-4 py-4 pl-12 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 transition-all duration-300 text-gray-900 dark:text-white text-base font-medium group-hover:border-gray-300 dark:group-hover:border-gray-600"
+                        className={`w-full px-4 py-4 pl-12 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 ${colors.focusRing} focus:${colors.borderPrimary} transition-all duration-300 text-gray-900 dark:text-white text-base font-medium group-hover:border-gray-300 dark:group-hover:border-gray-600`}
                         required
                       />
-                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 bg-pink-100 dark:bg-pink-900/30 rounded-xl flex items-center justify-center">
-                        <Calendar className="w-3 h-3 text-pink-600 dark:text-pink-400" strokeWidth={3} />
+                      <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl flex items-center justify-center`}>
+                        <Calendar className={`w-3 h-3 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={3} />
                       </div>
                     </div>
                   </div>
@@ -623,10 +688,10 @@ export default function AppointmentForm({
                         type="time"
                         value={formData.ora}
                         onChange={handleChange('ora')}
-                        className="w-full px-4 py-4 pl-12 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 transition-all duration-300 text-gray-900 dark:text-white text-base font-medium group-hover:border-gray-300 dark:group-hover:border-gray-600"
+                        className={`w-full px-4 py-4 pl-12 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 ${colors.focusRing} focus:${colors.borderPrimary} transition-all duration-300 text-gray-900 dark:text-white text-base font-medium group-hover:border-gray-300 dark:group-hover:border-gray-600`}
                       />
-                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 bg-pink-100 dark:bg-pink-900/30 rounded-xl flex items-center justify-center">
-                        <Clock className="w-3 h-3 text-pink-600 dark:text-pink-400" strokeWidth={3} />
+                      <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl flex items-center justify-center`}>
+                        <Clock className={`w-3 h-3 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={3} />
                       </div>
                     </div>
                   </div>
@@ -693,30 +758,30 @@ export default function AppointmentForm({
                   onClick={() => setFormData(prev => ({ ...prev, tipo_trattamento: '' }))}
                   className={`group w-full p-4 rounded-2xl border-2 transition-all duration-300 text-left relative overflow-hidden ${
                     formData.tipo_trattamento === ''
-                      ? 'border-pink-500 bg-gradient-to-br from-pink-50 via-white to-pink-50 dark:from-pink-950/50 dark:via-gray-900 dark:to-pink-950/30 shadow-lg shadow-pink-500/20'
-                      : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-pink-300 dark:hover:border-pink-700 hover:shadow-lg hover:shadow-black/5'
+                      ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimary}`
+                      : `border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:${colors.borderPrimary} hover:shadow-lg hover:shadow-black/5`
                   }`}
                 >
                   {/* Subtle gradient overlay */}
                   <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
                     formData.tipo_trattamento === '' 
-                      ? 'bg-gradient-to-r from-pink-500/5 to-pink-600/5' 
-                      : 'bg-gradient-to-r from-pink-500/3 to-pink-600/3'
+                      ? `${colors.bgGradientLight}` 
+                      : `${colors.bgGradientLight}`
                   }`} />
                   
                   <div className="relative flex items-center gap-4">
                     {/* Icon Container */}
                     <div className={`w-14 h-14 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 ${
                       formData.tipo_trattamento === ''
-                        ? 'bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-pink-500/30'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 group-hover:bg-pink-100 dark:group-hover:bg-pink-950/50 group-hover:text-pink-600 dark:group-hover:text-pink-400'
+                        ? `${colors.bgGradient} text-white ${colors.shadowPrimary}`
+                        : `bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 ${colors.bgHover} dark:${colors.bgHoverDark} ${colors.textHover} dark:${colors.textHoverDark}`
                     }`}>
                       <Clock className="w-6 h-6" strokeWidth={2} />
                     </div>
                     
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 group-hover:text-pink-900 dark:group-hover:text-pink-100 transition-colors">
+                      <h3 className={`text-lg font-bold text-gray-900 dark:text-white mb-1 ${colors.textHover} dark:${colors.textHoverDark} transition-colors`}>
                         Appuntamento Generico
                       </h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
@@ -727,8 +792,8 @@ export default function AppointmentForm({
                     {/* Selection Indicator */}
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
                       formData.tipo_trattamento === ''
-                        ? 'border-pink-500 bg-pink-500'
-                        : 'border-gray-300 dark:border-gray-600 group-hover:border-pink-400'
+                        ? `${colors.borderPrimary} ${colors.bgGradient}`
+                        : `border-gray-300 dark:border-gray-600 hover:${colors.borderPrimary}`
                     }`}>
                       {formData.tipo_trattamento === '' && (
                         <motion.div
@@ -746,7 +811,7 @@ export default function AppointmentForm({
 
               {/* Treatment Options */}
               <div className="space-y-2">
-                {treatmentTypes.map((treatment, index) => (
+                {(appType === 'isabellenails' ? treatmentTypesIsabelle : treatmentTypesLashesAndra).map((treatment, index) => (
                   <motion.div
                     key={treatment}
                     initial={{ opacity: 0, x: -20 }}
@@ -758,19 +823,19 @@ export default function AppointmentForm({
                       onClick={() => setFormData(prev => ({ ...prev, tipo_trattamento: treatment }))}
                       className={`group w-full p-4 rounded-xl border transition-all duration-300 text-left relative overflow-hidden ${
                         formData.tipo_trattamento === treatment
-                          ? 'border-pink-500 bg-gradient-to-r from-pink-50 to-white dark:from-pink-950/30 dark:to-gray-900 shadow-lg shadow-pink-500/10'
-                          : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-pink-200 dark:hover:border-pink-800 hover:shadow-md hover:shadow-black/5'
+                          ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimaryLight}`
+                          : `border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:${colors.borderPrimary} hover:shadow-md hover:shadow-black/5`
                       }`}
                     >
                       {/* Hover gradient */}
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-pink-500/2 to-pink-600/2" />
+                      <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${colors.bgGradientLight}`} />
                       
                       <div className="relative flex items-center gap-4">
                         {/* Treatment Icon */}
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 ${
                           formData.tipo_trattamento === treatment
-                            ? 'bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-pink-500/20'
-                            : 'bg-pink-50 dark:bg-pink-950/30 text-pink-600 dark:text-pink-400 group-hover:bg-pink-100 dark:group-hover:bg-pink-950/50'
+                            ? `${colors.bgGradient} text-white ${colors.shadowPrimary}`
+                            : `${colors.bgPrimary} dark:${colors.bgPrimaryDark} ${colors.textPrimary} dark:${colors.textPrimaryDark} ${colors.bgHover} dark:${colors.bgHoverDark}`
                         }`}>
                           <Sparkles className="w-5 h-5" strokeWidth={2} />
                         </div>
@@ -779,8 +844,8 @@ export default function AppointmentForm({
                         <div className="flex-1 min-w-0">
                           <h3 className={`font-semibold transition-colors duration-300 ${
                             formData.tipo_trattamento === treatment
-                              ? 'text-pink-900 dark:text-pink-100'
-                              : 'text-gray-900 dark:text-white group-hover:text-pink-900 dark:group-hover:text-pink-100'
+                              ? `${colors.textPrimary} dark:${colors.textPrimaryDark}`
+                              : `text-gray-900 dark:text-white ${colors.textHover} dark:${colors.textHoverDark}`
                           }`}>
                             {treatment}
                           </h3>
@@ -789,8 +854,8 @@ export default function AppointmentForm({
                         {/* Selection Radio */}
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
                           formData.tipo_trattamento === treatment
-                            ? 'border-pink-500 bg-pink-500'
-                            : 'border-gray-300 dark:border-gray-600 group-hover:border-pink-400'
+                            ? `${colors.borderPrimary} ${colors.bgGradient}`
+                            : `border-gray-300 dark:border-gray-600 hover:${colors.borderPrimary}`
                         }`}>
                           {formData.tipo_trattamento === treatment && (
                             <motion.div
@@ -816,8 +881,8 @@ export default function AppointmentForm({
             >
               <div className="p-6 border-b border-gray-50 dark:border-gray-800">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-pink-50 dark:bg-pink-900/20 rounded-2xl flex items-center justify-center">
-                    <Euro className="w-5 h-5 text-pink-600 dark:text-pink-400" strokeWidth={2.5} />
+                  <div className={`w-10 h-10 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-2xl flex items-center justify-center`}>
+                    <Euro className={`w-5 h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={2.5} />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -845,11 +910,11 @@ export default function AppointmentForm({
                       placeholder="0.00"
                       min="0"
                       step="0.01"
-                      className="w-full px-4 py-4 pl-12 pr-16 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 transition-all duration-300 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-base font-medium group-hover:border-gray-300 dark:group-hover:border-gray-600"
+                      className={`w-full px-4 py-4 pl-12 pr-16 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 ${colors.focusRing} focus:${colors.borderPrimary} transition-all duration-300 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-base font-medium group-hover:border-gray-300 dark:group-hover:border-gray-600`}
                       required
                     />
-                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 bg-pink-100 dark:bg-pink-900/30 rounded-xl flex items-center justify-center">
-                      <Euro className="w-3 h-3 text-pink-600 dark:text-pink-400" strokeWidth={3} />
+                      <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl flex items-center justify-center`}>
+                        <Euro className={`w-3 h-3 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={3} />
                     </div>
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-sm font-semibold text-gray-400 dark:text-gray-500">
                       EUR
@@ -869,7 +934,7 @@ export default function AppointmentForm({
                   </div>
                   
                   <div className="grid grid-cols-4 gap-3">
-                    {quickAmounts.map((amount, index) => (
+                    {(appType === 'isabellenails' ? quickAmountsIsabelle : quickAmountsLashesAndra).map((amount, index) => (
                       <motion.button
                         key={amount}
                         type="button"
@@ -881,8 +946,8 @@ export default function AppointmentForm({
                         whileTap={{ scale: 0.95 }}
                         className={`relative h-16 rounded-2xl text-sm font-bold transition-all duration-300 shadow-lg overflow-hidden ${
                           formData.importo === amount
-                            ? 'bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-pink-500/30 shadow-xl'
-                            : 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-pink-200 dark:hover:border-pink-300 hover:shadow-xl hover:shadow-pink-500/10'
+                            ? `${colors.bgGradient} text-white ${colors.shadowPrimary} shadow-xl`
+                            : `bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:${colors.borderPrimary} hover:shadow-xl ${colors.shadowPrimaryLight}`
                         }`}
                       >
                         <div className="flex flex-col items-center justify-center h-full">
@@ -956,8 +1021,8 @@ export default function AppointmentForm({
                       transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     >
                       {/* Avatar with Glow Effect */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-pink-600 rounded-3xl blur-lg opacity-30 scale-110" />
-                      <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white font-bold text-2xl shadow-xl">
+                      <div className={`absolute inset-0 ${colors.bgGradient} rounded-3xl blur-lg opacity-30 scale-110`} />
+                      <div className={`relative w-20 h-20 rounded-3xl ${colors.bgGradient} flex items-center justify-center text-white font-bold text-2xl shadow-xl`}>
                         {selectedClient ? selectedClient.nome.charAt(0).toUpperCase() : '?'}
                       </div>
                     </motion.div>
@@ -1005,17 +1070,17 @@ export default function AppointmentForm({
                       whileHover={{ y: -4, scale: 1.02 }}
                       className="group"
                     >
-                      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg shadow-black/5 hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300">
-                        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg shadow-black/5 hover:shadow-xl ${colors.shadowPrimaryLight} transition-all duration-300`}>
+                        <div className={`absolute inset-0 ${colors.bgGradientLight} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
                         
                         <div className="relative">
                           <div className="flex items-center gap-3 mb-4">
                             <motion.div 
-                              className="w-10 h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl flex items-center justify-center"
+                              className={`w-10 h-10 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl flex items-center justify-center`}
                               whileHover={{ rotate: 10 }}
                               transition={{ type: "spring", stiffness: 400, damping: 25 }}
                             >
-                              <Calendar className="w-5 h-5 text-pink-600 dark:text-pink-400" strokeWidth={2} />
+                              <Calendar className={`w-5 h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={2} />
                             </motion.div>
                             <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</span>
                           </div>
@@ -1035,17 +1100,17 @@ export default function AppointmentForm({
                         whileHover={{ y: -4, scale: 1.02 }}
                         className="group"
                       >
-                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg shadow-black/5 hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300">
-                          <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg shadow-black/5 hover:shadow-xl ${colors.shadowPrimaryLight} transition-all duration-300`}>
+                          <div className={`absolute inset-0 ${colors.bgGradientLight} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
                           
                           <div className="relative">
                             <div className="flex items-center gap-3 mb-4">
                               <motion.div 
-                                className="w-10 h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl flex items-center justify-center"
+                                className={`w-10 h-10 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl flex items-center justify-center`}
                                 whileHover={{ rotate: 10 }}
                                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
                               >
-                                <Clock className="w-5 h-5 text-pink-600 dark:text-pink-400" strokeWidth={2} />
+                                <Clock className={`w-5 h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={2} />
                               </motion.div>
                               <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Orario</span>
                             </div>
@@ -1065,21 +1130,21 @@ export default function AppointmentForm({
                       whileHover={{ y: -4, scale: 1.02 }}
                       className="group"
                     >
-                      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg shadow-black/5 hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300">
-                        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg shadow-black/5 hover:shadow-xl ${colors.shadowPrimaryLight} transition-all duration-300`}>
+                        <div className={`absolute inset-0 ${colors.bgGradientLight} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
                         
                         <div className="relative">
                           <div className="flex items-center gap-3 mb-4">
                             <motion.div 
-                              className="w-10 h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl flex items-center justify-center"
+                              className={`w-10 h-10 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl flex items-center justify-center`}
                               whileHover={{ rotate: 10 }}
                               transition={{ type: "spring", stiffness: 400, damping: 25 }}
                             >
-                              <Euro className="w-5 h-5 text-pink-600 dark:text-pink-400" strokeWidth={2} />
+                              <Euro className={`w-5 h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={2} />
                             </motion.div>
                             <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Importo</span>
                           </div>
-                          <p className="text-xl font-bold text-pink-600 dark:text-pink-400">
+                          <p className={`text-xl font-bold ${colors.textPrimary} dark:${colors.textPrimaryDark}`}>
                             {new Intl.NumberFormat('it-IT', {
                               style: 'currency',
                               currency: 'EUR',
@@ -1097,17 +1162,17 @@ export default function AppointmentForm({
                       whileHover={{ y: -4, scale: 1.02 }}
                       className="group"
                     >
-                      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg shadow-black/5 hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300">
-                        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg shadow-black/5 hover:shadow-xl ${colors.shadowPrimaryLight} transition-all duration-300`}>
+                        <div className={`absolute inset-0 ${colors.bgGradientLight} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
                         
                         <div className="relative">
                           <div className="flex items-center gap-3 mb-4">
                             <motion.div 
-                              className="w-10 h-10 bg-pink-100 dark:bg-pink-900/30 rounded-xl flex items-center justify-center"
+                              className={`w-10 h-10 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl flex items-center justify-center`}
                               whileHover={{ rotate: 10 }}
                               transition={{ type: "spring", stiffness: 400, damping: 25 }}
                             >
-                              <Sparkles className="w-5 h-5 text-pink-600 dark:text-pink-400" strokeWidth={2} />
+                              <Sparkles className={`w-5 h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={2} />
                             </motion.div>
                             <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trattamento</span>
                           </div>
@@ -1126,7 +1191,7 @@ export default function AppointmentForm({
                     transition={{ duration: 0.5, delay: 1.1, type: "spring", stiffness: 300, damping: 25 }}
                     className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800"
                   >
-                    <div className="flex items-center justify-center gap-3 text-pink-600 dark:text-pink-400">
+                    <div className={`flex items-center justify-center gap-3 ${colors.textPrimary} dark:${colors.textPrimaryDark}`}>
                       <motion.div
                         animate={{ rotate: 360 }}
                         transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
@@ -1159,7 +1224,7 @@ export default function AppointmentForm({
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/25">
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 ${colors.bgGradient} rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg ${colors.shadowPrimary}`}>
                 <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
@@ -1215,9 +1280,9 @@ export default function AppointmentForm({
                     <div 
                       className={`${isMobile ? 'w-8 h-8' : 'w-12 h-12'} rounded-xl flex items-center justify-center transition-all duration-300 shadow-lg ${
                         isActive 
-                          ? 'bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-pink-500/30' 
+                          ? `${colors.bgGradient} text-white ${colors.shadowPrimary}` 
                           : isCompleted 
-                            ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 shadow-pink-500/10'
+                            ? `${colors.bgPrimary} dark:${colors.bgPrimaryDark} ${colors.textPrimary} dark:${colors.textPrimaryDark} ${colors.shadowPrimaryLight}`
                             : 'bg-white dark:bg-gray-700 text-gray-400 dark:text-gray-500 shadow-black/5'
                       }`}
                     >
@@ -1225,7 +1290,7 @@ export default function AppointmentForm({
                     </div>
                     {!isMobile && (
                       <p className={`mt-2 text-sm font-bold transition-colors duration-300 ${
-                        isActive ? 'text-pink-600 dark:text-pink-400' : isCompleted ? 'text-pink-500 dark:text-pink-400' : 'text-gray-400 dark:text-gray-500'
+                        isActive ? `${colors.textPrimary} dark:${colors.textPrimaryDark}` : isCompleted ? `${colors.textPrimary} dark:${colors.textPrimaryDark}` : 'text-gray-400 dark:text-gray-500'
                       }`}>
                         {step.title}
                       </p>
@@ -1233,7 +1298,7 @@ export default function AppointmentForm({
                   </div>
                   {index < steps.length - 1 && (
                     <div className={`${isMobile ? 'w-4' : 'w-12'} h-1 ${isMobile ? 'mx-1' : 'mx-3'} rounded-full transition-all duration-300 ${
-                      isCompleted ? 'bg-gradient-to-r from-pink-400 to-pink-500' : 'bg-gray-200 dark:bg-gray-600'
+                      isCompleted ? colors.bgGradient : 'bg-gray-200 dark:bg-gray-600'
                     }`} />
                   )}
                 </div>
@@ -1242,7 +1307,7 @@ export default function AppointmentForm({
           </div>
           {isMobile && (
             <div className="mt-2 text-center">
-              <p className="text-sm font-semibold text-pink-600 dark:text-pink-400">
+              <p className={`text-sm font-semibold ${colors.textPrimary} dark:${colors.textPrimaryDark}`}>
                 {steps[activeStep].title}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -1295,7 +1360,7 @@ export default function AppointmentForm({
                 <button
                   type="submit"
                   disabled={loading}
-                  className={`flex-1 ${isMobile ? 'px-4 py-3' : 'px-6 py-3'} bg-gradient-to-r from-pink-500 to-pink-600 text-white ${isMobile ? 'rounded-xl' : 'rounded-2xl'} font-medium transition-all duration-200 hover:from-pink-600 hover:to-pink-700 shadow-lg shadow-pink-500/25 disabled:opacity-50 flex items-center justify-center gap-2 text-sm`}
+                  className={`flex-1 ${isMobile ? 'px-4 py-3' : 'px-6 py-3'} ${colors.bgGradient} text-white ${isMobile ? 'rounded-xl' : 'rounded-2xl'} font-medium transition-all duration-200 hover:${colors.gradientFromLight} hover:${colors.gradientToLight} shadow-lg ${colors.shadowPrimary} disabled:opacity-50 flex items-center justify-center gap-2 text-sm`}
                 >
                   {loading ? (
                     <>
@@ -1318,7 +1383,7 @@ export default function AppointmentForm({
                     handleNext();
                   }}
                   disabled={!canProceed()}
-                  className={`flex-1 ${isMobile ? 'px-4 py-3' : 'px-6 py-3'} bg-gradient-to-r from-pink-500 to-pink-600 text-white ${isMobile ? 'rounded-xl' : 'rounded-2xl'} font-medium transition-all duration-200 hover:from-pink-600 hover:to-pink-700 shadow-lg shadow-pink-500/25 disabled:opacity-50 flex items-center justify-center gap-2 text-sm`}
+                  className={`flex-1 ${isMobile ? 'px-4 py-3' : 'px-6 py-3'} ${colors.bgGradient} text-white ${isMobile ? 'rounded-xl' : 'rounded-2xl'} font-medium transition-all duration-200 hover:${colors.gradientFromLight} hover:${colors.gradientToLight} shadow-lg ${colors.shadowPrimary} disabled:opacity-50 flex items-center justify-center gap-2 text-sm`}
                 >
                   Continua
                   <ChevronRight className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />

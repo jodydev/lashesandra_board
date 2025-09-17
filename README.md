@@ -1,8 +1,14 @@
 # LashesAndra Board 
 
-Un'applicazione web moderna per la gestione di clienti e appuntamenti per estetisti, costruita con React, Material UI e Supabase.
+Un'applicazione web moderna per la gestione di clienti e appuntamenti per estetisti, costruita con React, Material UI e Supabase. Supporta due applicazioni separate: LashesAndra e Isabelle Nails, ciascuna con il proprio database dedicato.
 
 ## 🚀 Funzionalità
+
+### 🏢 Multi-App Support
+- **Due Applicazioni Separate**: LashesAndra e Isabelle Nails
+- **Database Dedicati**: Ogni app ha le proprie tabelle su Supabase
+- **Interfaccia Unificata**: Stessa UI per entrambe le app
+- **Selezione App**: Pagina di selezione per scegliere quale app utilizzare
 
 ### 📋 Gestione Clienti
 - **Aggiunta/Modifica Clienti**: Form completo con validazione per tutti i campi
@@ -72,10 +78,11 @@ npm install
 ```
 
 ### 2. Configurazione Supabase
-Il progetto è già configurato con un database Supabase esistente. Le tabelle sono state create automaticamente:
+Il progetto è già configurato con un database Supabase esistente. Le tabelle sono state create automaticamente per entrambe le app:
 
+#### Tabelle LashesAndra (originali):
 ```sql
--- Tabella clienti
+-- Tabella clienti LashesAndra
 CREATE TABLE clients (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   nome text NOT NULL,
@@ -90,13 +97,43 @@ CREATE TABLE clients (
   created_at timestamp DEFAULT now()
 );
 
--- Tabella appuntamenti
+-- Tabella appuntamenti LashesAndra
 CREATE TABLE appointments (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   client_id uuid REFERENCES clients(id) ON DELETE CASCADE,
   data date NOT NULL,
   importo numeric NOT NULL,
   tipo_trattamento text,
+  created_at timestamp DEFAULT now()
+);
+```
+
+#### Tabelle Isabelle Nails (duplicate):
+```sql
+-- Tabella clienti Isabelle Nails
+CREATE TABLE isabelle_clients (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  nome text NOT NULL,
+  cognome text NOT NULL,
+  telefono text,
+  email text,
+  tipo_trattamento text,
+  data_ultimo_appuntamento date,
+  spesa_totale numeric DEFAULT 0,
+  importo numeric DEFAULT 0,
+  tipo_cliente text CHECK (tipo_cliente IN ('nuovo', 'abituale')),
+  created_at timestamp DEFAULT now()
+);
+
+-- Tabella appuntamenti Isabelle Nails
+CREATE TABLE isabelle_appointments (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_id uuid REFERENCES isabelle_clients(id) ON DELETE CASCADE,
+  data date NOT NULL,
+  ora text,
+  importo numeric NOT NULL,
+  tipo_trattamento text,
+  status text CHECK (status IN ('pending', 'completed', 'cancelled')) DEFAULT 'pending',
   created_at timestamp DEFAULT now()
 );
 ```
@@ -110,13 +147,19 @@ L'applicazione sarà disponibile su `http://localhost:5173`
 
 ## 📱 Utilizzo
 
+### Selezione App
+All'avvio dell'applicazione, verrai presentato con una pagina di selezione dove puoi scegliere tra:
+- **LashesAndra**: App originale con database dedicato
+- **Isabelle Nails**: App duplicata con database separato
+
 ### Navigazione
-L'applicazione include una sidebar con le seguenti sezioni:
+Una volta selezionata un'app, l'applicazione include una sidebar con le seguenti sezioni:
 - **🏠 Home**: Dashboard principale con accesso rapido
 - **📋 Lista Clienti**: Gestione completa dei clienti
 - **➕ Aggiungi Cliente**: Form per nuovi clienti
 - **📅 Calendario Mensile**: Vista calendario appuntamenti
 - **📊 Panoramica Mensile**: Statistiche e analisi
+- **🔄 Cambia App**: Pulsante per tornare alla selezione delle app
 
 ### Aggiungere un Cliente
 1. Vai su "Aggiungi Cliente"
@@ -157,16 +200,23 @@ L'applicazione include una sidebar con le seguenti sezioni:
 ### Struttura Progetto
 ```
 src/
-├── components/          # Componenti riutilizzabili
+├── apps/               # Applicazioni separate
+│   ├── LashesAndraApp.tsx    # App LashesAndra
+│   └── IsabelleNailsApp.tsx  # App Isabelle Nails
+├── components/         # Componenti riutilizzabili
 │   ├── Layout.tsx      # Layout principale con sidebar
 │   ├── ClientForm.tsx  # Form per clienti
 │   ├── ClientList.tsx  # Lista clienti con DataGrid
 │   ├── CalendarView.tsx # Vista calendario
 │   ├── MonthlyOverview.tsx # Dashboard statistiche
 │   └── AppointmentForm.tsx # Form appuntamenti
+├── contexts/           # Context providers
+│   └── AppContext.tsx  # Context per gestione app attiva
 ├── pages/              # Pagine dell'applicazione
+│   └── AppSelector.tsx # Pagina di selezione app
 ├── lib/                # Servizi e utilities
-│   └── supabase.ts     # Client Supabase e API
+│   ├── supabase.ts     # Client Supabase originale
+│   └── supabaseService.ts # Servizio dinamico per tabelle
 ├── types/              # Definizioni TypeScript
 │   └── index.ts        # Interfacce per Client e Appointment
 └── App.jsx            # Componente principale
@@ -174,6 +224,8 @@ src/
 
 ### API e Database
 - **Supabase Client**: Configurato per operazioni CRUD
+- **Database Separati**: Tabelle dedicate per ogni app
+- **Context Provider**: Gestione dinamica delle tabelle
 - **Trigger Automatici**: Calcolo spesa totale clienti
 - **Type Safety**: Interfacce TypeScript per tutti i dati
 - **Error Handling**: Gestione errori centralizzata

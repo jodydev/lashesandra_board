@@ -15,12 +15,15 @@ import {
 } from 'lucide-react';
 import { Dialog, DialogContent } from '@mui/material';
 import type { Client, Appointment } from '../types';
-import { clientService, appointmentService } from '../lib/supabase';
+import { useSupabaseServices } from '../lib/supabaseService';
+import { useAppColors } from '../hooks/useAppColors';
 import ClientForm from './ClientForm';
 import { formatCurrency } from '../lib/utils';
 import dayjs from 'dayjs';
 
 export default function ClientList() {
+  const { clientService, appointmentService } = useSupabaseServices();
+  const colors = useAppColors();
   const [clients, setClients] = useState<Client[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -198,7 +201,7 @@ export default function ClientList() {
           className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8"
         >
           <div className="space-y-2">
-            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-gray-900 via-pink-600 to-gray-900 dark:from-white dark:via-pink-400 dark:to-white bg-clip-text text-transparent">
+            <h1 className={`text-3xl sm:text-4xl font-bold bg-gradient-to-r from-gray-900 via-${colors.primary} to-gray-900 dark:from-white dark:via-${colors.primaryLight} dark:to-white bg-clip-text text-transparent`}>
               Gestione Clienti
             </h1>
             <p className="text-gray-600 dark:text-gray-400 text-lg">
@@ -210,7 +213,7 @@ export default function ClientList() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleAddClient}
-            className="group relative mt-6 sm:mt-0 inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold rounded-xl shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 transition-all duration-300"
+            className={`group relative mt-6 sm:mt-0 inline-flex items-center gap-3 px-6 py-3 ${colors.bgGradient} hover:${colors.gradientFromLight} hover:${colors.gradientToLight} text-white font-semibold rounded-xl shadow-lg ${colors.shadowPrimary} hover:${colors.shadowPrimary} transition-all duration-300`}
           >
             <Plus className="w-5 h-5 transition-transform group-hover:rotate-90 duration-300" />
             Nuovo Cliente
@@ -231,8 +234,8 @@ export default function ClientList() {
               value: totalClients,
               subtitle: `${regularClients} abituali, ${newClients} nuovi`,
               icon: Users,
-              gradient: 'from-pink-500 to-pink-600',
-              bgGradient: 'from-pink-50 to-pink-100/50 dark:from-pink-950/50 dark:to-pink-900/30',
+              gradient: `${colors.gradientFrom} ${colors.gradientTo}`,
+              bgGradient: `${colors.bgGradientHover} dark:${colors.bgPrimaryDark}`,
               delay: 0.1
             },
             {
@@ -240,9 +243,27 @@ export default function ClientList() {
               value: activeClientsThisMonth,
               subtitle: 'questo mese',
               icon: Calendar,
-              gradient: 'from-emerald-500 to-emerald-600',
-              bgGradient: 'from-emerald-50 to-emerald-100/50 dark:from-emerald-950/50 dark:to-emerald-900/30',
+              gradient: `${colors.gradientFrom} ${colors.gradientTo}`,
+              bgGradient: `${colors.bgGradientHover} dark:${colors.bgPrimaryDark}`,
               delay: 0.2
+            },
+            {
+              title: 'Clienti Abituali',
+              value: regularClients,
+              subtitle: 'abituali',
+              icon: Users,
+              gradient: `${colors.gradientFrom} ${colors.gradientTo}`,
+              bgGradient: `${colors.bgGradientHover} dark:${colors.bgPrimaryDark}`,
+              delay: 0.3
+            },
+            {
+              title: 'Clienti Nuovi',
+              value: newClients,
+              subtitle: 'nuovi',
+              icon: Users,
+              gradient: `${colors.gradientFrom} ${colors.gradientTo}`,
+              bgGradient: `${colors.bgGradientHover} dark:${colors.bgPrimaryDark}`,
+              delay: 0.4
             }
           ].map((stat) => (
             <motion.div
@@ -363,7 +384,7 @@ export default function ClientList() {
                 placeholder="Cerca clienti..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500"
+                className={`w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 ${colors.focusRing} focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500`}
               />
             </div>
 
@@ -382,7 +403,7 @@ export default function ClientList() {
                   onClick={() => setFilterType(filter.key as any)}
                   className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
                     filterType === filter.key
-                      ? 'bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-lg shadow-pink-500/25'
+                      ? `${colors.bgGradient} text-white shadow-lg ${colors.shadowPrimary}`
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                 >
@@ -413,13 +434,13 @@ export default function ClientList() {
                   delay: index * 0.05,
                   ease: [0.22, 1, 0.36, 1]
                 }}
-                className="group relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-800/50 shadow-lg hover:shadow-lg hover:shadow-pink-500/10 transition-all duration-300 cursor-pointer"
+                className={`group relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-800/50 shadow-lg hover:shadow-lg ${colors.shadowPrimaryLight} transition-all duration-300 cursor-pointer`}
               >
                 {/* Client Avatar and Info */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-4">
                     <div className="relative">
-                      <div className="w-14 h-14 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-pink-500/25 group-hover:scale-110 transition-transform duration-300">
+                      <div className={`w-14 h-14 ${colors.bgGradient} rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg ${colors.shadowPrimary} group-hover:scale-110 transition-transform duration-300`}>
                         {client.nome.charAt(0).toUpperCase()}
                       </div>
                       {client.tipo_cliente === 'nuovo' && (
@@ -436,7 +457,7 @@ export default function ClientList() {
                       <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                         client.tipo_cliente === 'nuovo'
                           ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                          : 'bg-pink-200  text-gray-700'
+                          : `${colors.bgPrimary} ${colors.textPrimary}`
                       }`}>
                         {client.tipo_cliente === 'nuovo' ? 'Nuovo Cliente' : 'Cliente Abituale'}
                       </div>
@@ -450,9 +471,9 @@ export default function ClientList() {
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => handleEditClient(client)}
-                        className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-pink-100 dark:hover:bg-pink-900/30 rounded-xl transition-colors duration-200 group/btn"
+                        className={`p-2 bg-gray-100 dark:bg-gray-800 ${colors.bgHover} dark:${colors.bgHoverDark} rounded-xl transition-colors duration-200 group/btn`}
                       >
-                        <Edit3 className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover/btn:text-pink-600 dark:group-hover/btn:text-pink-400" />
+                        <Edit3 className={`w-4 h-4 text-gray-600 dark:text-gray-400 ${colors.textHover} dark:${colors.textHoverDark}`} />
                       </motion.button>
                       <motion.button
                         whileHover={{ scale: 1.1 }}
@@ -500,14 +521,14 @@ export default function ClientList() {
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Spesa Totale</span>
-                    <span className="font-bold text-lg bg-gradient-to-r from-pink-600 to-pink-700 bg-clip-text text-transparent">
+                    <span className={`font-bold text-lg ${colors.bgGradient} bg-clip-text text-transparent`}>
                       {formatCurrency(client.spesa_totale)}
                     </span>
                   </div>
                 </div>
 
                 {/* Hover overlay */}
-                <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl pointer-events-none" />
+                <div className={`absolute inset-0 ${colors.bgGradientLight} opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl pointer-events-none`} />
               </motion.div>
             ))}
           </AnimatePresence>
@@ -519,7 +540,7 @@ export default function ClientList() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="text-center py-16"
+            className="text-center py-16 bg-white dark:bg-gray-900 rounded-2xl shadow-lg"
           >
             <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-6">
               <Users className="w-12 h-12 text-gray-400" />
@@ -538,7 +559,7 @@ export default function ClientList() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleAddClient}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-semibold rounded-xl shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 transition-all duration-300"
+                className={`inline-flex items-center gap-2 px-6 py-3 ${colors.bgGradient} text-white font-semibold rounded-xl shadow-lg ${colors.shadowPrimary} hover:${colors.shadowPrimary} transition-all duration-300`}
               >
                 <Plus className="w-5 h-5" />
                 Aggiungi Cliente

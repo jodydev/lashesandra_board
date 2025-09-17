@@ -2,13 +2,11 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import Layout from './components/Layout';
-import HomePage from './pages/HomePage';
-import ClientsPage from './pages/ClientsPage';
-import CalendarPage from './pages/CalendarPage';
-import OverviewPage from './pages/OverviewPage';
-import AppointmentsPage from './pages/AppointmentsPage';
-import AppointmentsConfirmationPage from './pages/AppointmentsConfirmationPage';
+import AppSelector from './pages/AppSelector';
+import LashesAndraApp from './apps/LashesAndraApp';
+import IsabelleNailsApp from './apps/IsabelleNailsApp';
+import { AppProvider } from './contexts/AppContext';
+
 
 // Modern Design System with Pink/Black/White palette inspired by Material Design 3
 const theme = createTheme({
@@ -177,17 +175,11 @@ export default function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Navigate to="/home" replace />} />
-            <Route path="/home" element={<HomePage />} />
-            <Route path="/clients" element={<ClientsPage />} />
-            <Route path="/appointments" element={<AppointmentsPage />} />
-            <Route path="/confirmations" element={<AppointmentsConfirmationPage />} />
-            <Route path="/calendar" element={<CalendarPage />} />
-            <Route path="/overview" element={<OverviewPage />} />
-          </Routes>
-        </Layout>
+        <Routes>
+          <Route path="/" element={<AppSelector />} />
+          <Route path="/lashesandra/*" element={<LashesAndraApp />} />
+          <Route path="/isabellenails/*" element={<IsabelleNailsApp />} />
+        </Routes>
       </BrowserRouter>
     </ThemeProvider>
   );

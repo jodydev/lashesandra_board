@@ -5,17 +5,10 @@ import {
   CssBaseline,
   Drawer,
   IconButton,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
   Toolbar,
   Typography,
   useTheme,
   useMediaQuery,
-  Avatar,
-  Chip,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -25,9 +18,12 @@ import {
   Home as HomeIcon,
   Close as CloseIcon,
   CheckCircle as CheckCircleIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useApp } from '../contexts/AppContext';
+import { useAppColors } from '../hooks/useAppColors';
 
 const drawerWidth = 280;
 
@@ -36,12 +32,12 @@ interface LayoutProps {
 }
 
 const menuItems = [
-  { text: 'Dashboard', icon: <HomeIcon />, path: '/home', badge: null },
-  { text: 'Clienti', icon: <PeopleIcon />, path: '/clients', badge: null },
-  { text: 'Appuntamenti', icon: <CalendarIcon />, path: '/appointments', badge: null },
-  { text: 'Calendario', icon: <CalendarIcon />, path: '/calendar', badge: null },
-  { text: 'Statistiche', icon: <ChartIcon />, path: '/overview', badge: null },
-  { text: 'Conferma Appuntamenti', icon: <CheckCircleIcon />, path: '/confirmations', badge: null },
+  { text: 'Dashboard', icon: <HomeIcon />, path: 'home', badge: null },
+  { text: 'Clienti', icon: <PeopleIcon />, path: 'clients', badge: null },
+  { text: 'Appuntamenti', icon: <CalendarIcon />, path: 'appointments', badge: null },
+  { text: 'Calendario', icon: <CalendarIcon />, path: 'calendar', badge: null },
+  { text: 'Statistiche', icon: <ChartIcon />, path: 'overview', badge: null },
+  { text: 'Conferma Appuntamenti', icon: <CheckCircleIcon />, path: 'confirmations', badge: null },
 ];
 
 export default function Layout({ children }: LayoutProps) {
@@ -50,22 +46,35 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { appName, appType } = useApp();
+  const colors = useAppColors();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
   const handleNavigation = (path: string) => {
-    navigate(path);
+    // Navigate to absolute path within the current app
+    const appPrefix = appType === 'isabellenails' ? '/isabellenails' : '/lashesandra';
+    navigate(`${appPrefix}/${path}`);
     if (isMobile) {
       setMobileOpen(false);
     }
   };
 
   const drawer = (
-    <div className="h-full flex flex-col bg-gradient-to-br from-white via-pink-50/30 to-pink-100/20 dark:from-gray-900 dark:via-gray-900 dark:to-pink-950/20">
+    <div className={`h-full flex flex-col bg-gradient-to-br from-white dark:from-gray-900 dark:via-gray-900 ${
+      appType === 'isabellenails' 
+        ? 'via-purple-50/30 to-purple-100/20 dark:to-purple-950/20' 
+        : 'via-pink-50/30 to-pink-100/20 dark:to-pink-950/20'
+    }`}>
       {/* Modern Header Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-pink-500 via-pink-600 to-pink-700 dark:from-pink-600 dark:via-pink-700 dark:to-pink-800">
+      <div 
+        className="relative overflow-hidden bg-gradient-to-br dark:from-purple-600 dark:via-purple-700 dark:to-purple-800"
+        style={{
+          background: colors.cssGradient
+        }}
+      >
         {/* Animated Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-32 h-32 bg-white rounded-full -translate-x-16 -translate-y-16 animate-pulse" />
@@ -78,14 +87,14 @@ export default function Layout({ children }: LayoutProps) {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="flex items-center justify-between mb-2"
+            className="flex items-center justify-between"
           >
             <div className="flex items-center gap-3">
               <div>
                 <h1 className="text-white font-bold text-xl tracking-tight">
-                  LashesAndra
+                  {appName}
                 </h1>
-                <p className="text-pink-100 text-sm font-medium">
+                <p className="text-white/80 text-sm font-medium">
                   Workspace 
                 </p>
               </div>
@@ -105,14 +114,16 @@ export default function Layout({ children }: LayoutProps) {
           
         </div>
         
-        {/* Subtle bottom wave */}
-        <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-r from-pink-500/20 to-pink-600/20 backdrop-blur-sm" />
       </div>
 
       {/* Navigation Menu */}
       <div className="flex-1 p-4 space-y-2">
         {menuItems.map((item, index) => {
-          const isSelected = location.pathname === item.path;
+          // Check if current path matches the expected app path
+          const appPrefix = appType === 'isabellenails' ? '/isabellenails' : '/lashesandra';
+          const expectedPath = `${appPrefix}/${item.path}`;
+          const isSelected = location.pathname === expectedPath || 
+                           (location.pathname === appPrefix && item.path === 'home');
           const Icon = item.icon.type;
           
           return (
@@ -132,15 +143,15 @@ export default function Layout({ children }: LayoutProps) {
                 onClick={() => handleNavigation(item.path)}
                 className={`w-full group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${
                   isSelected
-                    ? 'bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-lg shadow-pink-500/25'
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-gray-700 hover:text-pink-600 dark:hover:text-pink-400 shadow-lg hover:shadow-lg border border-gray-100 dark:border-gray-700'
+                    ? `text-white shadow-lg bg-gradient-to-r ${colors.gradientFrom} ${colors.gradientTo} ${colors.shadowPrimary}`
+                    : `bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:${colors.bgGradientHover} dark:hover:bg-gray-700 ${colors.textHover} dark:${colors.textHoverDark} shadow-lg hover:shadow-lg border border-gray-100 dark:border-gray-700`
                 }`}
               >
                 {/* Selection indicator */}
                 {isSelected && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute inset-0 bg-gradient-to-r from-pink-500 to-pink-600 rounded-2xl"
+                    className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${colors.gradientFrom} ${colors.gradientTo}`}
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
@@ -149,19 +160,19 @@ export default function Layout({ children }: LayoutProps) {
                 <div className={`absolute inset-0 rounded-2xl transition-opacity duration-300 ${
                   isSelected 
                     ? 'opacity-0' 
-                    : 'opacity-0 group-hover:opacity-100 bg-gradient-to-r from-pink-500/5 to-pink-600/5'
+                    : `opacity-0 group-hover:opacity-100 ${colors.bgGradientLight}`
                 }`} />
                 
                 <div className="relative flex items-center gap-4">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
                     isSelected
                       ? 'bg-white/20 backdrop-blur-sm'
-                      : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-pink-100 dark:group-hover:bg-pink-900/30'
+                      : `bg-gray-100 dark:bg-gray-700 ${colors.bgHover} dark:${colors.bgHoverDark}`
                   }`}>
                     <Icon className={`w-5 h-5 transition-colors duration-300 ${
                       isSelected 
                         ? 'text-white' 
-                        : 'text-gray-600 dark:text-gray-400 group-hover:text-pink-600 dark:group-hover:text-pink-400'
+                        : `text-gray-600 dark:text-gray-400 ${colors.textHover} dark:${colors.textHoverDark}`
                     }`} />
                   </div>
                   
@@ -169,7 +180,7 @@ export default function Layout({ children }: LayoutProps) {
                     <span className={`font-semibold text-sm transition-colors duration-300 ${
                       isSelected 
                         ? 'text-white' 
-                        : 'text-gray-900 dark:text-gray-100 group-hover:text-pink-600 dark:group-hover:text-pink-400'
+                        : `text-gray-900 dark:text-gray-100 ${colors.textHover} dark:${colors.textHoverDark}`
                     }`}>
                       {item.text}
                     </span>
@@ -179,7 +190,7 @@ export default function Layout({ children }: LayoutProps) {
                     <div className={`px-2 py-1 rounded-xl text-xs font-bold transition-all duration-300 ${
                       isSelected
                         ? 'bg-white/20 text-white'
-                        : 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
+                        : `${colors.bgPrimary} dark:${colors.bgPrimaryDark} ${colors.textPrimary} dark:${colors.textPrimaryDark}`
                     }`}>
                       {item.badge}
                     </div>
@@ -207,11 +218,15 @@ export default function Layout({ children }: LayoutProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="bg-gradient-to-r from-gray-50 to-pink-50/50 dark:from-gray-800 dark:to-pink-900/20 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
+          className={`bg-gradient-to-r from-gray-50 dark:from-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 ${
+            appType === 'isabellenails' 
+              ? 'to-purple-50/50 dark:to-purple-900/20' 
+              : 'to-pink-50/50 dark:to-pink-900/20'
+          }`}
         >
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/25">
+              <div className={`w-12 h-12 ${colors.bgGradient} rounded-2xl flex items-center justify-center shadow-lg ${colors.shadowPrimary}`}>
                 <span className="text-white font-bold text-lg">A</span>
               </div>
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
@@ -219,7 +234,7 @@ export default function Layout({ children }: LayoutProps) {
             
             <div className="flex-1 min-w-0">
               <h3 className="font-bold text-gray-900 dark:text-white text-sm truncate">
-                LashesAndra
+                {appName}
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                 Proprietaria
@@ -265,7 +280,12 @@ export default function Layout({ children }: LayoutProps) {
               <MenuIcon />
             </IconButton>
             <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 600 }}>
-              {menuItems.find(item => item.path === location.pathname)?.text || 'Dashboard'}
+              {menuItems.find(item => {
+                const appPrefix = appType === 'isabellenails' ? '/isabellenails' : '/lashesandra';
+                const expectedPath = `${appPrefix}/${item.path}`;
+                return location.pathname === expectedPath || 
+                       (location.pathname === appPrefix && item.path === 'home');
+              })?.text || 'Dashboard'}
             </Typography>
           </Box>
           

@@ -24,30 +24,32 @@ import {
 } from 'recharts';
 import dayjs from 'dayjs';
 import type { MonthlyStats } from '../types';
-import { statsService } from '../lib/supabase';
+import { useSupabaseServices } from '../lib/supabaseService';
+import { useAppColors } from '../hooks/useAppColors';
 import { formatCurrency } from '../lib/utils';
 
 
 // Modern metric card component with glass morphism effect
-const MetricCard = ({ icon: Icon, title, value, trend, delay = 0 }: {
+const MetricCard = ({ icon: Icon, title, value, trend, delay = 0, colors }: {
   icon: any;
   title: string;
   value: string | number;
   trend?: string;
   delay?: number;
+  colors: any;
 }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay }}
-    className="group relative overflow-hidden rounded-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:border-pink-200 dark:hover:border-pink-800 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/10"
+    className={`group relative overflow-hidden rounded-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:${colors.borderPrimary} dark:hover:${colors.borderPrimary} transition-all duration-300 hover:shadow-lg ${colors.shadowPrimaryLight}`}
   >
-    <div className="absolute inset-0 bg-gradient-to-br from-pink-50/50 to-transparent dark:from-pink-900/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    <div className={`absolute inset-0 ${colors.bgGradientLight} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
     <div className="relative p-4 sm:p-6">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-            <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-lg shadow-pink-500/25">
+            <div className={`p-2 sm:p-2.5 rounded-xl ${colors.bgGradient} text-white shadow-lg ${colors.shadowPrimary}`}>
               <Icon size={16} className="sm:w-5 sm:h-5" />
             </div>
             <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">{title}</span>
@@ -106,6 +108,8 @@ const LoadingSkeleton = () => (
 );
 
 export default function MonthlyOverview() {
+  const { statsService } = useSupabaseServices();
+  const colors = useAppColors();
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [stats, setStats] = useState<MonthlyStats | null>(null);
   const [dailyStats, setDailyStats] = useState<Array<{ day: number; revenue: number; clients: number }>>([]);
@@ -167,7 +171,7 @@ export default function MonthlyOverview() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-pink-50/30 to-gray-100 dark:from-gray-900 dark:via-pink-900/10 dark:to-gray-800">
+    <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-${colors.primaryLight}/30 to-gray-100 dark:from-gray-900 dark:via-${colors.primaryDark}/10 dark:to-gray-800`}>
       <div className="max-w-7xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-8">
         {/* Header with enhanced navigation */}
         <motion.div
@@ -235,6 +239,7 @@ export default function MonthlyOverview() {
             value={stats?.totalClients || 0}
             trend="+12% vs mese scorso"
             delay={0.1}
+            colors={colors}
           />
           <MetricCard
             icon={Euro}
@@ -242,6 +247,7 @@ export default function MonthlyOverview() {
             value={formatCurrency(stats?.totalRevenue || 0)}
             trend="+8% vs mese scorso"
             delay={0.2}
+            colors={colors}
           />
           <MetricCard
             icon={TrendingUp}
@@ -249,12 +255,14 @@ export default function MonthlyOverview() {
             value={formatCurrency(stats?.averageRevenuePerClient || 0)}
             trend="+5% vs mese scorso"
             delay={0.3}
+            colors={colors}
           />
           <MetricCard
             icon={Star}
             title="Top Clienti"
             value={stats?.topClients.length || 0}
             delay={0.4}
+            colors={colors}
           />
         </div>
 

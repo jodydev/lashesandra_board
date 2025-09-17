@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { clientService, appointmentService } from '../lib/supabase';
+import { useSupabaseServices } from '../lib/supabaseService';
+import { useAppColors } from '../hooks/useAppColors';
+import { useApp } from '../contexts/AppContext';
 import type { Client, Appointment } from '../types';
 import dayjs from 'dayjs';
 import {
@@ -23,6 +25,9 @@ import {
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { clientService, appointmentService } = useSupabaseServices();
+  const { appType } = useApp();
+  const colors = useAppColors();
   
   // Data states
   const [clients, setClients] = useState<Client[]>([]);
@@ -101,7 +106,7 @@ export default function HomePage() {
       title: 'Clienti',
       description: 'Gestisci la tua base clienti',
       icon: Users,
-      gradient: 'from-pink-500 to-pink-600',
+      gradient: `${colors.gradientFrom} ${colors.gradientTo}`,
       path: '/clients',
       stats: loading ? 'Caricamento...' : `${stats.totalClients} clienti`,
       bgPattern: 'users',
@@ -222,13 +227,17 @@ export default function HomePage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-pink-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-pink-950/20 flex items-center justify-center">
+      <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-white dark:from-gray-900 dark:via-gray-900 flex items-center justify-center ${
+        appType === 'isabellenails' 
+          ? 'to-purple-50/30 dark:to-purple-950/20' 
+          : 'to-pink-50/30 dark:to-pink-950/20'
+      }`}>
         <div className="text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-pink-100 dark:bg-pink-950/30 rounded-full text-pink-600 dark:text-pink-400 text-sm font-medium mb-6">
+          <div className={`inline-flex items-center gap-2 px-4 py-2 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-full ${colors.textPrimary} dark:${colors.textPrimaryDark} text-sm font-medium mb-6`}>
             <Sparkles className="w-4 h-4 animate-pulse" />
             Caricamento dati...
           </div>
-          <div className="w-8 h-8 border-4 border-pink-200 border-t-pink-600 rounded-full animate-spin mx-auto"></div>
+          <div className={`w-8 h-8 border-4 ${colors.borderPrimary} border-t-${colors.primary} rounded-full animate-spin mx-auto`}></div>
         </div>
       </div>
     );
@@ -265,13 +274,13 @@ export default function HomePage() {
       >
         {/* Hero Section */}
         <motion.div  className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-pink-100 dark:bg-pink-950/30 rounded-full text-pink-600 dark:text-pink-400 text-sm font-medium mb-6">
+          <div className={`inline-flex items-center gap-2 px-4 py-2 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-full ${colors.textPrimary} dark:${colors.textPrimaryDark} text-sm font-medium mb-6`}>
             <Sparkles className="w-4 h-4" />
-            Benvenuta nel tuo spazio di lavoro amore mio
+           {appType === 'isabellenails' ? 'Benvenuta nel tuo spazio di lavoro migliore amica del mio amore' : 'Benvenuto nel tuo spazio di lavoro amore mio'}
           </div>
           
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gray-900 via-pink-600 to-gray-900 dark:from-white dark:via-pink-400 dark:to-white bg-clip-text text-transparent mb-6 leading-tight">
-            LashesAndra Board 
+          <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gray-900 via-${colors.primary} to-gray-900 dark:from-white dark:via-${colors.primaryLight} dark:to-white bg-clip-text text-transparent mb-6 leading-tight`}>
+            {appType === 'isabellenails' ? 'Isabelle Nails Board' : 'LashesAndra Board'}
           </h1>
           
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed mb-8">
@@ -331,8 +340,8 @@ export default function HomePage() {
         {/* Quick Actions */}
         <motion.div variants={itemVariants} className="mb-16">
           <div className="flex items-center gap-3 mb-8">
-            <div className="p-2 rounded-xl bg-pink-100 dark:bg-pink-950/30">
-              <Zap className="w-5 h-5 text-pink-600 dark:text-pink-400" />
+            <div className={`p-2 rounded-xl ${colors.bgPrimary} dark:${colors.bgPrimaryDark}`}>
+              <Zap className={`w-5 h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
             </div>
             <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
               Azioni Rapide
@@ -391,8 +400,8 @@ export default function HomePage() {
               className="flex items-center justify-center gap-4 mb-6"
             >
               <div className="relative">
-                <div className="absolute inset-0 bg-pink-500/20 rounded-2xl blur-xl" />
-                <div className="relative p-3 rounded-2xl bg-gradient-to-br from-pink-500 to-pink-600 shadow-lg">
+                <div className={`absolute inset-0 ${colors.primary}/20 rounded-2xl blur-xl`} />
+                <div className={`relative p-3 rounded-2xl ${colors.bgGradient} shadow-lg`}>
                   <Target className="w-6 h-6 text-white" />
                 </div>
               </div>
@@ -422,10 +431,10 @@ export default function HomePage() {
               >
                 <div className="relative h-full">
                   {/* Background Glow Effect */}
-                  <div className="absolute -inset-1 bg-gradient-to-r from-pink-500/20 via-transparent to-pink-500/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-700" />
+                  <div className={`absolute -inset-1 ${colors.bgGradientLight} rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-700`} />
                   
                   {/* Main Card */}
-                  <div className="relative h-full p-8 lg:p-10 rounded-3xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-lg hover:shadow-lg hover:shadow-pink-500/10 transition-all duration-700 overflow-hidden">
+                  <div className={`relative h-full p-8 lg:p-10 rounded-3xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-lg hover:shadow-lg ${colors.shadowPrimaryLight} transition-all duration-700 overflow-hidden`}>
                     
                     {/* Top Accent Line */}
                     <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-${feature.color}-400 to-${feature.color}-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`} />
@@ -475,8 +484,8 @@ export default function HomePage() {
                     </div>
                     
                     {/* Floating Elements */}
-                    <div className="absolute top-6 right-6 w-2 h-2 rounded-full bg-pink-400/30 group-hover:bg-pink-400/60 transition-colors duration-500" />
-                    <div className="absolute bottom-8 right-8 w-1 h-1 rounded-full bg-pink-300/40 group-hover:bg-pink-300/80 transition-colors duration-500" />
+                    <div className={`absolute top-6 right-6 w-2 h-2 rounded-full ${colors.primaryLight}/30 group-hover:${colors.primaryLight}/60 transition-colors duration-500`} />
+                    <div className={`absolute bottom-8 right-8 w-1 h-1 rounded-full ${colors.primaryLight}/40 group-hover:${colors.primaryLight}/80 transition-colors duration-500`} />
                     
                     {/* Hover Gradient Overlay */}
                     <div className={`
@@ -494,8 +503,9 @@ export default function HomePage() {
         </motion.div>
 
         {/* Call to Action */}
+        {appType !== 'isabellenails' && (
         <motion.div variants={itemVariants}>
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-pink-600 via-pink-500 to-rose-600 p-12 text-center text-white">
+          <div className={`relative overflow-hidden rounded-3xl ${colors.bgGradient} p-12 text-center text-white`}>
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium mb-6">
                 Realizzato dal tuo Amore <Heart
@@ -507,7 +517,7 @@ export default function HomePage() {
                 Ricordati sempre quanto il tuo fidanzato ti ama.
               </h2>
               
-              <p className="text-xl text-pink-100 max-w-2xl mx-auto mb-8 leading-relaxed">
+              <p className="text-xl text-white/80 max-w-2xl mx-auto mb-8 leading-relaxed">
                 Lui ci sarà sempre per te, dovrai solamente dargli la possibilità di farlo.
               </p>
               
@@ -515,7 +525,7 @@ export default function HomePage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowLoveDialog(true)}
-                className="inline-flex items-center gap-3 px-8 py-4 bg-white text-pink-600 rounded-2xl font-semibold text-lg shadow-lg hover:shadow-lg transition-all duration-300"
+                className={`inline-flex items-center gap-3 px-8 py-4 bg-white ${colors.textPrimary} rounded-2xl font-semibold text-lg shadow-lg hover:shadow-lg transition-all duration-300`}
               >
                 Clicca qui per ricordarti quanto il tuo fidanzato ti ama
                 <Heart className="w-5 h-5" />
@@ -530,6 +540,7 @@ export default function HomePage() {
             <div className="absolute bottom-1/3 left-1/2 w-1.5 h-1.5 rounded-full bg-white/20" />
           </div>
         </motion.div>
+        )}
       </motion.div>
 
       {/* Love Dialog */}
@@ -552,7 +563,7 @@ export default function HomePage() {
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="relative bg-gradient-to-r from-pink-500 to-pink-600 text-white p-8">
+          <div className={`relative ${colors.bgGradient} text-white p-8`}>
             <div className="absolute inset-0 bg-black/10" />
             <div className="relative flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -561,7 +572,7 @@ export default function HomePage() {
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold">Per la mia principessa</h2>
-                  <p className="text-pink-100">Un messaggio speciale per te</p>
+                  <p className="text-white/80">Un messaggio speciale per te</p>
                 </div>
               </div>
               <button
@@ -627,17 +638,17 @@ export default function HomePage() {
                   className="grid grid-cols-1 md:grid-cols-3 gap-4"
                 >
                   <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 text-center">
-                    <Smile className="w-8 h-8 text-pink-500 mx-auto mb-2" />
+                    <Smile className={`w-8 h-8 ${colors.textPrimary} mx-auto mb-2`} />
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Il tuo sorriso</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">È la mia gioia quotidiana</p>
                   </div>
                   <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 text-center">
-                    <Heart className="w-8 h-8 text-pink-500 mx-auto mb-2" />
+                    <Heart className={`w-8 h-8 ${colors.textPrimary} mx-auto mb-2`} />
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Il tuo cuore</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">È la mia casa</p>
                   </div>
                   <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 text-center">
-                    <Sparkles className="w-8 h-8 text-pink-500 mx-auto mb-2" />
+                    <Sparkles className={`w-8 h-8 ${colors.textPrimary} mx-auto mb-2`} />
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300">La tua anima</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">È la mia stella polare</p>
                   </div>
@@ -650,7 +661,7 @@ export default function HomePage() {
                   transition={{ duration: 0.5, delay: 0.8 }}
                   className="text-center"
                 >
-                  <p className="text-xl font-bold text-pink-600 dark:text-pink-400 mb-2">
+                  <p className={`text-xl font-bold ${colors.textPrimary} dark:${colors.textPrimaryDark} mb-2`}>
                     Per sempre tuo,
                   </p>
                   <p className="text-lg text-gray-600 dark:text-gray-400">
@@ -667,7 +678,7 @@ export default function HomePage() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setShowLoveDialog(false)}
-              className="w-full px-6 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-2xl font-semibold transition-all duration-200 hover:from-pink-600 hover:to-pink-700 shadow-lg shadow-pink-500/25"
+              className={`w-full px-6 py-3 ${colors.bgGradient} text-white rounded-2xl font-semibold transition-all duration-200 hover:${colors.gradientFromLight} hover:${colors.gradientToLight} shadow-lg ${colors.shadowPrimary}`}
             >
               Chiudi con amore
             </motion.button>
