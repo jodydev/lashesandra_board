@@ -138,54 +138,155 @@ export function NotificationSummary() {
 
   if (!notifications.hasNotifications) {
     return (
-      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-        <Bell className="w-12 h-12 mx-auto mb-4 opacity-50" />
-        <p className="text-sm">Nessun appuntamento da confermare</p>
-      </div>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center py-12 text-gray-500 dark:text-gray-400"
+      >
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+          className="w-16 h-16 mx-auto mb-6 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center"
+        >
+          <Bell className="w-8 h-8 opacity-50" />
+        </motion.div>
+        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          Tutto sotto controllo
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Nessun appuntamento da confermare al momento
+        </p>
+      </motion.div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-        <div className={`w-10 h-10 ${colors.bgGradient} rounded-xl flex items-center justify-center text-white`}>
-          <Bell className="w-5 h-5" />
-        </div>
-        <div className="flex-1">
-          <h3 className="font-semibold text-gray-900 dark:text-white">
-            Appuntamenti da confermare
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            {notifications.pendingCount} appuntamenti in attesa di conferma
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        {notifications.todayCount > 0 && (
-          <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-            <div className="flex items-center gap-2 mb-1">
-              <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              <span className="text-sm font-medium text-amber-800 dark:text-amber-200">Oggi</span>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4"
+    >
+      {/* Header principale */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.1 }}
+        className="relative overflow-hidden p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm"
+      >
+        <div className="flex items-center gap-4">
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            className={`w-12 h-12 ${colors.bgGradient} rounded-2xl flex items-center justify-center text-white shadow-lg`}
+          >
+            <Bell className="w-6 h-6" />
+          </motion.div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+              Appuntamenti da confermare
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {notifications.pendingCount} {notifications.pendingCount === 1 ? 'appuntamento' : 'appuntamenti'} in attesa
+            </p>
+          </div>
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.3, type: "spring" }}
+            className="text-right"
+          >
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              {notifications.pendingCount}
             </div>
-            <div className="text-lg font-bold text-amber-900 dark:text-amber-100">
+            <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              Totale
+            </div>
+          </motion.div>
+        </div>
+        
+        {/* Decorative gradient overlay */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-500/5 to-transparent rounded-full -translate-y-16 translate-x-16" />
+      </motion.div>
+
+      {/* Cards per oggi e domani */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {notifications.todayCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            className="group relative overflow-hidden p-4 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 bg-gradient-to-br ${colors.gradientFrom} ${colors.gradientTo} rounded-xl flex items-center justify-center`}>
+                  <Clock className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                  Oggi
+                </span>
+              </div>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.4 }}
+                className="w-6 h-6 bg-amber-500/20 rounded-full flex items-center justify-center"
+              >
+                <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+              </motion.div>
+            </div>
+            <div className="text-2xl font-bold text-amber-900 dark:text-amber-100 mb-1">
               {notifications.todayCount}
             </div>
-          </div>
+            <div className="text-xs text-amber-700 dark:text-amber-300 opacity-80">
+              {notifications.todayCount === 1 ? 'Appuntamento' : 'Appuntamenti'}
+            </div>
+            
+            {/* Decorative element */}
+            <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-amber-500/10 rounded-full group-hover:scale-110 transition-transform duration-300" />
+          </motion.div>
         )}
 
         {notifications.tomorrowCount > 0 && (
-          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-            <div className="flex items-center gap-2 mb-1">
-              <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Domani</span>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            className="group relative overflow-hidden p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800/50 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 bg-gradient-to-br ${colors.gradientFrom} ${colors.gradientTo} rounded-xl flex items-center justify-center`}>
+                  <Calendar className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                  Domani
+                </span>
+              </div>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.5 }}
+                className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center"
+              >
+                <div className="w-2 h-2 bg-blue-500 rounded-full" />
+              </motion.div>
             </div>
-            <div className="text-lg font-bold text-blue-900 dark:text-blue-100">
+            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100 mb-1">
               {notifications.tomorrowCount}
             </div>
-          </div>
+            <div className="text-xs text-blue-700 dark:text-blue-300 opacity-80">
+              {notifications.tomorrowCount === 1 ? 'Appuntamento' : 'Appuntamenti'}
+            </div>
+            
+            {/* Decorative element */}
+            <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-blue-500/10 rounded-full group-hover:scale-110 transition-transform duration-300" />
+          </motion.div>
         )}
       </div>
-    </div>
+
+    </motion.div>
   );
 }

@@ -56,3 +56,64 @@ export interface CalendarViewProps {
   onNewAppointment: () => void;
   colors: ReturnType<typeof import('../hooks/useAppColors').useAppColors>;
 }
+
+// Tipi per le schede cliente estese
+export interface EyeCharacteristics {
+  colore_occhi?: string;
+  forma_occhi: 'mandorla' | 'rotondi' | 'normali';
+  posizione_occhi: 'sporgenti' | 'incavati' | 'normali';
+  distanza_occhi: 'ravvicinati' | 'distanziati' | 'normali';
+  angolo_esterno: 'normale' | 'alto' | 'basso';
+  asimmetria: 'si' | 'no';
+  lunghezza_ciglia_naturali: 'corte' | 'medie' | 'lunghe';
+  foltezza_ciglia_naturali: 'rade' | 'medie' | 'folte';
+  direzione_crescita_ciglia: 'in_basso' | 'dritte' | 'in_alto';
+}
+
+export interface ClientProfile {
+  allergie: boolean;
+  pelle_sensibile: boolean;
+  terapia_ormonale: boolean;
+  gravidanza: boolean;
+  lenti_contatto: boolean;
+  occhiali: boolean;
+  lacrimazione: boolean;
+  note?: string;
+}
+
+export interface EyeLengthMap {
+  [key: string]: number; // posizione -> lunghezza in mm
+}
+
+export interface Treatment {
+  id?: string;
+  data: string;
+  curvatura: string;
+  spessore: number;
+  lunghezze: string;
+  schema_occhio: EyeLengthMap;
+  colla: string;
+  tenuta: string;
+  colore_ciglia: string;
+  refill: 'si' | 'no';
+  tempo_applicazione: string;
+  bigodini: string[];
+  colore: string;
+  prezzo: number;
+  created_at?: string;
+}
+
+export interface ClientProfileData {
+  id?: string;
+  client_id: string;
+  data_nascita?: string;
+  caratteristiche_occhi: EyeCharacteristics;
+  profilo_cliente: ClientProfile;
+  trattamenti: Treatment[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ClientWithProfile extends Client {
+  profile?: ClientProfileData;
+}

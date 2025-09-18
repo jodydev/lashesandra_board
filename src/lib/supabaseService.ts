@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Client, Appointment, ClientWithAppointments, MonthlyStats } from '../types';
+import type { Client, Appointment, ClientWithAppointments, MonthlyStats, ClientProfileData } from '../types';
 import { useApp } from '../contexts/AppContext';
 
 const supabaseUrl = 'https://ufondjehytekkbrgrjgd.supabase.co';
@@ -7,12 +7,51 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Servizio semplificato per l'uso diretto
+export const supabaseService = {
+  async getClients(): Promise<Client[]> {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getClientProfile(clientId: string): Promise<ClientProfileData | null> {
+    const { data, error } = await supabase
+      .from('client_profiles')
+      .select('*')
+      .eq('client_id', clientId)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
+    return data;
+  },
+
+  async saveClientProfile(profileData: ClientProfileData): Promise<ClientProfileData> {
+    const { data, error } = await supabase
+      .from('client_profiles')
+      .upsert([profileData], { 
+        onConflict: 'client_id',
+        ignoreDuplicates: false 
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+};
+
 // Hook per ottenere i servizi con le tabelle corrette
 export function useSupabaseServices() {
   const { tablePrefix } = useApp();
   
   const clientsTable = `${tablePrefix}clients`;
   const appointmentsTable = `${tablePrefix}appointments`;
+  const clientProfilesTable = `${tablePrefix}client_profiles`;
 
   // Client operations
   const clientService = {
@@ -306,9 +345,47 @@ export function useSupabaseServices() {
     }
   };
 
+  // Client Profile operations
+  const clientProfileService = {
+    async getByClientId(clientId: string): Promise<ClientProfileData | null> {
+      const { data, error } = await supabase
+        .from(clientProfilesTable)
+        .select('*')
+        .eq('client_id', clientId)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
+      return data;
+    },
+
+    async save(profileData: ClientProfileData): Promise<ClientProfileData> {
+      const { data, error } = await supabase
+        .from(clientProfilesTable)
+        .upsert([profileData], { 
+          onConflict: 'client_id',
+          ignoreDuplicates: false 
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+
+    async delete(clientId: string): Promise<void> {
+      const { error } = await supabase
+        .from(clientProfilesTable)
+        .delete()
+        .eq('client_id', clientId);
+      
+      if (error) throw error;
+    }
+  };
+
   return {
     clientService,
     appointmentService,
-    statsService
+    statsService,
+    clientProfileService
   };
 }

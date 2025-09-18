@@ -13,6 +13,7 @@ import {
 import {
   Menu as MenuIcon,
   People as PeopleIcon,
+  Person as PersonIcon,
   CalendarMonth as CalendarIcon,
   BarChart as ChartIcon,
   Home as HomeIcon,
@@ -21,6 +22,8 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { useApp } from '../contexts/AppContext';
 import { useAppColors } from '../hooks/useAppColors';
 import NotificationBadge from './NotificationBadge';
@@ -35,6 +38,7 @@ interface LayoutProps {
 const menuItems = [
   { text: 'Dashboard', icon: <HomeIcon />, path: 'home', badge: null },
   { text: 'Clienti', icon: <PeopleIcon />, path: 'clients', badge: null },
+  { text: 'Schede Cliente', icon: <PersonIcon />, path: 'client-profiles', badge: null },
   { text: 'Appuntamenti', icon: <CalendarIcon />, path: 'appointments', badge: null },
   { text: 'Calendario', icon: <CalendarIcon />, path: 'calendar', badge: null },
   { text: 'Statistiche', icon: <ChartIcon />, path: 'overview', badge: null },
@@ -373,6 +377,24 @@ export default function Layout({ children }: LayoutProps) {
       
       {/* Floating Notification */}
       <FloatingNotification />
+      
+      {/* Toast Notifications */}
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        toastClassName={`custom-toast ${appType === 'isabellenails' ? 'toast-purple' : 'toast-pink'}`}
+        bodyClassName="custom-toast-body"
+        progressClassName="custom-toast-progress"
+        className="custom-toast-container"
+      />
     </Box>
   );
 }

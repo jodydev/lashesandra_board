@@ -14,6 +14,7 @@ export function useAppColors() {
     // Gradient colors
     gradientFrom: isIsabelle ? 'from-purple-500' : 'from-pink-500',
     gradientTo: isIsabelle ? 'to-purple-600' : 'to-pink-600',
+    gradientVia: isIsabelle ? 'via-purple-400' : 'via-pink-400',
     gradientFromLight: isIsabelle ? 'from-purple-400' : 'from-pink-400',
     gradientToLight: isIsabelle ? 'to-purple-500' : 'to-pink-500',
     

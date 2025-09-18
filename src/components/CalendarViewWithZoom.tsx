@@ -15,7 +15,6 @@ import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/it';
 import { useSupabaseServices } from '../lib/supabaseService';
 import { useAppColors } from '../hooks/useAppColors';
-import { useHammerGestures } from '../hooks/useHammerGestures';
 import type { Client, Appointment, CalendarView } from '../types';
 import AppointmentForm from './AppointmentForm';
 import MonthView from './views/MonthView';
@@ -41,11 +40,6 @@ export default function CalendarViewWithZoom() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Gesture detection with Hammer.js
-  const { containerRef } = useHammerGestures(
-    setCurrentView,
-    currentView
-  );
 
   // Load data from database
   useEffect(() => {
@@ -88,6 +82,11 @@ export default function CalendarViewWithZoom() {
   const handleNewAppointment = () => {
     setEditingAppointment(null);
     setShowAppointmentForm(true);
+  };
+
+  // View handlers
+  const handleViewChange = (view: CalendarView) => {
+    setCurrentView(view);
   };
 
   const handleEditAppointment = (appointment: Appointment) => {
@@ -196,18 +195,32 @@ export default function CalendarViewWithZoom() {
             </p>
           </div>
           
-          <div className="flex items-center gap-4">
-            {/* View Indicator */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className={`inline-flex items-center gap-2 px-4 py-2 ${colors.bgGradient} text-white rounded-xl shadow-lg ${colors.shadowPrimary}`}
-            >
-              <Calendar className="w-4 h-4" />
-              <span className="font-semibold text-sm">
-                {viewLabels[currentView]}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            {/* View Selector Buttons */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400 mr-2">
+                Vista:
               </span>
-            </motion.div>
+              <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+                {(['month', 'week', 'day'] as CalendarView[]).map((view) => (
+                  <motion.button
+                    key={view}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleViewChange(view)}
+                    className={`
+                      px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200
+                      ${currentView === view
+                        ? `${colors.bgGradient} text-white shadow-lg ${colors.shadowPrimary}`
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }
+                    `}
+                  >
+                    {viewLabels[view]}
+                  </motion.button>
+                ))}
+              </div>
+            </div>
 
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -236,19 +249,19 @@ export default function CalendarViewWithZoom() {
             {
               icon: Calendar,
               value: monthlyStats.totalAppointments,
-              label: 'Appuntamenti',
+              label: 'Appuntamenti in questo mese',
               color: 'pink',
             },
             {
               icon: Users,
               value: monthlyStats.uniqueClients,
-              label: 'Clienti',
+              label: 'Clienti in questo mese',
               color: 'gray',
             },
             {
               icon: Euro,
               value: formatCurrency(monthlyStats.totalRevenue),
-              label: 'Fatturato',
+              label: 'Fatturato Stimato in questo mese',
               color: 'pink',
             },
           ].map((stat, index) => (
@@ -286,9 +299,8 @@ export default function CalendarViewWithZoom() {
           ))}
         </motion.div>
 
-        {/* Calendar Container with Gesture Detection */}
+        {/* Calendar Container */}
         <motion.div
-          ref={containerRef}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
@@ -353,17 +365,6 @@ export default function CalendarViewWithZoom() {
           </AnimatePresence>
         </motion.div>
 
-        {/* Gesture Hint */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-          className="mt-6 text-center"
-        >
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            💡 Su mobile: pinch con due dita per cambiare vista. Su desktop: Cmd+scroll
-          </p>
-        </motion.div>
 
         {/* Appointment Details Modal */}
         <Dialog 
