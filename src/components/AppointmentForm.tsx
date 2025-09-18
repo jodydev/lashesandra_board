@@ -144,7 +144,7 @@ export default function AppointmentForm({
   const [activeStep, setActiveStep] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobile, setIsMobile] = useState(false);
-  const [viewType, setViewType] = useState<'list' | 'grid'>('list');
+  const [viewType, setViewType] = useState<'list' | 'grid'>('grid');
   useEffect(() => {
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -376,12 +376,7 @@ export default function AppointmentForm({
                               {/* Enhanced Avatar with Multiple Layers */}
                               <div className="relative">
                                 <motion.div 
-                                  className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center text-white font-bold text-base sm:text-lg shadow-lg transition-all duration-500 ${
-                                    formData.client_id === client.id
-                                      ? `${colors.bgGradient} ${colors.shadowPrimary} scale-110`
-                                      : `bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600 group-hover:${colors.bgGradient} group-hover:scale-105 shadow-gray-500/20`
-                                  }`}
-                                  whileHover={{ scale: formData.client_id === client.id ? 1.1 : 1.05 }}
+                                  className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center text-white font-bold text-base sm:text-lg shadow-lg transition-all duration-500 ${colors.bgPrimary}`}
                                 >
                                   {/* Client Initial */}
                                   <span className="relative z-10 drop-shadow-lg">
@@ -389,7 +384,6 @@ export default function AppointmentForm({
                                   </span>
                                   
                                   {/* Hover Overlay */}
-                                  <div className="absolute inset-0 rounded-xl sm:rounded-2xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                 </motion.div>
 
                                 {/* Status Indicator Ring */}
