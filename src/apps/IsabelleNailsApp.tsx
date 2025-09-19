@@ -8,6 +8,7 @@ import CalendarPage from '../pages/CalendarPage';
 import OverviewPage from '../pages/OverviewPage';
 import AppointmentsPage from '../pages/AppointmentsPage';
 import AppointmentsConfirmationPage from '../pages/AppointmentsConfirmationPage';
+import ProfilePage from '../pages/ProfilePage';
 
 export default function IsabelleNailsApp() {
   return (
@@ -22,6 +23,7 @@ export default function IsabelleNailsApp() {
             <Route path="confirmations" element={<AppointmentsConfirmationPage />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="overview" element={<OverviewPage />} />
+            <Route path="profile" element={<ProfilePage />} />
           </Routes>
         </Layout>
       </DynamicThemeProvider>

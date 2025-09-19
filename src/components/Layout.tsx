@@ -28,6 +28,7 @@ import { useApp } from '../contexts/AppContext';
 import { useAppColors } from '../hooks/useAppColors';
 import NotificationBadge from './NotificationBadge';
 import FloatingNotification from './FloatingNotification';
+import { Heart } from 'lucide-react';
 
 const drawerWidth = 280;
 
@@ -53,14 +54,13 @@ export default function Layout({ children }: LayoutProps) {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { appName, appType } = useApp();
   const colors = useAppColors();
-
+  const appPrefix = appType === 'isabellenails' ? '/isabellenails' : '/lashesandra';
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
   const handleNavigation = (path: string) => {
     // Navigate to absolute path within the current app
-    const appPrefix = appType === 'isabellenails' ? '/isabellenails' : '/lashesandra';
     navigate(`${appPrefix}/${path}`);
     if (isMobile) {
       setMobileOpen(false);
@@ -222,10 +222,11 @@ export default function Layout({ children }: LayoutProps) {
       {/* Enhanced User Profile Section */}
       <div className="p-4 border-t border-gray-100 dark:border-gray-800">
         <motion.div
+          onClick={() => navigate(`${appPrefix}/profile`)}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className={`bg-gradient-to-r from-gray-50 dark:from-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 ${
+          className={`cursor-pointer bg-gradient-to-r from-gray-50 dark:from-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 ${
             appType === 'isabellenails' 
               ? 'to-purple-50/50 dark:to-purple-900/20' 
               : 'to-pink-50/50 dark:to-pink-900/20'
@@ -234,7 +235,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className={`w-12 h-12 ${colors.bgGradient} rounded-2xl flex items-center justify-center shadow-lg ${colors.shadowPrimary}`}>
-                <span className="text-white font-bold text-lg">A</span>
+                <span className="text-white font-bold text-lg"><Heart /></span>
               </div>
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
             </div>

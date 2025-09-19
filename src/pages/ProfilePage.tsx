@@ -202,36 +202,16 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-white dark:from-gray-900 dark:to-gray-800">
-      {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700"
-      >
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => navigate(-1)}
-                className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Profilo Utente</h1>
-            </div>
-          </div>
-        </div>
-      </motion.header>
+    <div>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Success Message */}
         {successMessage && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 flex items-center space-x-3"
+            className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 flex items-center space-x-3"
           >
             <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
             <p className="text-sm text-green-700 dark:text-green-400">{successMessage}</p>
@@ -263,7 +243,7 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
                   <Mail className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</p>
@@ -271,7 +251,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
                   <Calendar className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Account creato</p>
@@ -279,7 +259,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
                   <Shield className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email verificata</p>
@@ -289,7 +269,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
                   <Calendar className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Ultimo accesso</p>
@@ -312,7 +292,7 @@ export default function ProfilePage() {
                 </div>
                 <button
                   onClick={() => setShowPasswordForm(!showPasswordForm)}
-                  className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white font-medium rounded-lg transition-colors duration-200"
+                  className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white font-medium rounded-xl transition-colors duration-200"
                 >
                   {showPasswordForm ? 'Annulla' : 'Modifica Password'}
                 </button>
@@ -328,7 +308,7 @@ export default function ProfilePage() {
                 >
                   {/* General Error */}
                   {passwordErrors.general && (
-                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start space-x-3">
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-start space-x-3">
                       <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
                       <p className="text-sm text-red-700 dark:text-red-400">{passwordErrors.general}</p>
                     </div>
@@ -345,7 +325,7 @@ export default function ProfilePage() {
                         name="currentPassword"
                         value={passwordForm.currentPassword}
                         onChange={handleInputChange}
-                        className={`block w-full px-3 py-3 pr-10 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
+                        className={`block w-full px-3 py-3 pr-10 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
                           passwordErrors.currentPassword
                             ? 'border-red-300 dark:border-red-600 focus:ring-red-500'
                             : 'border-gray-300 dark:border-gray-600'
@@ -378,7 +358,7 @@ export default function ProfilePage() {
                         name="newPassword"
                         value={passwordForm.newPassword}
                         onChange={handleInputChange}
-                        className={`block w-full px-3 py-3 pr-10 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
+                        className={`block w-full px-3 py-3 pr-10 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
                           passwordErrors.newPassword
                             ? 'border-red-300 dark:border-red-600 focus:ring-red-500'
                             : 'border-gray-300 dark:border-gray-600'
@@ -411,7 +391,7 @@ export default function ProfilePage() {
                         name="confirmPassword"
                         value={passwordForm.confirmPassword}
                         onChange={handleInputChange}
-                        className={`block w-full px-3 py-3 pr-10 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
+                        className={`block w-full px-3 py-3 pr-10 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
                           passwordErrors.confirmPassword
                             ? 'border-red-300 dark:border-red-600 focus:ring-red-500'
                             : 'border-gray-300 dark:border-gray-600'
@@ -440,7 +420,7 @@ export default function ProfilePage() {
                       disabled={isChangingPassword}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
+                      className="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
                     >
                       {isChangingPassword ? (
                         <>
@@ -472,20 +452,12 @@ export default function ProfilePage() {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Azioni Rapide
               </h3>
-              <div className="space-y-3">
-                <button
-                  onClick={() => navigate(-1)}
-                  className="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
-                >
-                  <X className="w-5 h-5" />
-                  <span>Torna indietro</span>
-                </button>
-                
+              <div className="space-y-3">                
                 <motion.button
                   onClick={handleLogout}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors duration-200"
+                  className="w-full bg-red-50 flex items-center space-x-3 px-4 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors duration-200"
                 >
                   <LogOut className="w-5 h-5" />
                   <span>Logout</span>

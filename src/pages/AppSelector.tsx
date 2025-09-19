@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Heart, Star, LogOut } from 'lucide-react';
+import { Sparkles, Heart, Star, LogOut, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function AppSelector() {
@@ -41,8 +41,17 @@ export default function AppSelector() {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          {/* Logout Button */}
-          <div className="flex justify-end mb-4">
+          {/* User Actions */}
+          <div className="flex justify-end mb-4 space-x-2">
+            <motion.button
+              onClick={() => navigate('/profile')}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center space-x-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+            >
+              <User className="w-4 h-4" />
+              <span className="text-sm font-medium">Profilo</span>
+            </motion.button>
             <motion.button
               onClick={handleLogout}
               whileHover={{ scale: 1.05 }}
