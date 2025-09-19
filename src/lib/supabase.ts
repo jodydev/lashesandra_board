@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Client, Appointment, ClientWithAppointments, MonthlyStats } from '../types';
 
-const supabaseUrl = 'https://ufondjehytekkbrgrjgd.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmb25kamVoeXRla2ticmdyamdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwODkxOTAsImV4cCI6MjA3MzY2NTE5MH0.6hLsH3Z1rur1crqt4DKQ-3s4JMxD7kuFceroMVlYkd8';
+// Use environment variables for better security
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ufondjehytekkbrgrjgd.supabase.co';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmb25kamVoeXRla2ticmdyamdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwODkxOTAsImV4cCI6MjA3MzY2NTE5MH0.6hLsH3Z1rur1crqt4DKQ-3s4JMxD7kuFceroMVlYkd8';
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 

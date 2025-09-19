@@ -3,9 +3,13 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import AppSelector from './pages/AppSelector';
+import LoginPage from './pages/LoginPage';
+import ProfilePage from './pages/ProfilePage';
 import LashesAndraApp from './apps/LashesAndraApp';
 import IsabelleNailsApp from './apps/IsabelleNailsApp';
 import { AppProvider } from './contexts/AppContext';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 
 
 // Modern Design System with Pink/Black/White palette inspired by Material Design 3
@@ -174,13 +178,34 @@ export default function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<AppSelector />} />
-          <Route path="/lashesandra/*" element={<LashesAndraApp />} />
-          <Route path="/isabellenails/*" element={<IsabelleNailsApp />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <AppSelector />
+              </ProtectedRoute>
+            } />
+            <Route path="/lashesandra/*" element={
+              <ProtectedRoute>
+                <LashesAndraApp />
+              </ProtectedRoute>
+            } />
+            <Route path="/isabellenails/*" element={
+              <ProtectedRoute>
+                <IsabelleNailsApp />
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

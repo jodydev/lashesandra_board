@@ -1,9 +1,16 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Heart, Star } from 'lucide-react';
+import { Sparkles, Heart, Star, LogOut } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function AppSelector() {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   const apps = [
     {
@@ -34,6 +41,19 @@ export default function AppSelector() {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
+          {/* Logout Button */}
+          <div className="flex justify-end mb-4">
+            <motion.button
+              onClick={handleLogout}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center space-x-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="text-sm font-medium">Logout</span>
+            </motion.button>
+          </div>
+
           <div className="flex items-center justify-center mb-6">
             <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/25">
               <Sparkles className="w-8 h-8 text-white" />
@@ -45,6 +65,11 @@ export default function AppSelector() {
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Scegli l'applicazione che desideri utilizzare per gestire i tuoi clienti e appuntamenti
           </p>
+          {user && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              Accesso effettuato come: {user.email}
+            </p>
+          )}
         </motion.div>
 
         {/* App Cards */}
