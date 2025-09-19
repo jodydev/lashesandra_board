@@ -204,13 +204,13 @@ export default function HomePage() {
   // Loading state
   if (loading) {
     return (
-      <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-white dark:from-gray-900 dark:via-gray-900 flex items-center justify-center ${
+      <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-white dark:from-gray-900 dark:via-gray-900 flex items-center justify-center px-4 ${
         appType === 'isabellenails' 
           ? 'to-purple-50/30 dark:to-purple-950/20' 
           : 'to-pink-50/30 dark:to-pink-950/20'
       }`}>
         <div className="text-center">
-          <div className={`inline-flex items-center gap-2 px-4 py-2 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-full ${colors.textPrimary} dark:${colors.textPrimaryDark} text-sm font-medium mb-6`}>
+          <div className={`inline-flex items-center gap-2 px-4 py-2 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl ${colors.textPrimary} dark:${colors.textPrimaryDark} text-sm font-medium mb-6`}>
             <Sparkles className="w-4 h-4 animate-pulse" />
             Caricamento dati...
           </div>
@@ -223,9 +223,9 @@ export default function HomePage() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-pink-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-pink-950/20 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-4">
-          <div className="p-4 bg-red-100 dark:bg-red-950/30 rounded-2xl text-red-600 dark:text-red-400 mb-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-pink-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-pink-950/20 flex items-center justify-center px-4">
+        <div className="text-center max-w-md mx-auto">
+          <div className="p-4 bg-red-100 dark:bg-red-950/30 rounded-xl text-red-600 dark:text-red-400 mb-4">
             <X className="w-8 h-8 mx-auto mb-2" />
             <h3 className="font-semibold">Errore di caricamento</h3>
             <p className="text-sm">{error}</p>
@@ -243,48 +243,43 @@ export default function HomePage() {
 
   return (
     <section>
-      <div
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12"
-      >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
         {/* Hero Section */}
-        <div className="text-center mb-16">
-          <div className={`inline-flex items-center gap-2 px-4 py-2 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-full ${colors.textPrimary} dark:${colors.textPrimaryDark} text-sm font-medium mb-6`}>
-            <Sparkles className="w-4 h-4" />
-           {appType === 'isabellenails' ? 'Benvenuta nel tuo spazio di lavoro migliore amica del mio amore' : 'Benvenuto nel tuo spazio di lavoro amore mio'}
+        <div className="text-center mb-12 sm:mb-16">
+          <div className={`inline-flex items-center gap-2 px-3 sm:px-4 py-2 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl ${colors.textPrimary} dark:${colors.textPrimaryDark} text-xs sm:text-sm font-medium mb-4 sm:mb-6`}>
+            <Sparkles className="w-3 sm:w-4 h-3 sm:h-4" />
+            {appType === 'isabellenails' ? 'Benvenuta nel tuo spazio di lavoro migliore amica del mio amore' : 'Benvenuto nel tuo spazio di lavoro amore mio'}
           </div>
           
-          <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gray-900 via-${colors.primary} to-gray-900 dark:from-white dark:via-${colors.primaryLight} dark:to-white bg-clip-text text-transparent mb-6 leading-tight`}>
+          <h1 className={`text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold bg-gradient-to-r from-gray-900 via-${colors.primary} to-gray-900 dark:from-white dark:via-${colors.primaryLight} dark:to-white bg-clip-text text-transparent mb-4 sm:mb-6 leading-tight px-2`}>
             {appType === 'isabellenails' ? 'Isabelle Nails Board' : 'LashesAndra Board'}
           </h1>
           
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed mb-8">
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed mb-6 sm:mb-8 px-4">
             La piattaforma completa per gestire il tuo business estetico con eleganza e professionalità.
             Monitora clienti, appuntamenti e performance in un'unica soluzione moderna.
           </p>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-12">
+          {/* Stats Grid - Mobile responsive */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-8 sm:mb-12">
             {statsData.map((stat) => (
-              <div
-                key={stat.label}
-                className="group"
-              >
+              <div key={stat.label} className="group">
                 <div className={`
-                  relative p-6 rounded-2xl bg-white dark:bg-gray-800 
+                  relative p-3 sm:p-4 lg:p-6 rounded-xl bg-white dark:bg-gray-800 
                   border border-gray-200 dark:border-gray-700
                   shadow-lg hover:shadow-lg transition-all duration-300
                   hover:border-${stat.color}-200 dark:hover:border-${stat.color}-800
                 `}>
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-2 sm:mb-3">
                     <div className={`
-                      p-2 rounded-xl bg-${stat.color}-100 dark:bg-${stat.color}-950/30
+                      p-1.5 sm:p-2 rounded-xl bg-${stat.color}-100 dark:bg-${stat.color}-950/30
                       text-${stat.color}-600 dark:text-${stat.color}-400
                       group-hover:scale-110 transition-transform duration-300
                     `}>
-                      <stat.icon className="w-5 h-5" />
+                      <stat.icon className="w-3 sm:w-4 lg:w-5 h-3 sm:h-4 lg:h-5" />
                     </div>
                     <div className={`
-                      text-xs font-semibold px-2 py-1 rounded-full
+                      text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl
                       bg-${stat.color}-100 dark:bg-${stat.color}-950/30
                       text-${stat.color}-600 dark:text-${stat.color}-400
                     `}>
@@ -292,11 +287,11 @@ export default function HomePage() {
                     </div>
                   </div>
                   
-                  <div className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                  <div className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900 dark:text-white mb-1">
                     {stat.value}
                   </div>
                   
-                  <div className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                  <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white mb-1">
                     {stat.label}
                   </div>
                   
@@ -310,10 +305,10 @@ export default function HomePage() {
         </div>
 
         {/* Notifications Widget */}
-        <div className="mb-12">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+        <div className="mb-8 sm:mb-12">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                 Notifiche Appuntamenti
               </h3>
               <button
@@ -321,7 +316,7 @@ export default function HomePage() {
                   const appPrefix = appType === 'isabellenails' ? '/isabellenails' : '/lashesandra';
                   navigate(`${appPrefix}/confirmations`);
                 }}
-                className={`px-4 py-2 ${colors.bgGradient} text-white rounded-xl font-medium hover:${colors.gradientFromLight} hover:${colors.gradientToLight} transition-colors`}
+                className={`px-4 py-2 ${colors.bgGradient} text-white rounded-xl font-medium hover:${colors.gradientFromLight} hover:${colors.gradientToLight} transition-colors text-sm sm:text-base`}
               >
                 Vai alle conferme
               </button>
@@ -331,49 +326,47 @@ export default function HomePage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="mb-16">
-          <div className="flex items-center gap-3 mb-8">
+        <div className="mb-12 sm:mb-16">
+          <div className="flex items-center gap-3 mb-6 sm:mb-8">
             <div className={`p-2 rounded-xl ${colors.bgPrimary} dark:${colors.bgPrimaryDark}`}>
-              <Zap className={`w-5 h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
+              <Zap className={`w-4 sm:w-5 h-4 sm:h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
             </div>
-            <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
               Azioni Rapide
             </h2>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {quickActions.map((action) => (
               <div
                 key={action.title}
                 className="group cursor-pointer hover:scale-105 hover:-translate-y-1 transition-all duration-300"
                 onClick={() => navigate(action.path)}
               >
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-lg transition-all duration-500">
+                <div className="relative overflow-hidden rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-lg transition-all duration-500">
                   {/* Gradient Header */}
                   <div className={`
-                    relative p-6 bg-gradient-to-br ${action.gradient} text-white
+                    relative p-4 sm:p-6 bg-gradient-to-br ${action.gradient} text-white
                     group-hover:scale-105 transition-transform duration-500 origin-top
                   `}>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm">
-                        <action.icon className="w-6 h-6" />
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                      <div className="p-2 sm:p-3 rounded-xl bg-white/20 backdrop-blur-sm">
+                        <action.icon className="w-5 sm:w-6 h-5 sm:h-6" />
                       </div>
                       {action.badge && (
-                        <div className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-semibold">
+                        <div className="px-2 sm:px-3 py-1 rounded-xl bg-white/20 backdrop-blur-sm text-xs font-semibold">
                           {action.badge}
                         </div>
                       )}
                     </div>
                     
-                    <h3 className="text-xl font-bold mb-2">{action.title}</h3>
+                    <h3 className="text-lg sm:text-xl font-bold mb-2">{action.title}</h3>
                     <p className="text-white/90 text-sm leading-relaxed">{action.description}</p>
                     
                     {/* Decorative Pattern */}
-                    <div className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-white/10 blur-xl" />
-                    <div className="absolute -bottom-2 -left-2 w-16 h-16 rounded-full bg-white/5" />
+                    <div className="absolute -top-4 -right-4 w-16 sm:w-24 h-16 sm:h-24 rounded-full bg-white/10 blur-xl" />
+                    <div className="absolute -bottom-2 -left-2 w-12 sm:w-16 h-12 sm:h-16 rounded-full bg-white/5" />
                   </div>
-                  
-     
                 </div>
               </div>
             ))}
@@ -381,25 +374,25 @@ export default function HomePage() {
         </div>
 
         {/* Features Section */}
-        <div className="mb-20">
-          <div className="text-center mb-16">
-            <div className="flex items-center justify-center gap-4 mb-6">
+        <div className="mb-16 sm:mb-20">
+          <div className="text-center mb-12 sm:mb-16">
+            <div className="flex items-center justify-center gap-4 mb-4 sm:mb-6">
               <div className="relative">
-                <div className={`absolute inset-0 ${colors.primary}/20 rounded-2xl blur-xl`} />
-                <div className={`relative p-3 rounded-2xl ${colors.bgGradient} shadow-lg`}>
-                  <Target className="w-6 h-6 text-white" />
+                <div className={`absolute inset-0 ${colors.primary}/20 rounded-xl blur-xl`} />
+                <div className={`relative p-2 sm:p-3 rounded-xl ${colors.bgGradient} shadow-lg`}>
+                  <Target className="w-5 sm:w-6 h-5 sm:h-6 text-white" />
                 </div>
               </div>
-              <h2 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
                 Funzionalità Principali
               </h2>
             </div>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed px-4">
               Scopri tutti gli strumenti avanzati che trasformeranno il modo di gestire il tuo business estetico
             </p>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-10">
             {features.map((feature, index) => (
               <div
                 key={feature.title}
@@ -407,23 +400,23 @@ export default function HomePage() {
               >
                 <div className="relative h-full">
                   {/* Background Glow Effect */}
-                  <div className={`absolute -inset-1 ${colors.bgGradientLight} rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-700`} />
+                  <div className={`absolute -inset-1 ${colors.bgGradientLight} rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-700`} />
                   
                   {/* Main Card */}
-                  <div className={`relative h-full p-8 lg:p-10 rounded-3xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-lg hover:shadow-lg ${colors.shadowPrimaryLight} transition-all duration-700 overflow-hidden`}>
+                  <div className={`relative h-full p-6 sm:p-8 lg:p-10 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-lg hover:shadow-lg ${colors.shadowPrimaryLight} transition-all duration-700 overflow-hidden`}>
                     
                     {/* Top Accent Line */}
                     <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-${feature.color}-400 to-${feature.color}-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`} />
                     
-                    <div className="flex items-start gap-6">
+                    <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
                       {/* Icon Container */}
                       <div className="relative flex-shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                         {/* Icon Background Glow */}
-                        <div className={`absolute inset-0 bg-${feature.color}-500/20 rounded-2xl blur-lg scale-110 opacity-0 group-hover:opacity-100 transition-all duration-500`} />
+                        <div className={`absolute inset-0 bg-${feature.color}-500/20 rounded-xl blur-lg scale-110 opacity-0 group-hover:opacity-100 transition-all duration-500`} />
                         
                         {/* Icon Container */}
                         <div className={`
-                          relative p-5 rounded-2xl
+                          relative p-3 sm:p-4 lg:p-5 rounded-xl
                           bg-gradient-to-br from-${feature.color}-50 to-${feature.color}-100
                           dark:from-${feature.color}-950/30 dark:to-${feature.color}-900/20
                           border border-${feature.color}-200/50 dark:border-${feature.color}-800/30
@@ -431,14 +424,14 @@ export default function HomePage() {
                           group-hover:shadow-lg group-hover:shadow-${feature.color}-500/20
                           transition-all duration-500
                         `}>
-                          <feature.icon className={`w-8 h-8 text-${feature.color}-600 dark:text-${feature.color}-400`} />
+                          <feature.icon className={`w-6 sm:w-7 lg:w-8 h-6 sm:h-7 lg:h-8 text-${feature.color}-600 dark:text-${feature.color}-400`} />
                         </div>
                       </div>
                       
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <h3 className={`
-                            text-xl lg:text-2xl font-bold mb-4
+                            text-lg sm:text-xl lg:text-2xl font-bold mb-3 sm:mb-4
                             text-${feature.color}-600 dark:text-${feature.color}-400
                             group-hover:text-${feature.color}-700 dark:group-hover:text-${feature.color}-300
                             transition-colors duration-300
@@ -447,10 +440,9 @@ export default function HomePage() {
                           {feature.title}
                         </h3>
                         
-                        <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-base lg:text-lg group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-300">
+                        <p className="text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-300 leading-relaxed group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-300">
                           {feature.description}
                         </p>
-
                       </div>
                     </div>
                     
@@ -460,7 +452,7 @@ export default function HomePage() {
                     
                     {/* Hover Gradient Overlay */}
                     <div className={`
-                      absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100
+                      absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100
                       bg-gradient-to-br from-${feature.color}-50/30 via-transparent to-${feature.color}-100/20
                       dark:from-${feature.color}-950/20 dark:via-transparent dark:to-${feature.color}-900/10
                       transition-opacity duration-700 pointer-events-none
@@ -470,49 +462,47 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-
         </div>
 
         {/* Call to Action */}
         {appType !== 'isabellenails' && (
-        <div>
-          <div className={`relative overflow-hidden rounded-3xl ${colors.bgGradient} p-12 text-center text-white`}>
-            <div className="relative z-10">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium mb-6">
-                Realizzato dal tuo Amore <Heart
-                className="w-4 h-4"
-              />
+          <div>
+            <div className={`relative overflow-hidden rounded-xl ${colors.bgGradient} p-6 sm:p-8 lg:p-12 text-center text-white`}>
+              <div className="relative z-10">
+                <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl text-xs sm:text-sm font-medium mb-4 sm:mb-6">
+                  Realizzato dal tuo Amore <Heart className="w-3 sm:w-4 h-3 sm:h-4" />
+                </div>
+                
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 px-2">
+                  Ricordati sempre quanto il tuo fidanzato ti ama.
+                </h2>
+                
+                <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed px-4">
+                  Lui ci sarà sempre per te, dovrai solamente dargli la possibilità di farlo.
+                </p>
+                
+                <button
+                  onClick={() => setShowLoveDialog(true)}
+                  className={`inline-flex items-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-white ${colors.textPrimary} rounded-xl font-semibold text-base sm:text-lg shadow-lg hover:shadow-lg transition-all duration-300 hover:scale-105`}
+                >
+                  <span className="hidden sm:inline">Clicca qui per ricordarti quanto il tuo fidanzato ti ama</span>
+                  <span className="sm:hidden">Messaggio d'amore</span>
+                  <Heart className="w-4 sm:w-5 h-4 sm:h-5" />
+                </button>
               </div>
               
-              <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-                Ricordati sempre quanto il tuo fidanzato ti ama.
-              </h2>
-              
-              <p className="text-xl text-white/80 max-w-2xl mx-auto mb-8 leading-relaxed">
-                Lui ci sarà sempre per te, dovrai solamente dargli la possibilità di farlo.
-              </p>
-              
-              <button
-                onClick={() => setShowLoveDialog(true)}
-                className={`inline-flex items-center gap-3 px-8 py-4 bg-white ${colors.textPrimary} rounded-2xl font-semibold text-lg shadow-lg hover:shadow-lg transition-all duration-300 hover:scale-105`}
-              >
-                Clicca qui per ricordarti quanto il tuo fidanzato ti ama
-                <Heart className="w-5 h-5" />
-              </button>
+              {/* Background Decorations */}
+              <div className="absolute -top-16 sm:-top-24 -right-16 sm:-right-24 w-32 sm:w-48 h-32 sm:h-48 rounded-full bg-white/10 blur-3xl" />
+              <div className="absolute -bottom-12 sm:-bottom-16 -left-12 sm:-left-16 w-24 sm:w-32 h-24 sm:h-32 rounded-full bg-white/5 blur-2xl" />
+              <div className="absolute top-1/2 left-1/4 w-2 h-2 rounded-full bg-white/30" />
+              <div className="absolute top-1/3 right-1/3 w-1 h-1 rounded-full bg-white/40" />
+              <div className="absolute bottom-1/3 left-1/2 w-1.5 h-1.5 rounded-full bg-white/20" />
             </div>
-            
-            {/* Background Decorations */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
-            <div className="absolute -bottom-16 -left-16 w-32 h-32 rounded-full bg-white/5 blur-2xl" />
-            <div className="absolute top-1/2 left-1/4 w-2 h-2 rounded-full bg-white/30" />
-            <div className="absolute top-1/3 right-1/3 w-1 h-1 rounded-full bg-white/40" />
-            <div className="absolute bottom-1/3 left-1/2 w-1.5 h-1.5 rounded-full bg-white/20" />
           </div>
-        </div>
         )}
       </div>
 
-      {/* Love Dialog */}
+      {/* Love Dialog - Mobile responsive */}
       <div
         className={`fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[9999] transition-opacity duration-300 ${
           showLoveDialog ? 'opacity-100 block' : 'opacity-0 hidden'
@@ -520,83 +510,83 @@ export default function HomePage() {
         onClick={() => setShowLoveDialog(false)}
       >
         <div
-          className={`bg-white dark:bg-gray-900 rounded-3xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden border border-gray-100 dark:border-gray-800 transition-all duration-400 ${
+          className={`bg-white dark:bg-gray-900 rounded-xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden border border-gray-100 dark:border-gray-800 transition-all duration-400 ${
             showLoveDialog ? 'scale-100 opacity-100' : 'scale-90 opacity-0'
           }`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className={`relative ${colors.bgGradient} text-white p-8`}>
+          <div className={`relative ${colors.bgGradient} text-white p-4 sm:p-6 lg:p-8`}>
             <div className="absolute inset-0 bg-black/10" />
             <div className="relative flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
-                  <Heart className="w-6 h-6 text-white" />
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-10 sm:w-12 h-10 sm:h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Heart className="w-5 sm:w-6 h-5 sm:h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold">Per la mia principessa</h2>
-                  <p className="text-white/80">Un messaggio speciale per te</p>
+                  <h2 className="text-lg sm:text-2xl font-bold">Per la mia principessa</h2>
+                  <p className="text-white/80 text-sm sm:text-base">Un messaggio speciale per te</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowLoveDialog(false)}
-                className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-all duration-200"
+                className="w-8 sm:w-10 h-8 sm:h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-all duration-200"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 sm:w-5 h-4 sm:h-5" />
               </button>
             </div>
           </div>
 
           {/* Content */}
-          <div className="p-8 overflow-y-auto max-h-[60vh]">
-            <div className="text-center space-y-6">
+          <div className="p-4 sm:p-6 lg:p-8 overflow-y-auto max-h-[60vh]">
+            <div className="text-center space-y-4 sm:space-y-6">
               {/* Photo placeholder */}
-              <div className="relative mx-auto w-60 h-80 rounded-3xl overflow-hidden shadow-lg shadow-pink-500/20">
+              <div className="relative mx-auto w-48 sm:w-60 h-64 sm:h-80 rounded-xl overflow-hidden shadow-lg shadow-pink-500/20">
                 <img src="/IMG_3560.jpg" alt="Love" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
               </div>
 
               {/* Love message */}
-              <div className="space-y-4">
-                <div className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 rounded-2xl p-6 border border-pink-200 dark:border-pink-800/30">
-                  <h3 className="text-2xl font-bold text-pink-700 dark:text-pink-300 mb-4 flex items-center justify-center gap-2">
-                    <Heart className="w-6 h-6" />
+              <div className="space-y-3 sm:space-y-4">
+                <div className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 rounded-xl p-4 sm:p-6 border border-pink-200 dark:border-pink-800/30">
+                  <h3 className="text-lg sm:text-2xl font-bold text-pink-700 dark:text-pink-300 mb-3 sm:mb-4 flex items-center justify-center gap-2">
+                    <Heart className="w-5 sm:w-6 h-5 sm:h-6" />
                     Ti amo più di ogni cosa
-                    <Heart className="w-6 h-6" />
+                    <Heart className="w-5 sm:w-6 h-5 sm:h-6" />
                   </h3>
                   
-                  <div className="space-y-3 text-gray-700 dark:text-gray-300 leading-relaxed">
-                    <p className="text-lg">
+                  <div className="space-y-2 sm:space-y-3 text-gray-700 dark:text-gray-300 leading-relaxed">
+                    <p className="text-base sm:text-lg">
                       Mia amata, ogni giorno che passa mi rendo conto di quanto sei speciale per me.
                     </p>
-                    <p>
+                    <p className="text-sm sm:text-base">
                       Il tuo sorriso illumina le mie giornate più buie, la tua voce è la melodia più dolce che conosco, 
                       e il tuo amore è la forza che mi fa sentire invincibile.
                     </p>
-                    <p>
+                    <p className="text-sm sm:text-base">
                       Sei la mia compagna di vita, la mia migliore amica, la mia anima gemella. 
                       Con te ho trovato la felicità che non credevo possibile.
                     </p>
-                    <p className="font-semibold text-pink-600 dark:text-pink-400">
+                    <p className="font-semibold text-pink-600 dark:text-pink-400 text-sm sm:text-base">
                       Grazie per essere tu, grazie per amarmi, grazie per rendere la mia vita così bella.
                     </p>
                   </div>
                 </div>
 
                 {/* Special features */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 text-center">
-                    <Smile className={`w-8 h-8 ${colors.textPrimary} mx-auto mb-2`} />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-3 sm:p-4 border border-gray-100 dark:border-gray-700 text-center">
+                    <Smile className={`w-6 sm:w-8 h-6 sm:h-8 ${colors.textPrimary} mx-auto mb-2`} />
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Il tuo sorriso</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">È la mia gioia quotidiana</p>
                   </div>
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 text-center">
-                    <Heart className={`w-8 h-8 ${colors.textPrimary} mx-auto mb-2`} />
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-3 sm:p-4 border border-gray-100 dark:border-gray-700 text-center">
+                    <Heart className={`w-6 sm:w-8 h-6 sm:h-8 ${colors.textPrimary} mx-auto mb-2`} />
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Il tuo cuore</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">È la mia casa</p>
                   </div>
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 text-center">
-                    <Sparkles className={`w-8 h-8 ${colors.textPrimary} mx-auto mb-2`} />
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-3 sm:p-4 border border-gray-100 dark:border-gray-700 text-center">
+                    <Sparkles className={`w-6 sm:w-8 h-6 sm:h-8 ${colors.textPrimary} mx-auto mb-2`} />
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300">La tua anima</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">È la mia stella polare</p>
                   </div>
@@ -604,10 +594,10 @@ export default function HomePage() {
 
                 {/* Closing message */}
                 <div className="text-center">
-                  <p className={`text-xl font-bold ${colors.textPrimary} dark:${colors.textPrimaryDark} mb-2`}>
+                  <p className={`text-lg sm:text-xl font-bold ${colors.textPrimary} dark:${colors.textPrimaryDark} mb-2`}>
                     Per sempre tuo,
                   </p>
-                  <p className="text-lg text-gray-600 dark:text-gray-400">
+                  <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
                     Il tuo fidanzato che ti ama infinitamente
                   </p>
                 </div>
@@ -616,10 +606,10 @@ export default function HomePage() {
           </div>
 
           {/* Footer */}
-          <div className="p-6 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
+          <div className="p-4 sm:p-6 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
             <button
               onClick={() => setShowLoveDialog(false)}
-              className={`w-full px-6 py-3 ${colors.bgGradient} text-white rounded-2xl font-semibold transition-all duration-200 hover:${colors.gradientFromLight} hover:${colors.gradientToLight} shadow-lg ${colors.shadowPrimary} hover:scale-105`}
+              className={`w-full px-6 py-3 ${colors.bgGradient} text-white rounded-xl font-semibold transition-all duration-200 hover:${colors.gradientFromLight} hover:${colors.gradientToLight} shadow-lg ${colors.shadowPrimary} hover:scale-105`}
             >
               Chiudi con amore
             </button>

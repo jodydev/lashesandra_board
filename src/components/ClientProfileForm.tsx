@@ -299,7 +299,7 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
   ] as const;
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div ref={containerRef} >
       {/* Floating Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div 
@@ -321,13 +321,6 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
-              <button
-                onClick={onCancel}
-                className="p-2 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 shadow-sm"
-                aria-label="Torna indietro"
-              >
-                <FiArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              </button>
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
             Scheda Cliente
