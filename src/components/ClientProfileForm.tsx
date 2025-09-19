@@ -1,9 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 
 import type { Client, ClientProfileData, EyeCharacteristics, ClientProfile, Treatment } from '../types';
 import TreatmentForm from './TreatmentForm';
-import { FiUser, FiEye, FiHeart, FiCalendar, FiPlus, FiSave, FiArrowLeft } from 'react-icons/fi';
+import { 
+  FiUser, 
+  FiEye, 
+  FiHeart, 
+  FiCalendar, 
+  FiPlus, 
+  FiSave, 
+  FiArrowLeft,
+  FiCheck,
+  FiAlertCircle,
+  FiInfo
+} from 'react-icons/fi';
 import { useAppColors } from '../hooks/useAppColors';
 import { useToast } from '../hooks/useToast';
 
@@ -49,8 +60,37 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
   });
 
   const [activeSection, setActiveSection] = useState<'personal' | 'eyes' | 'profile' | 'treatments'>('personal');
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [progress, setProgress] = useState(0);
+  
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"]
+  });
+  
+  const y = useTransform(scrollYProgress, [0, 1], [50, -50]);
+  
   const colors = useAppColors();
   const { showSuccess, showError } = useToast();
+
+  // Helper function per colori dinamici delle checkbox
+  const getCheckboxColors = (isActive: boolean) => {
+    if (isActive) {
+      return {
+        container: `${colors.bgPrimary} dark:${colors.bgPrimaryDark} ${colors.borderPrimary} dark:${colors.borderPrimary} accent-${colors.bgPrimary} dark:accent-${colors.bgPrimaryDark}`,
+        text: `${colors.textPrimary} dark:${colors.textPrimaryDark}`,
+        textSecondary: `${colors.textPrimary} dark:${colors.textPrimaryDark}`,
+        icon: colors.textPrimary
+      };
+    }
+    return {
+      container: 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600',
+      text: 'text-gray-900 dark:text-gray-100',
+      textSecondary: 'text-gray-600 dark:text-gray-400',
+      icon: colors.textPrimary
+    };
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -58,11 +98,63 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
     }
   }, [initialData]);
 
+  // Calcola il progresso di completamento del form
+  useEffect(() => {
+    let completedFields = 0;
+    let totalFields = 0;
+
+    // Informazioni personali
+    totalFields += 1;
+    if (formData.data_nascita) completedFields += 1;
+
+    // Caratteristiche occhi
+    const eyeFields = Object.keys(formData.caratteristiche_occhi).length;
+    totalFields += eyeFields;
+    Object.values(formData.caratteristiche_occhi).forEach(value => {
+      if (value && value !== '') completedFields += 1;
+    });
+
+    // Profilo cliente (solo note contano come campo da compilare)
+    totalFields += 1;
+    if (formData.profilo_cliente.note && formData.profilo_cliente.note.length > 0) completedFields += 1;
+
+    setProgress(Math.round((completedFields / totalFields) * 100));
+  }, [formData]);
+
+  // Validazione dei campi
+  const validateField = (field: string, value: any): string => {
+    switch (field) {
+      case 'data_nascita':
+        if (value) {
+          const birthDate = new Date(value);
+          const today = new Date();
+          if (birthDate > today) return 'La data di nascita non può essere futura';
+          if (today.getFullYear() - birthDate.getFullYear() > 120) return 'Data di nascita non valida';
+        }
+        return '';
+      case 'colore_occhi':
+        if (value && value.length < 2) return 'Inserisci almeno 2 caratteri';
+        return '';
+      case 'note':
+        if (value && value.length > 500) return 'Le note non possono superare i 500 caratteri';
+        return '';
+      default:
+        return '';
+    }
+  };
+
   const handlePersonalInfoChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
+    // Validazione in tempo reale
+    const error = validateField(field, value);
+    setValidationErrors(prev => ({
+      ...prev,
+      [field]: error
+    }));
+    
     // Notifica per campi importanti
-    if (field === 'data_nascita' && value) {
+    if (field === 'data_nascita' && value && !error) {
       showSuccess('Data di nascita aggiornata');
     }
   };
@@ -76,8 +168,15 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
       }
     }));
     
+    // Validazione in tempo reale
+    const error = validateField(field, value);
+    setValidationErrors(prev => ({
+      ...prev,
+      [field]: error
+    }));
+    
     // Notifica per campi importanti delle caratteristiche occhi
-    if (field === 'colore_occhi' && value) {
+    if (field === 'colore_occhi' && value && !error) {
       showSuccess('Colore occhi aggiornato');
     }
   };
@@ -91,8 +190,15 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
       }
     }));
     
+    // Validazione in tempo reale
+    const error = validateField(field, value);
+    setValidationErrors(prev => ({
+      ...prev,
+      [field]: error
+    }));
+    
     // Notifica per campi importanti del profilo cliente
-    if (field === 'note' && value && value.length > 10) {
+    if (field === 'note' && value && value.length > 10 && !error) {
       showSuccess('Note aggiunte al profilo');
     }
   };
@@ -162,62 +268,177 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
   };
 
   const sections = [
-    { id: 'personal', label: 'Informazioni Personali', icon: FiUser },
-    { id: 'eyes', label: 'Caratteristiche Occhi', icon: FiEye },
-    { id: 'profile', label: 'Profilo Cliente', icon: FiHeart },
-    { id: 'treatments', label: 'Trattamenti', icon: FiCalendar }
+    { 
+      id: 'personal', 
+      label: 'Informazioni Personali', 
+      icon: FiUser,
+      description: 'Dati anagrafici e contatti',
+      color: 'blue'
+    },
+    { 
+      id: 'eyes', 
+      label: 'Caratteristiche Occhi', 
+      icon: FiEye,
+      description: 'Morfologia e caratteristiche',
+      color: 'purple'
+    },
+    { 
+      id: 'profile', 
+      label: 'Profilo Cliente', 
+      icon: FiHeart,
+      description: 'Allergie e condizioni mediche',
+      color: 'green'
+    },
+    { 
+      id: 'treatments', 
+      label: 'Trattamenti', 
+      icon: FiCalendar,
+      description: 'Storico e dettagli trattamenti',
+      color: 'orange'
+    }
   ] as const;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <button
-            onClick={onCancel}
-            className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 mb-4 transition-colors"
-          >
-            <FiArrowLeft className="w-4 h-4 mr-2" />
-            Torna indietro
-          </button>
-          
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+    <div ref={containerRef} className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Floating Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <motion.div 
+          style={{ y }}
+          className={`absolute -top-40 -right-40 w-80 h-80 ${colors.bgGradientLight} dark:opacity-10 rounded-full blur-3xl`}
+        />
+        <motion.div 
+          style={{ y: useTransform(scrollYProgress, [0, 1], [-50, 50]) }}
+          className={`absolute -bottom-40 -left-40 w-96 h-96 ${colors.bgGradientLight} dark:opacity-10 rounded-full blur-3xl`}
+        />
+      </div>
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Modern Header with Progress */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-12"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={onCancel}
+                className="p-2 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 shadow-sm"
+                aria-label="Torna indietro"
+              >
+                <FiArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              </button>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
             Scheda Cliente
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400 mt-2">
+                <p className="text-lg text-gray-600 dark:text-gray-400 mt-1">
             {client.nome} {client.cognome}
           </p>
+              </div>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Navigation */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex flex-wrap gap-2">
-              {sections.map((section) => {
-                const Icon = section.icon;
-                return (
-                  <button
-                    key={section.id}
-                    type="button"
-                    onClick={() => {
-                      setActiveSection(section.id);
-                    }}
-                    className={`flex items-center px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                      activeSection === section.id
-                        ? 'bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300'
-                        : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4 mr-2" />
-                    {section.label}
-                  </button>
-                );
-              })}
+            
+            <div className="flex items-center space-x-4">
+              <div className="text-right">
+                <div className="text-sm text-gray-500 dark:text-gray-400">Completamento</div>
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{progress}%</div>
+              </div>
+              <div className="w-16 h-16 relative">
+                <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    className="text-gray-200 dark:text-gray-700"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  <motion.path
+                    className={colors.textPrimary}
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    fill="none"
+                    strokeLinecap="round"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: progress / 100 }}
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                  />
+                </svg>
+              </div>
             </div>
           </div>
 
+          {/* Progress Bar */}
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+            <motion.div
+              className={`h-full ${colors.bgGradient} rounded-full`}
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+            />
+          </div>
+        </motion.div>
+
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Modern Navigation */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {sections.map((section, index) => {
+                const Icon = section.icon;
+                const isActive = activeSection === section.id;
+                const colorClasses = {
+                  blue: isActive ? `${colors.bgPrimary} ${colors.borderPrimary} ${colors.textPrimary} dark:${colors.bgPrimaryDark} dark:${colors.borderPrimary} dark:${colors.textPrimaryDark}` : `hover:${colors.bgPrimary} hover:${colors.borderHover} dark:hover:${colors.bgPrimaryDark}`,
+                  purple: isActive ? `${colors.bgPrimary} ${colors.borderPrimary} ${colors.textPrimary} dark:${colors.bgPrimaryDark} dark:${colors.borderPrimary} dark:${colors.textPrimaryDark}` : `hover:${colors.bgPrimary} hover:${colors.borderHover} dark:hover:${colors.bgPrimaryDark}`,
+                  green: isActive ? `${colors.bgPrimary} ${colors.borderPrimary} ${colors.textPrimary} dark:${colors.bgPrimaryDark} dark:${colors.borderPrimary} dark:${colors.textPrimaryDark}` : `hover:${colors.bgPrimary} hover:${colors.borderHover} dark:hover:${colors.bgPrimaryDark}`,
+                  orange: isActive ? `${colors.bgPrimary} ${colors.borderPrimary} ${colors.textPrimary} dark:${colors.bgPrimaryDark} dark:${colors.borderPrimary} dark:${colors.textPrimaryDark}` : `hover:${colors.bgPrimary} hover:${colors.borderHover} dark:hover:${colors.bgPrimaryDark}`
+                };
+                
+                return (
+                  <motion.button
+                    key={section.id}
+                    type="button"
+                    onClick={() => setActiveSection(section.id)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-200 text-left group ${
+                      isActive 
+                        ? colorClasses[section.color as keyof typeof colorClasses]
+                        : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                    }`}
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    <div className="flex items-center w-full mb-2">
+                      <Icon className={`w-5 h-5 mr-2 ${isActive ? '' : 'group-hover:scale-110 transition-transform duration-200'}`} />
+                      <span className="font-semibold text-sm">{section.label}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center leading-relaxed">
+                      {section.description}
+                    </p>
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeSection"
+                        className="absolute inset-0 rounded-xl border-2 border-current opacity-20"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                  </motion.button>
+                );
+              })}
+            </div>
+          </motion.div>
+
           {/* Form Sections */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 border-gray-200 dark:border-gray-700 p-6">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden"
+          >
             <AnimatePresence mode="wait">
               {/* Informazioni Personali */}
               {activeSection === 'personal' && (
@@ -226,48 +447,122 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="p-8"
                 >
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-                    <FiUser className="w-5 h-5 mr-2" />
-                    Informazioni Personali
-                  </h2>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex items-center mb-8">
+                    <div className={`p-3 rounded-xl ${colors.bgPrimary} dark:${colors.bgPrimaryDark} mr-4`}>
+                      <FiUser className={`w-6 h-6 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
+                    </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        Informazioni Personali
+                      </h2>
+                      <p className="text-gray-600 dark:text-gray-400 mt-1">
+                        Dati anagrafici e informazioni di contatto
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                         Nome e Cognome
                       </label>
+                        <div className="relative">
                       <input
                         type="text"
                         value={`${client.nome} ${client.cognome}`}
                         disabled
-                        className={`w-full px-3 py-2 border-2 ${colors.borderPrimary} dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400`}
-                      />
+                            className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                          />
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            <FiInfo className="w-4 h-4 text-gray-400" />
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          Informazioni non modificabili
+                        </p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                         Telefono
                       </label>
+                        <div className="relative">
                       <input
-                        type="text"
+                            type="tel"
                         value={client.telefono || ''}
-                        placeholder="Example: +39 123 456 7890"
-                        className={`w-full px-3 py-2 border-2 ${colors.borderPrimary} dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-500 placeholder-gray-500`}
-                      />
+                            placeholder="+39 123 456 7890"
+                            disabled
+                            className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                          />
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            <FiInfo className="w-4 h-4 text-gray-400" />
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          Numero di telefono del cliente
+                        </p>
+                      </div>
                     </div>
 
+                    <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                         Data di Nascita
+                          <span className="text-red-500 ml-1">*</span>
                       </label>
+                        <div className="relative">
                       <input
                         type="date"
                         value={formData.data_nascita || ''}
                         onChange={(e) => handlePersonalInfoChange('data_nascita', e.target.value)}
-                        className={`w-full px-3 py-2 border-2 ${colors.borderPrimary} dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors duration-200`}
-                      />
+                            className={`w-full px-4 py-3 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all duration-200 ${
+                              validationErrors.data_nascita 
+                                ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500' 
+                                : `border-gray-200 dark:border-gray-600 focus:ring-2 ${colors.focusRing} focus:border-transparent`
+                            }`}
+                            aria-describedby={validationErrors.data_nascita ? 'data_nascita-error' : undefined}
+                          />
+                          {formData.data_nascita && !validationErrors.data_nascita && (
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                              <FiCheck className="w-4 h-4 text-green-500" />
+                            </div>
+                          )}
+                          {validationErrors.data_nascita && (
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                              <FiAlertCircle className="w-4 h-4 text-red-500" />
+                            </div>
+                          )}
+                        </div>
+                        {validationErrors.data_nascita && (
+                          <p id="data_nascita-error" className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center">
+                            <FiAlertCircle className="w-4 h-4 mr-1" />
+                            {validationErrors.data_nascita}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          Data di nascita per calcolare l'età
+                        </p>
+                      </div>
+
+                      {/* Age Display */}
+                      {formData.data_nascita && !validationErrors.data_nascita && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className={`p-4 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl border ${colors.borderPrimary} dark:${colors.borderPrimary}`}
+                        >
+                          <div className="flex items-center">
+                            <div className={`w-2 h-2 ${colors.bgGradient} rounded-full mr-3`}></div>
+                            <span className={`text-sm font-medium ${colors.textPrimary} dark:${colors.textPrimaryDark}`}>
+                              Età: {new Date().getFullYear() - new Date(formData.data_nascita).getFullYear()} anni
+                            </span>
+                          </div>
+                        </motion.div>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -280,60 +575,124 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="p-8"
                 >
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-                    <FiEye className="w-5 h-5 mr-2" />
-                    Caratteristiche Occhi
-                  </h2>
-
-                  <div className="space-y-6">
+                  <div className="flex items-center mb-8">
+                    <div className={`p-3 rounded-xl ${colors.bgPrimary} dark:${colors.bgPrimaryDark} mr-4`}>
+                      <FiEye className={`w-6 h-6 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
+                    </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Colore Occhi
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        Caratteristiche Occhi
+                      </h2>
+                      <p className="text-gray-600 dark:text-gray-400 mt-1">
+                        Morfologia e caratteristiche specifiche degli occhi
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-8">
+                    {/* Colore Occhi */}
+                    <div className={`${colors.bgGradientLight} rounded-2xl p-6 border ${colors.borderPrimary} dark:${colors.borderPrimary}`}>
+                      <label className="block text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                        Colore degli Occhi
                       </label>
+                      <div className="relative">
                       <input
                         type="text"
                         value={formData.caratteristiche_occhi.colore_occhi || ''}
                         onChange={(e) => handleEyeCharacteristicsChange('colore_occhi', e.target.value)}
-                        placeholder="es. marroni, azzurri, verdi..."
-                        className={`w-full px-3 py-2 border-2 ${colors.borderPrimary} dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors duration-200`}
-                      />
+                          placeholder="es. marroni, azzurri, verdi, grigi..."
+                          className={`w-full px-4 py-3 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all duration-200 ${
+                            validationErrors.colore_occhi 
+                              ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500' 
+                              : `${colors.borderPrimary} dark:${colors.borderPrimary} focus:ring-2 ${colors.focusRing} focus:border-transparent`
+                          }`}
+                          aria-describedby={validationErrors.colore_occhi ? 'colore_occhi-error' : undefined}
+                        />
+                        {formData.caratteristiche_occhi.colore_occhi && !validationErrors.colore_occhi && (
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            <FiCheck className="w-4 h-4 text-green-500" />
+                          </div>
+                        )}
+                        {validationErrors.colore_occhi && (
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            <FiAlertCircle className="w-4 h-4 text-red-500" />
+                          </div>
+                        )}
+                      </div>
+                      {validationErrors.colore_occhi && (
+                        <p id="colore_occhi-error" className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center">
+                          <FiAlertCircle className="w-4 h-4 mr-1" />
+                          {validationErrors.colore_occhi}
+                        </p>
+                      )}
                     </div>
 
-                    {/* Radio Groups */}
-                    {[
-                      { key: 'forma_occhi', label: 'Forma degli Occhi', options: ['mandorla', 'rotondi', 'normali'] },
-                      { key: 'posizione_occhi', label: 'Posizione degli Occhi', options: ['sporgenti', 'incavati', 'normali'] },
-                      { key: 'distanza_occhi', label: 'Distanza tra Occhi', options: ['ravvicinati', 'distanziati', 'normali'] },
-                      { key: 'angolo_esterno', label: 'Angolo Esterno', options: ['normale', 'alto', 'basso'] },
-                      { key: 'asimmetria', label: 'Asimmetria', options: ['si', 'no'] },
-                      { key: 'lunghezza_ciglia_naturali', label: 'Lunghezza Ciglia Naturali', options: ['corte', 'medie', 'lunghe'] },
-                      { key: 'foltezza_ciglia_naturali', label: 'Foltezza Ciglia Naturali', options: ['rade', 'medie', 'folte'] },
-                      { key: 'direzione_crescita_ciglia', label: 'Direzione Crescita Ciglia', options: ['in_basso', 'dritte', 'in_alto'] }
-                    ].map(({ key, label, options }) => (
-                      <div key={key}>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    {/* Radio Groups Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      {[
+                        { key: 'forma_occhi', label: 'Forma degli Occhi', options: ['mandorla', 'rotondi', 'normali'], icon: '👁️' },
+                        { key: 'posizione_occhi', label: 'Posizione degli Occhi', options: ['sporgenti', 'incavati', 'normali'], icon: '👀' },
+                        { key: 'distanza_occhi', label: 'Distanza tra Occhi', options: ['ravvicinati', 'distanziati', 'normali'], icon: '👁️‍🗨️' },
+                        { key: 'angolo_esterno', label: 'Angolo Esterno', options: ['normale', 'alto', 'basso'], icon: '↗️' },
+                        { key: 'asimmetria', label: 'Asimmetria', options: ['si', 'no'], icon: '⚖️' },
+                        { key: 'lunghezza_ciglia_naturali', label: 'Lunghezza Ciglia Naturali', options: ['corte', 'medie', 'lunghe'], icon: '👁️' },
+                        { key: 'foltezza_ciglia_naturali', label: 'Foltezza Ciglia Naturali', options: ['rade', 'medie', 'folte'], icon: '👁️' },
+                        { key: 'direzione_crescita_ciglia', label: 'Direzione Crescita Ciglia', options: ['in_basso', 'dritte', 'in_alto'], icon: '👁️' }
+                      ].map(({ key, label, options, icon }) => (
+                        <motion.div
+                          key={key}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.1 }}
+                          className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200"
+                        >
+                          <div className="flex items-center mb-4">
+                            <span className="text-2xl mr-3">{icon}</span>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                           {label}
-                        </label>
-                        <div className="flex flex-wrap gap-4">
-                          {options.map((option) => (
-                            <label key={option} className="flex items-center">
+                            </h3>
+                          </div>
+                          <div className="space-y-3">
+                            {options.map((option) => (
+                              <motion.label
+                                key={option}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                                  formData.caratteristiche_occhi[key as keyof EyeCharacteristics] === option
+                                    ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} ${colors.textPrimary} dark:${colors.textPrimaryDark}`
+                                    : `border-gray-200 dark:border-gray-600 hover:${colors.borderHover} dark:hover:${colors.borderPrimary} text-gray-700 dark:text-gray-300`
+                                }`}
+                              >
                               <input
                                 type="radio"
                                 name={key}
                                 value={option}
                                 checked={formData.caratteristiche_occhi[key as keyof EyeCharacteristics] === option}
                                 onChange={(e) => handleEyeCharacteristicsChange(key as keyof EyeCharacteristics, e.target.value)}
-                                className="w-4 h-4 accent-pink-600 bg-gray-100 border-gray-300 rounded-xl focus:ring-pink-500 dark:focus:ring-pink-600 dark:ring-offset-gray-800 focus:ring-2"                              />
-                              <span className="ml-2 text-sm text-gray-700 dark:text-gray-300 capitalize">
+                                  className={`w-4 h-4 ${colors.textPrimary} accent-pink-500 bg-gray-100 border-gray-300 focus:ring-2 ${colors.focusRing} dark:focus:ring-${colors.focusRing} dark:ring-offset-gray-800`}
+                                />
+                                <span className="ml-3 text-sm font-medium capitalize">
                                 {option.replace('_', ' ')}
                               </span>
-                            </label>
+                                {formData.caratteristiche_occhi[key as keyof EyeCharacteristics] === option && (
+                                  <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    className="ml-auto"
+                                  >
+                                    <FiCheck className={`w-4 h-4 ${colors.textPrimary}`} />
+                                  </motion.div>
+                                )}
+                              </motion.label>
                           ))}
                         </div>
+                        </motion.div>
+                      ))}
                       </div>
-                    ))}
                   </div>
                 </motion.div>
               )}
@@ -345,44 +704,117 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="p-8"
                 >
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-                    <FiHeart className="w-5 h-5 mr-2" />
+                  <div className="flex items-center mb-8">
+                    <div className={`p-3 rounded-xl ${colors.bgPrimary} dark:${colors.bgPrimaryDark} mr-4`}>
+                      <FiHeart className={`w-6 h-6 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     Profilo Cliente
                   </h2>
+                      <p className="text-gray-600 dark:text-gray-400 mt-1">
+                        Allergie, condizioni mediche e note importanti
+                      </p>
+                    </div>
+                  </div>
 
-                  <div className="space-y-4">
-                    {[
-                      { key: 'allergie', label: 'Allergie' },
-                      { key: 'pelle_sensibile', label: 'Pelle Sensibile' },
-                      { key: 'terapia_ormonale', label: 'Terapia Ormonale' },
-                      { key: 'gravidanza', label: 'Gravidanza' },
-                      { key: 'lenti_contatto', label: 'Lenti a Contatto' },
-                      { key: 'occhiali', label: 'Occhiali' },
-                      { key: 'lacrimazione', label: 'Lacrimazione' }
-                    ].map(({ key, label }) => (
-                      <label key={key} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={formData.profilo_cliente[key as keyof ClientProfile] as boolean}
-                          onChange={(e) => handleProfileChange(key as keyof ClientProfile, e.target.checked)}
-                          className="w-4 h-4 accent-pink-600 bg-gray-100 border-gray-300 rounded-xl focus:ring-pink-500 dark:focus:ring-pink-600 dark:ring-offset-gray-800 focus:ring-2"                        />
-                        <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">{label}</span>
-                      </label>
-                    ))}
+                  <div className="space-y-8">
+                    {/* Checkboxes Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {[
+                        { key: 'allergie', label: 'Allergie', description: 'Reazioni allergiche note', icon: '⚠️' },
+                        { key: 'pelle_sensibile', label: 'Pelle Sensibile', description: 'Pelle particolarmente sensibile', icon: '🤲' },
+                        { key: 'terapia_ormonale', label: 'Terapia Ormonale', description: 'In corso di terapia ormonale', icon: '💊' },
+                        { key: 'gravidanza', label: 'Gravidanza', description: 'Stato di gravidanza', icon: '🤱' },
+                        { key: 'lenti_contatto', label: 'Lenti a Contatto', description: 'Utilizzo di lenti a contatto', icon: '👁️' },
+                        { key: 'occhiali', label: 'Occhiali', description: 'Utilizzo di occhiali', icon: '👓' },
+                        { key: 'lacrimazione', label: 'Lacrimazione', description: 'Tendenza alla lacrimazione', icon: '💧' }
+                      ].map(({ key, label, description, icon }) => {
+                        const isActive = formData.profilo_cliente[key as keyof ClientProfile] as boolean;
+                        const checkboxColors = getCheckboxColors(isActive);
+                        
+                        return (
+                        <motion.div
+                          key={key}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.1 }}
+                          className={`relative p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:shadow-lg ${checkboxColors.container}`}
+                          onClick={() => handleProfileChange(key as keyof ClientProfile, !(formData.profilo_cliente[key as keyof ClientProfile] as boolean))}
+                        >
+                          <div className="flex items-start">
+                            <div className="flex-shrink-0">
+                              <input
+                                type="checkbox"
+                                checked={formData.profilo_cliente[key as keyof ClientProfile] as boolean}
+                                onChange={(e) => handleProfileChange(key as keyof ClientProfile, e.target.checked)}
+                                className={`w-5 h-5 ${colors.textPrimary} accent-pink-500 dark:accent-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-2 ${colors.focusRing} dark:focus:ring-${colors.focusRing} dark:ring-offset-gray-800`}
+                              />
+                            </div>
+                            <div className="ml-4 flex-1">
+                              <div className="flex items-center">
+                                <span className="text-2xl mr-3">{icon}</span>
+                                <h3 className={`text-lg font-semibold ${checkboxColors.text}`}>
+                                  {label}
+                                </h3>
+                              </div>
+                              <p className={`text-sm mt-1 ${checkboxColors.textSecondary}`}>
+                                {description}
+                              </p>
+                            </div>
+                            {formData.profilo_cliente[key as keyof ClientProfile] as boolean && (
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="absolute top-4 right-4"
+                              >
+                                <FiCheck className={`w-5 h-5 ${checkboxColors.icon}`} />
+                              </motion.div>
+                            )}
+                          </div>
+                        </motion.div>
+                        );
+                      })}
+                    </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Note
+                    {/* Note Section */}
+                    <div className={`${colors.bgGradientLight} rounded-2xl p-6 border ${colors.borderPrimary} dark:${colors.borderPrimary}`}>
+                      <label className="block text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                        Note Aggiuntive
+                        <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+                          (max 500 caratteri)
+                        </span>
                       </label>
+                      <div className="relative">
                       <textarea
                         value={formData.profilo_cliente.note || ''}
                         onChange={(e) => handleProfileChange('note', e.target.value)}
                         rows={4}
-                        placeholder="Note aggiuntive sul cliente..."
-                        className={`w-full px-3 py-2 border-2 ${colors.borderPrimary} dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors duration-200`}
-                      />
+                          placeholder="Note aggiuntive sul cliente, preferenze particolari, allergie specifiche..."
+                          className={`w-full px-4 py-3 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all duration-200 resize-none ${
+                            validationErrors.note 
+                              ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500' 
+                              : `${colors.borderPrimary} dark:${colors.borderPrimary} focus:ring-2 ${colors.focusRing} focus:border-transparent`
+                          }`}
+                          aria-describedby={validationErrors.note ? 'note-error' : 'note-help'}
+                          maxLength={500}
+                        />
+                        <div className="absolute bottom-3 right-3 text-xs text-gray-400">
+                          {(formData.profilo_cliente.note || '').length}/500
+                        </div>
+                      </div>
+                      {validationErrors.note && (
+                        <p id="note-error" className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center">
+                          <FiAlertCircle className="w-4 h-4 mr-1" />
+                          {validationErrors.note}
+                        </p>
+                      )}
+                      <p id="note-help" className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        Inserisci informazioni aggiuntive che potrebbero essere utili per il trattamento
+                      </p>
                     </div>
                   </div>
                 </motion.div>
@@ -395,77 +827,133 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="p-8"
                 >
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-                      <FiCalendar className="w-5 h-5 mr-2" />
-                      Trattamenti ({formData.trattamenti.length})
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center">
+                      <div className={`p-3 rounded-xl ${colors.bgPrimary} dark:${colors.bgPrimaryDark} mr-4`}>
+                        <FiCalendar className={`w-6 h-6 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                          Trattamenti
                     </h2>
-                    <button
+                        <p className="text-gray-600 dark:text-gray-400 mt-1">
+                          Storico e dettagli dei trattamenti effettuati ({formData.trattamenti.length})
+                        </p>
+                      </div>
+                    </div>
+                    <motion.button
                       type="button"
                       onClick={addTreatment}
-                      className={`flex items-center px-4 py-2 ${colors.bgGradient} text-white rounded-xl hover:opacity-90 transition-all duration-200 shadow-lg ${colors.shadowPrimary}`}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`flex items-center px-6 py-3 ${colors.bgGradient} text-white rounded-xl hover:opacity-90 transition-all duration-200 shadow-lg ${colors.shadowPrimary} font-semibold`}
                     >
-                      <FiPlus className="w-4 h-4 mr-2" />
+                      <FiPlus className="w-5 h-5 mr-2" />
                       Aggiungi Trattamento
-                    </button>
+                    </motion.button>
                   </div>
 
                   <div className="space-y-6">
                     <AnimatePresence>
                       {formData.trattamenti.map((treatment, index) => (
-                        <TreatmentForm
+                        <motion.div
                           key={treatment.id || index}
+                          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                          className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-200"
+                        >
+                          <TreatmentForm
                           treatment={treatment}
                           index={index}
                           onChange={(updatedTreatment) => handleTreatmentChange(index, updatedTreatment)}
                           onRemove={() => removeTreatment(index)}
                           isLast={index === formData.trattamenti.length - 1}
                         />
+                        </motion.div>
                       ))}
                     </AnimatePresence>
 
                     {formData.trattamenti.length === 0 && (
-                      <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                        <FiCalendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <p>Nessun trattamento registrato</p>
-                        <p className="text-sm">Clicca su "Aggiungi Trattamento" per iniziare</p>
-                      </div>
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600"
+                      >
+                        <div className={`w-20 h-20 mx-auto mb-6 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-full flex items-center justify-center`}>
+                          <FiCalendar className={`w-10 h-10 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
+                        </div>
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                          Nessun trattamento registrato
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-6">
+                          Inizia aggiungendo il primo trattamento per questo cliente
+                        </p>
+                        <motion.button
+                          type="button"
+                          onClick={addTreatment}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className={`inline-flex items-center px-6 py-3 ${colors.bgGradient} text-white rounded-xl hover:opacity-90 transition-all duration-200 shadow-lg ${colors.shadowPrimary} font-semibold`}
+                        >
+                          <FiPlus className="w-5 h-5 mr-2" />
+                          Aggiungi Primo Trattamento
+                        </motion.button>
+                      </motion.div>
                     )}
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
+          </motion.div>
 
-          {/* Actions */}
-          <div className="flex justify-end gap-4">
-            <button
+          {/* Modern Actions */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6"
+          >
+            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+              <div className={`w-2 h-2 ${colors.bgGradient} rounded-full mr-2`}></div>
+              <span>Profilo {progress}% completato</span>
+            </div>
+
+            <div className="flex gap-4">
+              <motion.button
               type="button"
               onClick={onCancel}
-              className={`px-6 py-2 border-2 ${colors.borderPrimary} dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 font-semibold"
             >
               Annulla
-            </button>
-            <button
+              </motion.button>
+              <motion.button
               type="submit"
               disabled={isLoading}
-              className={`flex items-center px-6 py-2 ${colors.bgGradient} text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg ${colors.shadowPrimary}`}
+                whileHover={!isLoading ? { scale: 1.02 } : {}}
+                whileTap={!isLoading ? { scale: 0.98 } : {}}
+                className={`flex items-center px-8 py-3 ${colors.bgGradient} text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg ${colors.shadowPrimary} font-semibold`}
             >
               {isLoading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3" />
                   Salvataggio...
                 </>
               ) : (
                 <>
-                  <FiSave className="w-4 h-4 mr-2" />
+                    <FiSave className="w-5 h-5 mr-3" />
                   Salva Scheda
                 </>
               )}
-            </button>
+              </motion.button>
           </div>
+          </motion.div>
         </form>
       </div>
     </div>

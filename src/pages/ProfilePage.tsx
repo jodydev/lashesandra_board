@@ -10,12 +10,12 @@ import {
   Eye, 
   EyeOff, 
   Save, 
-  X,
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useAppColors } from '../hooks/useAppColors';
 
 interface UserProfile {
   id: string;
@@ -41,6 +41,7 @@ interface PasswordErrors {
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const colors = useAppColors();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [passwordForm, setPasswordForm] = useState<PasswordForm>({
@@ -73,8 +74,8 @@ export default function ProfilePage() {
           id: data.user.id,
           email: data.user.email || '',
           created_at: data.user.created_at,
-          last_sign_in_at: data.user.last_sign_in_at,
-          email_confirmed_at: data.user.email_confirmed_at
+          last_sign_in_at: data.user.last_sign_in_at || null,
+          email_confirmed_at: data.user.email_confirmed_at || null
         });
       } catch (error) {
         console.error('Error loading profile:', error);
@@ -192,9 +193,9 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
+          <div className={`animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4`} style={{ borderColor: colors.primary }}></div>
           <p className="text-gray-600 dark:text-gray-400">Caricamento profilo...</p>
         </div>
       </div>
@@ -229,7 +230,7 @@ export default function ProfilePage() {
             {/* User Info Card */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
               <div className="flex items-center space-x-4 mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <div className={`w-16 h-16 ${colors.bgGradient} rounded-2xl flex items-center justify-center shadow-lg`}>
                   <User className="w-8 h-8 text-white" />
                 </div>
                 <div>
@@ -255,7 +256,7 @@ export default function ProfilePage() {
                   <Calendar className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Account creato</p>
-                    <p className="text-gray-900 dark:text-white">{formatDate(profile?.created_at)}</p>
+                    <p className="text-gray-900 dark:text-white">{formatDate(profile?.created_at || null)}</p>
                   </div>
                 </div>
 
@@ -273,7 +274,7 @@ export default function ProfilePage() {
                   <Calendar className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Ultimo accesso</p>
-                    <p className="text-gray-900 dark:text-white">{formatDate(profile?.last_sign_in_at)}</p>
+                    <p className="text-gray-900 dark:text-white">{formatDate(profile?.last_sign_in_at || null)}</p>
                   </div>
                 </div>
               </div>
@@ -292,7 +293,7 @@ export default function ProfilePage() {
                 </div>
                 <button
                   onClick={() => setShowPasswordForm(!showPasswordForm)}
-                  className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white font-medium rounded-xl transition-colors duration-200"
+                  className={`px-4 py-2 ${colors.bgGradient} hover:opacity-90 text-white font-medium rounded-xl transition-all duration-200`}
                 >
                   {showPasswordForm ? 'Annulla' : 'Modifica Password'}
                 </button>
@@ -325,7 +326,7 @@ export default function ProfilePage() {
                         name="currentPassword"
                         value={passwordForm.currentPassword}
                         onChange={handleInputChange}
-                        className={`block w-full px-3 py-3 pr-10 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
+                        className={`block w-full px-3 py-3 pr-10 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors ${
                           passwordErrors.currentPassword
                             ? 'border-red-300 dark:border-red-600 focus:ring-red-500'
                             : 'border-gray-300 dark:border-gray-600'
@@ -358,7 +359,7 @@ export default function ProfilePage() {
                         name="newPassword"
                         value={passwordForm.newPassword}
                         onChange={handleInputChange}
-                        className={`block w-full px-3 py-3 pr-10 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
+                        className={`block w-full px-3 py-3 pr-10 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors ${
                           passwordErrors.newPassword
                             ? 'border-red-300 dark:border-red-600 focus:ring-red-500'
                             : 'border-gray-300 dark:border-gray-600'
@@ -391,7 +392,7 @@ export default function ProfilePage() {
                         name="confirmPassword"
                         value={passwordForm.confirmPassword}
                         onChange={handleInputChange}
-                        className={`block w-full px-3 py-3 pr-10 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
+                        className={`block w-full px-3 py-3 pr-10 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors ${
                           passwordErrors.confirmPassword
                             ? 'border-red-300 dark:border-red-600 focus:ring-red-500'
                             : 'border-gray-300 dark:border-gray-600'
@@ -420,7 +421,7 @@ export default function ProfilePage() {
                       disabled={isChangingPassword}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
+                      className={`flex-1 ${colors.bgGradient} hover:opacity-90 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 ${colors.focusRing} focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center justify-center space-x-2`}
                     >
                       {isChangingPassword ? (
                         <>
