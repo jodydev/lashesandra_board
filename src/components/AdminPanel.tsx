@@ -134,13 +134,32 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
   const checkWhatsAppStatus = async () => {
     try {
-      await whatsappService.initializeConfig();
-      setWhatsappStatus({
-        isConfigured: true,
-        isActive: true,
-        lastRun: null // TODO: Get from database
-      });
+      // Check if WhatsApp configuration exists and is active
+      const { data, error } = await supabase
+        .from(`${tablePrefix}whatsapp_config`)
+        .select('*')
+        .eq('is_active', true)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw new Error(`Error loading WhatsApp config: ${error.message}`);
+      }
+
+      if (data) {
+        setWhatsappStatus({
+          isConfigured: true,
+          isActive: true,
+          lastRun: null // TODO: Get from database
+        });
+      } else {
+        setWhatsappStatus({
+          isConfigured: false,
+          isActive: false,
+          lastRun: null
+        });
+      }
     } catch (err) {
+      console.error('Error checking WhatsApp status:', err);
       setWhatsappStatus({
         isConfigured: false,
         isActive: false,

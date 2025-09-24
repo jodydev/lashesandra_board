@@ -37,6 +37,7 @@ export default function MessageLogTable({ onRefresh }: MessageLogTableProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedLog, setSelectedLog] = useState<WhatsAppLogEntry | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  console.log(logs);
 
   useEffect(() => {
     loadLogs();

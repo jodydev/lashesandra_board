@@ -2,7 +2,6 @@ import { supabase } from './supabase';
 import type { 
   WhatsAppMessage, 
   MessageTemplate, 
-  WhatsAppConfig, 
   AppointmentWithClient,
   WhatsAppLogEntry 
 } from '../types';
@@ -10,26 +9,10 @@ import { useApp } from '../contexts/AppContext';
 
 // WhatsApp Business API Service
 export class WhatsAppService {
-  private config: WhatsAppConfig | null = null;
   private tablePrefix: string;
 
   constructor(tablePrefix: string = '') {
     this.tablePrefix = tablePrefix;
-  }
-
-  // Initialize WhatsApp configuration
-  async initializeConfig(): Promise<void> {
-    const { data, error } = await supabase
-      .from(`${this.tablePrefix}whatsapp_config`)
-      .select('*')
-      .eq('is_active', true)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
-      throw new Error(`Errore nel caricamento configurazione WhatsApp: ${error.message}`);
-    }
-
-    this.config = data;
   }
 
   // Get message template
@@ -57,11 +40,35 @@ export class WhatsAppService {
     return data;
   }
 
-  // Generate personalized message
-  generateMessage(template: string, appointment: AppointmentWithClient, location: string = 'Via Monsignor Enrico Montalbetti 5, Reggio Calabria'): string {
+  // Get tomorrow's appointments with client data
+  async getTomorrowAppointments(): Promise<AppointmentWithClient[]> {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from(`${this.tablePrefix}appointments`)
+      .select(`
+        *,
+        client:${this.tablePrefix}clients(*)
+      `)
+      .eq('data', tomorrowStr)
+      .eq('status', 'pending')
+      .not('client.telefono', 'is', null);
+
+    if (error) {
+      throw new Error(`Errore nel caricamento appuntamenti: ${error.message}`);
+    }
+
+    return (data || []) as unknown as AppointmentWithClient[];
+  }
+
+  // Generate personalized message from template
+  generateMessage(template: string, appointment: AppointmentWithClient): string {
     const client = appointment.client;
     const appointmentDate = new Date(appointment.data);
-    const timeStr = appointment.ora ? appointment.ora : 'orario da confermare';
+    const timeStr = appointment.ora || 'orario da confermare';
+    const location = 'Via Monsignor Enrico Montalbetti 5, Reggio Calabria';
     
     return template
       .replace(/{nome}/g, client.nome)
@@ -70,54 +77,6 @@ export class WhatsAppService {
       .replace(/{servizio}/g, appointment.tipo_trattamento || 'trattamento')
       .replace(/{location}/g, location)
       .replace(/{data}/g, appointmentDate.toLocaleDateString('it-IT'));
-  }
-
-  // Send WhatsApp message via API
-  async sendMessage(phoneNumber: string, message: string): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    if (!this.config) {
-      await this.initializeConfig();
-    }
-
-    if (!this.config) {
-      return { success: false, error: 'Configurazione WhatsApp non trovata' };
-    }
-
-    try {
-      const response = await fetch(`${this.config.api_url}/messages`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.config.api_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          to: phoneNumber.replace(/\D/g, ''), // Remove non-digits
-          type: 'text',
-          text: {
-            body: message
-          }
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        return { 
-          success: false, 
-          error: data.error?.message || `Errore API: ${response.status}` 
-        };
-      }
-
-      return { 
-        success: true, 
-        messageId: data.messages?.[0]?.id 
-      };
-    } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Errore sconosciuto' 
-      };
-    }
   }
 
   // Save message to database
@@ -137,12 +96,12 @@ export class WhatsAppService {
 
   // Update message status
   async updateMessageStatus(messageId: string, status: WhatsAppMessage['status'], errorMessage?: string): Promise<void> {
-    const updateData: Partial<WhatsAppMessage> = {
+    const updateData: any = {
       status,
       updated_at: new Date().toISOString()
     };
 
-    if (status === 'sent' || status === 'delivered') {
+    if (status === 'sent') {
       updateData.sent_at = new Date().toISOString();
     }
 
@@ -156,134 +115,136 @@ export class WhatsAppService {
       .eq('id', messageId);
 
     if (error) {
-      throw new Error(`Errore nell'aggiornamento messaggio: ${error.message}`);
+      throw new Error(`Errore nell'aggiornamento status messaggio: ${error.message}`);
     }
   }
 
-  // Get appointments for tomorrow
-  async getTomorrowAppointments(): Promise<AppointmentWithClient[]> {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
-
-    const { data, error } = await supabase
-      .from(`${this.tablePrefix}appointments`)
-      .select(`
-        *,
-        client:${this.tablePrefix}clients(*)
-      `)
-      .eq('data', tomorrowStr)
-      .eq('status', 'pending')
-      .not('client.telefono', 'is', null);
-
-    if (error) {
-      throw new Error(`Errore nel recupero appuntamenti: ${error.message}`);
-    }
-
-    return data || [];
-  }
-
-  // Get WhatsApp message logs
-  async getMessageLogs(limit: number = 50, offset: number = 0): Promise<WhatsAppLogEntry[]> {
-    const { data, error } = await supabase
+  // Get message logs with full client and appointment data
+  async getMessageLogs(limit: number = 100): Promise<WhatsAppLogEntry[]> {
+    // Get messages
+    const { data: messages, error: messagesError } = await supabase
       .from(`${this.tablePrefix}whatsapp_messages`)
       .select(`
-        *,
-        client:${this.tablePrefix}clients(nome, cognome, telefono),
-        appointment:${this.tablePrefix}appointments(data, ora, tipo_trattamento)
+        id,
+        message_content,
+        status,
+        sent_at,
+        error_message,
+        client_id,
+        appointment_id
       `)
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .limit(limit);
 
-    if (error) {
-      throw new Error(`Errore nel recupero log messaggi: ${error.message}`);
+    if (messagesError) {
+      throw new Error(`Errore nel caricamento log messaggi: ${messagesError.message}`);
     }
 
-    return (data || []).map(msg => ({
-      id: msg.id,
-      client_name: `${msg.client.nome} ${msg.client.cognome}`,
-      client_phone: msg.client.telefono,
-      appointment_date: msg.appointment.data,
-      appointment_time: msg.appointment.ora,
-      service: msg.appointment.tipo_trattamento || 'Generico',
-      message_status: msg.status,
-      message_content: msg.message_content,
-      sent_at: msg.sent_at,
-      error_message: msg.error_message
-    }));
+    if (!messages || messages.length === 0) {
+      return [];
+    }
+
+    // Get unique client and appointment IDs
+    const clientIds = [...new Set(messages.map(msg => msg.client_id))];
+    const appointmentIds = [...new Set(messages.map(msg => msg.appointment_id))];
+
+    // Get clients data
+    const { data: clients, error: clientsError } = await supabase
+      .from(`${this.tablePrefix}clients`)
+      .select('id, nome, cognome, telefono')
+      .in('id', clientIds);
+
+    if (clientsError) {
+      console.error('Error loading clients:', clientsError);
+    }
+
+    // Get appointments data
+    const { data: appointments, error: appointmentsError } = await supabase
+      .from(`${this.tablePrefix}appointments`)
+      .select('id, data, ora, tipo_trattamento')
+      .in('id', appointmentIds);
+
+    if (appointmentsError) {
+      console.error('Error loading appointments:', appointmentsError);
+    }
+
+    // Create lookup maps
+    const clientsMap = new Map((clients || []).map(client => [client.id, client]));
+    const appointmentsMap = new Map((appointments || []).map(appointment => [appointment.id, appointment]));
+
+    // Transform data to match WhatsAppLogEntry interface
+    return messages.map(msg => {
+      const client = clientsMap.get(msg.client_id);
+      const appointment = appointmentsMap.get(msg.appointment_id);
+      
+      return {
+        id: msg.id,
+        client_name: client ? `${client.nome} ${client.cognome}` : 'Cliente Sconosciuto',
+        client_phone: client?.telefono || '',
+        appointment_date: appointment?.data || '',
+        appointment_time: appointment?.ora || '',
+        service: appointment?.tipo_trattamento || 'Generico',
+        message_status: msg.status,
+        message_content: msg.message_content,
+        sent_at: msg.sent_at,
+        error_message: msg.error_message
+      };
+    });
   }
 
-  // Send confirmation messages for tomorrow's appointments
+  // Send confirmation messages for tomorrow's appointments via Edge Function
   async sendTomorrowConfirmations(): Promise<{ sent: number; failed: number; errors: string[] }> {
-    const results = { sent: 0, failed: 0, errors: [] as string[] };
-
     try {
-      // Get tomorrow's appointments
-      const appointments = await this.getTomorrowAppointments();
+      console.log('🚀 Starting WhatsApp confirmations...');
+      console.log('📋 Table prefix:', this.tablePrefix);
       
-      if (appointments.length === 0) {
-        return results;
+      // Use direct fetch with proper headers
+      const supabaseUrl = 'https://ufondjehytekkbrgrjgd.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmb25kamVoeXRla2ticmdyamdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwODkxOTAsImV4cCI6MjA3MzY2NTE5MH0.6hLsH3Z1rur1crqt4DKQ-3s4JMxD7kuFceroMVlYkd8';
+      
+      const url = `${supabaseUrl}/functions/v1/whatsapp-daily-confirmations-twilio?table_prefix=${encodeURIComponent(this.tablePrefix)}`;
+      console.log('🌐 Calling URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`,
+          'apikey': supabaseKey
+        },
+        body: JSON.stringify({})
+      });
+
+      console.log('📊 Response status:', response.status);
+      console.log('📊 Response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ HTTP Error:', response.status, errorText);
+        return { 
+          sent: 0, 
+          failed: 0, 
+          errors: [`HTTP ${response.status}: ${errorText}`] 
+        };
       }
 
-      // Get message template
-      const template = await this.getMessageTemplate();
-
-      // Process each appointment
-      for (const appointment of appointments) {
-        try {
-          // Check if message already sent for this appointment
-          const { data: existingMessage } = await supabase
-            .from(`${this.tablePrefix}whatsapp_messages`)
-            .select('id')
-            .eq('appointment_id', appointment.id)
-            .eq('status', 'sent')
-            .single();
-
-          if (existingMessage) {
-            continue; // Skip if already sent
-          }
-
-          // Generate personalized message
-          const messageContent = this.generateMessage(template.content, appointment);
-
-          // Save message to database with pending status
-          const messageData = await this.saveMessage({
-            client_id: appointment.client_id,
-            appointment_id: appointment.id,
-            phone_number: appointment.client.telefono!,
-            message_content: messageContent,
-            status: 'pending'
-          });
-
-          // Send message via WhatsApp API
-          const sendResult = await this.sendMessage(
-            appointment.client.telefono!,
-            messageContent
-          );
-
-          if (sendResult.success) {
-            await this.updateMessageStatus(messageData.id, 'sent');
-            results.sent++;
-          } else {
-            await this.updateMessageStatus(messageData.id, 'failed', sendResult.error);
-            results.failed++;
-            results.errors.push(`${appointment.client.nome}: ${sendResult.error}`);
-          }
-
-          // Add delay between messages to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-        } catch (error) {
-          results.failed++;
-          results.errors.push(`${appointment.client.nome}: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`);
-        }
-      }
+      const data = await response.json();
+      console.log('✅ Edge Function success:', data);
+      
+      return {
+        sent: data?.sent || 0,
+        failed: data?.failed || 0,
+        errors: data?.errors || []
+      };
 
     } catch (error) {
-      results.errors.push(`Errore generale: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`);
+      console.error('❌ WhatsApp service error:', error);
+      return { 
+        sent: 0, 
+        failed: 0, 
+        errors: [error instanceof Error ? error.message : 'Errore di rete'] 
+      };
     }
-
-    return results;
   }
 }
 

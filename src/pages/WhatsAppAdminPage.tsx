@@ -33,17 +33,7 @@ export default function WhatsAppAdminPage() {
             className="mb-6"
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleBack}
-                  className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 shadow-lg"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Indietro
-                </motion.button>
-                
+              <div className="flex items-center gap-4">                
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 ${colors.bgGradient} rounded-xl flex items-center justify-center shadow-lg`}>
                     <Settings className="w-5 h-5 text-white" />
