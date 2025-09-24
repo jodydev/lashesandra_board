@@ -246,12 +246,22 @@ export class WhatsAppService {
 
           console.log('💾 Message saved to database:', messageData.id);
 
-          // For now, mark as sent (simulate success)
-          // In production, you would call Twilio API here
-          await this.updateMessageStatus(messageData.id!, 'sent');
-          
-          results.sent++;
-          console.log(`✅ Message marked as sent for ${appointment.client.nome}`);
+          // Send message via Twilio WhatsApp API
+          const sendResult = await this.sendTwilioMessage(
+            appointment.client.telefono!,
+            messageContent
+          );
+
+          if (sendResult.success) {
+            await this.updateMessageStatus(messageData.id!, 'sent');
+            results.sent++;
+            console.log(`✅ Message sent successfully to ${appointment.client.nome}`);
+          } else {
+            await this.updateMessageStatus(messageData.id!, 'failed', sendResult.error);
+            results.failed++;
+            results.errors.push(`${appointment.client.nome}: ${sendResult.error}`);
+            console.log(`❌ Failed to send message to ${appointment.client.nome}: ${sendResult.error}`);
+          }
 
           // Add delay between messages
           await new Promise(resolve => setTimeout(resolve, 500));
@@ -273,6 +283,65 @@ export class WhatsAppService {
         sent: 0, 
         failed: 0, 
         errors: [error instanceof Error ? error.message : 'Errore di rete'] 
+      };
+    }
+  }
+
+  // Send message via Twilio WhatsApp API
+  private async sendTwilioMessage(
+    phoneNumber: string, 
+    message: string
+  ): Promise<{ success: boolean; error?: string; messageId?: string }> {
+    try {
+      console.log('📱 Sending Twilio WhatsApp message...');
+      console.log('📞 To:', phoneNumber);
+      console.log('💬 Message:', message);
+
+      // Twilio configuration
+      const accountSid = 'AC7c1b8d8823020e99af99f54728dea952';
+      const authToken = 'a72ed944839f3378682ae209c68236a2';
+      const fromNumber = 'whatsapp:+14155238886'; // Twilio WhatsApp Sandbox
+      
+      // Format phone number for WhatsApp
+      const formattedPhone = `whatsapp:${phoneNumber.replace(/\D/g, '')}`;
+      
+      // Create Basic Auth header
+      const credentials = btoa(`${accountSid}:${authToken}`);
+      
+      const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          'From': fromNumber,
+          'To': formattedPhone,
+          'Body': message
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('❌ Twilio API Error:', response.status, data);
+        return { 
+          success: false, 
+          error: data.message || `Twilio API Error: ${response.status}` 
+        };
+      }
+
+      console.log('✅ Twilio message sent successfully:', data.sid);
+      return { 
+        success: true, 
+        messageId: data.sid 
+      };
+
+    } catch (error) {
+      console.error('❌ Twilio send error:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
       };
     }
   }
