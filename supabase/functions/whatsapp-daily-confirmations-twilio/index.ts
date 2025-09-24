@@ -10,6 +10,14 @@ interface TwilioConfig {
   is_active: boolean;
 }
 
+// Environment-based configuration
+interface EnvironmentConfig {
+  accountSid: string;
+  authToken: string;
+  fromNumber: string;
+  isProduction: boolean;
+}
+
 interface AppointmentWithClient {
   id: string;
   client_id: string;
@@ -40,6 +48,48 @@ interface WhatsAppMessage {
   error_message?: string;
 }
 
+// Get Twilio configuration (environment variables or database)
+async function getTwilioConfig(supabase: any, tablePrefix: string): Promise<EnvironmentConfig> {
+  // Check if we're in production mode
+  const isProduction = Deno.env.get('WHATSAPP_MODE') === 'production';
+  
+  if (isProduction) {
+    // Production mode: use environment variables
+    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+    const phoneNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
+    
+    if (!accountSid || !authToken || !phoneNumber) {
+      throw new Error('Missing Twilio configuration in environment variables');
+    }
+    
+    return {
+      accountSid,
+      authToken,
+      fromNumber: phoneNumber.startsWith('whatsapp:') ? phoneNumber : `whatsapp:${phoneNumber}`,
+      isProduction: true
+    };
+  } else {
+    // Development mode: use database configuration
+    const { data: config, error } = await supabase
+      .from(`${tablePrefix}whatsapp_config`)
+      .select('*')
+      .eq('is_active', true)
+      .single();
+
+    if (error || !config) {
+      throw new Error('WhatsApp configuration not found in database');
+    }
+
+    return {
+      accountSid: config.api_token, // In our DB, api_token contains the account SID
+      authToken: config.api_url, // In our DB, api_url contains the auth token
+      fromNumber: config.phone_number_id, // In our DB, phone_number_id contains the WhatsApp number
+      isProduction: false
+    };
+  }
+}
+
 Deno.serve(async (req: Request) => {
   try {
     // Initialize Supabase client
@@ -54,17 +104,8 @@ Deno.serve(async (req: Request) => {
     console.log('🚀 Starting WhatsApp daily confirmations with Twilio...');
 
     // Get Twilio configuration
-    const { data: config, error: configError } = await supabase
-      .from(`${tablePrefix}whatsapp_config`)
-      .select('*')
-      .eq('is_active', true)
-      .single();
-
-    if (configError || !config) {
-      throw new Error('Twilio configuration not found or inactive');
-    }
-
-    const twilioConfig: TwilioConfig = config;
+    const twilioConfig = await getTwilioConfig(supabase, tablePrefix);
+    console.log(`📱 Using ${twilioConfig.isProduction ? 'production' : 'development'} mode`);
 
     // Get tomorrow's date
     const tomorrow = new Date();
@@ -255,30 +296,29 @@ function generateMessage(template: string, appointment: AppointmentWithClient): 
 }
 
 async function sendTwilioWhatsAppMessage(
-  config: TwilioConfig,
+  config: EnvironmentConfig,
   phoneNumber: string,
   message: string
-): Promise<{ success: boolean; error?: string; messageId?: string }> {
+): Promise<{ success: boolean; error?: string; messageId?: string; twilioError?: any }> {
   try {
-    // Twilio WhatsApp API endpoint
-    const accountSid = config.phone_number_id; // Account SID
-    const authToken = config.api_token;
+    console.log(`📱 Sending WhatsApp message via ${config.isProduction ? 'production' : 'development'} mode`);
+    console.log(`📞 From: ${config.fromNumber}`);
+    console.log(`📞 To: ${phoneNumber}`);
     
     // Format phone number for WhatsApp (remove + and add whatsapp: prefix)
     const formattedPhone = `whatsapp:${phoneNumber.replace(/\D/g, '')}`;
-    const fromNumber = 'whatsapp:+14155238886'; // Twilio WhatsApp Sandbox number
     
     // Create Basic Auth header
-    const credentials = btoa(`${accountSid}:${authToken}`);
+    const credentials = btoa(`${config.accountSid}:${config.authToken}`);
     
-    const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+    const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${config.accountSid}/Messages.json`, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${credentials}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        'From': fromNumber,
+        'From': config.fromNumber,
         'To': formattedPhone,
         'Body': message
       })
@@ -287,17 +327,21 @@ async function sendTwilioWhatsAppMessage(
     const data = await response.json();
 
     if (!response.ok) {
+      console.error('❌ Twilio API Error:', response.status, data);
       return { 
         success: false, 
-        error: data.message || `Twilio API Error: ${response.status}` 
+        error: data.message || `Twilio API Error: ${response.status}`,
+        twilioError: data
       };
     }
 
+    console.log('✅ Twilio message sent successfully:', data.sid);
     return { 
       success: true, 
       messageId: data.sid 
     };
   } catch (error) {
+    console.error('❌ Twilio send error:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 

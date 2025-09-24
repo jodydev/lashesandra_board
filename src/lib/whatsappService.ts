@@ -6,6 +6,7 @@ import type {
   WhatsAppLogEntry 
 } from '../types';
 import { useApp } from '../contexts/AppContext';
+import dayjs from 'dayjs';
 
 // WhatsApp Business API Service
 export class WhatsAppService {
@@ -192,130 +193,217 @@ export class WhatsAppService {
     });
   }
 
-  // Send confirmation messages for tomorrow's appointments via Edge Function
+  // Send confirmation messages for tomorrow's appointments
   async sendTomorrowConfirmations(): Promise<{ sent: number; failed: number; errors: string[] }> {
+    const results = { sent: 0, failed: 0, errors: [] as string[] };
     try {
       console.log('🚀 Starting WhatsApp confirmations...');
       console.log('📋 Table prefix:', this.tablePrefix);
-      
-      // Get tomorrow's appointments
-      const appointments = await this.getTomorrowAppointments();
-      console.log('📅 Found appointments:', appointments.length);
-      
-      if (appointments.length === 0) {
-        console.log('ℹ️ No appointments found for tomorrow');
-        return { sent: 0, failed: 0, errors: [] };
+
+      // 1. Get WhatsApp config
+      const { data: config, error: configError } = await supabase
+        .from(`${this.tablePrefix}whatsapp_config`)
+        .select('*')
+        .eq('is_active', true)
+        .single();
+
+      if (configError || !config) {
+        const errorMessage = configError?.message || 'WhatsApp non configurato o non attivo.';
+        results.errors.push(errorMessage);
+        console.error('❌ WhatsApp config error:', errorMessage);
+        return results;
       }
 
-      // Get message template
-      const template = await this.getMessageTemplate();
+      // 2. Get tomorrow's appointments
+      const tomorrow = dayjs().add(1, 'day').format('YYYY-MM-DD');
+      const { data: appointments, error: appointmentsError } = await supabase
+        .from(`${this.tablePrefix}appointments`)
+        .select(`
+          id,
+          data,
+          ora,
+          tipo_trattamento,
+          client:client_id (
+            id,
+            nome,
+            cognome,
+            telefono
+          )
+        `)
+        .eq('data', tomorrow)
+        .not('client.telefono', 'is', null)
+        .not('client.telefono', 'eq', '');
+
+      if (appointmentsError) {
+        results.errors.push(`Errore nel recupero appuntamenti: ${appointmentsError.message}`);
+        console.error('❌ Appointments error:', appointmentsError);
+        return results;
+      }
+
+      if (!appointments || appointments.length === 0) {
+        results.errors.push('Nessun appuntamento trovato per domani.');
+        console.log('📅 No appointments found for tomorrow.');
+        return results;
+      }
+
+      console.log('📅 Found appointments:', appointments.length);
+
+      // 3. Get default message template
+      const { data: template, error: templateError } = await supabase
+        .from(`${this.tablePrefix}message_templates`)
+        .select('*')
+        .eq('is_default', true)
+        .single();
+
+      if (templateError || !template) {
+        const errorMessage = templateError?.message || 'Template messaggio predefinito non trovato.';
+        results.errors.push(errorMessage);
+        console.error('❌ Template error:', errorMessage);
+        return results;
+      }
+
       console.log('📝 Using template:', template.name);
 
-      const results = { sent: 0, failed: 0, errors: [] as string[] };
-
-      // Process each appointment
+      // 4. Process each appointment
       for (const appointment of appointments) {
-        try {
-          console.log(`📱 Processing appointment for ${appointment.client.nome} ${appointment.client.cognome}`);
-          
-          // Check if message already sent for this appointment
-          const { data: existingMessage } = await supabase
-            .from(`${this.tablePrefix}whatsapp_messages`)
-            .select('id')
-            .eq('appointment_id', appointment.id)
-            .eq('status', 'sent')
-            .single();
+        const client = appointment.client as any;
+        if (!client || !client.telefono) {
+          results.failed++;
+          results.errors.push(`Cliente o numero di telefono mancante per appuntamento ${appointment.id}`);
+          continue;
+        }
 
-          if (existingMessage) {
-            console.log(`⏭️ Message already sent for appointment ${appointment.id}`);
-            continue;
+        // Check for duplicate send
+        const { data: existingMessage, error: existingMessageError } = await supabase
+          .from(`${this.tablePrefix}whatsapp_messages`)
+          .select('id, status')
+          .eq('appointment_id', appointment.id)
+          .eq('client_id', client.id)
+          .in('status', ['sent', 'delivered', 'pending'])
+          .single();
+
+        if (existingMessageError && existingMessageError.code !== 'PGRST116') { // PGRST116 means no rows found
+          console.error('Error checking existing message:', existingMessageError);
+          results.failed++;
+          results.errors.push(`Errore nel controllo duplicati per ${client.nome}: ${existingMessageError.message}`);
+          continue;
+        }
+
+        if (existingMessage) {
+          console.log(`⏭️ Message already sent for appointment ${appointment.id}`);
+          // Only add to errors if it's not already in the list
+          if (!results.errors.some(e => e.includes('Tutti i messaggi di conferma sono già stati inviati'))) {
+              results.errors.push(`Messaggio già inviato per ${client.nome} (status: ${existingMessage.status})`);
           }
+          continue;
+        }
 
-          // Generate personalized message
-          const messageContent = this.generateMessage(template.content, appointment);
-          console.log('💬 Generated message:', messageContent);
+        console.log('📱 Processing appointment for', client.nome, client.cognome);
 
-          // Save message to database with pending status
-          const messageData = await this.saveMessage({
-            client_id: appointment.client_id,
+        const messageContent = template.content
+          .replace(/{nome}/g, client.nome || '')
+          .replace(/{cognome}/g, client.cognome || '')
+          .replace(/{ora}/g, appointment.ora || '')
+          .replace(/{servizio}/g, appointment.tipo_trattamento || 'trattamento')
+          .replace(/{location}/g, 'Via Monsignor Enrico Montalbetti 5, Reggio Calabria') // Hardcoded location
+          .replace(/{data}/g, dayjs(appointment.data).format('DD/MM/YYYY'));
+
+        // Save message to DB with 'pending' status
+        const { data: savedMessage, error: saveError } = await supabase
+          .from(`${this.tablePrefix}whatsapp_messages`)
+          .insert({
+            client_id: client.id,
             appointment_id: appointment.id,
-            phone_number: appointment.client.telefono!,
+            phone_number: client.telefono,
             message_content: messageContent,
             status: 'pending'
-          });
+          })
+          .select()
+          .single();
 
-          console.log('💾 Message saved to database:', messageData.id);
+        if (saveError || !savedMessage) {
+          results.failed++;
+          results.errors.push(`Errore nel salvataggio messaggio per ${client.nome}: ${saveError?.message || 'Sconosciuto'}`);
+          console.error('❌ Save message error:', saveError);
+          continue;
+        }
 
-          // Send message via Twilio WhatsApp API
-          const sendResult = await this.sendTwilioMessage(
-            appointment.client.telefono!,
+        console.log('💾 Message saved to database:', savedMessage.id);
+
+        // Send message via Twilio
+        try {
+          const twilioResponse = await this.sendTwilioMessage(
+            client.telefono,
             messageContent
           );
 
-          if (sendResult.success) {
-            await this.updateMessageStatus(messageData.id!, 'sent');
+          if (twilioResponse.success) {
             results.sent++;
-            console.log(`✅ Message sent successfully to ${appointment.client.nome}`);
+            await supabase
+              .from(`${this.tablePrefix}whatsapp_messages`)
+              .update({ status: 'sent', sent_at: new Date().toISOString() })
+              .eq('id', savedMessage.id);
           } else {
-            await this.updateMessageStatus(messageData.id!, 'failed', sendResult.error);
             results.failed++;
-            results.errors.push(`${appointment.client.nome}: ${sendResult.error}`);
-            console.log(`❌ Failed to send message to ${appointment.client.nome}: ${sendResult.error}`);
+            results.errors.push(`Failed to send message to ${client.nome}: ${twilioResponse.error}`);
+            await supabase
+              .from(`${this.tablePrefix}whatsapp_messages`)
+              .update({ status: 'failed', error_message: twilioResponse.error })
+              .eq('id', savedMessage.id);
           }
-
-          // Add delay between messages
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-        } catch (error) {
+        } catch (sendError) {
           results.failed++;
-          const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
-          results.errors.push(`${appointment.client.nome}: ${errorMessage}`);
-          console.error(`❌ Error processing appointment ${appointment.id}:`, error);
+          const errorMessage = sendError instanceof Error ? sendError.message : 'Errore sconosciuto durante l\'invio Twilio';
+          results.errors.push(`Failed to send message to ${client.nome}: ${errorMessage}`);
+          await supabase
+            .from(`${this.tablePrefix}whatsapp_messages`)
+            .update({ status: 'failed', error_message: errorMessage })
+            .eq('id', savedMessage.id);
+          console.error('❌ Twilio send error:', sendError);
         }
       }
-
-      console.log('✅ WhatsApp confirmations completed:', results);
-      return results;
-
     } catch (error) {
       console.error('❌ WhatsApp service error:', error);
-      return { 
-        sent: 0, 
-        failed: 0, 
-        errors: [error instanceof Error ? error.message : 'Errore di rete'] 
-      };
+      results.errors.push(error instanceof Error ? error.message : 'Errore di rete');
     }
+    
+    console.log('✅ WhatsApp confirmations completed:', results);
+    
+    // Add special message if all messages were already sent
+    if (results.sent === 0 && results.failed === 0 && results.errors.some(e => e.includes('Messaggio già inviato'))) {
+      results.errors = ['Tutti i messaggi di conferma sono già stati inviati per gli appuntamenti di domani'];
+    }
+    
+    return results;
   }
 
   // Send message via Twilio WhatsApp API
   private async sendTwilioMessage(
     phoneNumber: string, 
     message: string
-  ): Promise<{ success: boolean; error?: string; messageId?: string }> {
+  ): Promise<{ success: boolean; error?: string; messageId?: string; twilioError?: any }> {
     try {
       console.log('📱 Sending Twilio WhatsApp message...');
       console.log('📞 To:', phoneNumber);
       console.log('💬 Message:', message);
 
-      // Twilio configuration
-      const accountSid = 'AC7c1b8d8823020e99af99f54728dea952';
-      const authToken = '595de72983918890d1e0426d4d33a7eb';
-      const fromNumber = 'whatsapp:+14155238886'; // Twilio WhatsApp Sandbox
+      // Get Twilio configuration from environment or database
+      const config = await this.getTwilioConfig();
       
       // Format phone number for WhatsApp
       const formattedPhone = `whatsapp:${phoneNumber.replace(/\D/g, '')}`;
       
       // Create Basic Auth header
-      const credentials = btoa(`${accountSid}:${authToken}`);
+      const credentials = btoa(`${config.accountSid}:${config.authToken}`);
       
-      const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+      const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${config.accountSid}/Messages.json`, {
         method: 'POST',
         headers: {
           'Authorization': `Basic ${credentials}`,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          'From': fromNumber,
+          'From': config.fromNumber,
           'To': formattedPhone,
           'Body': message
         })
@@ -327,7 +415,8 @@ export class WhatsAppService {
         console.error('❌ Twilio API Error:', response.status, data);
         return { 
           success: false, 
-          error: data.message || `Twilio API Error: ${response.status}` 
+          error: data.message || `Twilio API Error: ${response.status}`,
+          twilioError: data
         };
       }
 
@@ -342,6 +431,53 @@ export class WhatsAppService {
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
+  }
+
+  // Get Twilio configuration (environment variables or database)
+  private async getTwilioConfig(): Promise<{
+    accountSid: string;
+    authToken: string;
+    fromNumber: string;
+    isProduction: boolean;
+  }> {
+    // Check if we're in production mode
+    const isProduction = import.meta.env.PROD || import.meta.env.VITE_WHATSAPP_MODE === 'production';
+    
+    if (isProduction) {
+      // Production mode: use environment variables
+      const accountSid = import.meta.env.VITE_TWILIO_ACCOUNT_SID;
+      const authToken = import.meta.env.VITE_TWILIO_AUTH_TOKEN;
+      const phoneNumber = import.meta.env.VITE_TWILIO_PHONE_NUMBER;
+      
+      if (!accountSid || !authToken || !phoneNumber) {
+        throw new Error('Missing Twilio configuration in environment variables');
+      }
+      
+      return {
+        accountSid,
+        authToken,
+        fromNumber: phoneNumber.startsWith('whatsapp:') ? phoneNumber : `whatsapp:${phoneNumber}`,
+        isProduction: true
+      };
+    } else {
+      // Development mode: use database configuration
+      const { data: config, error } = await supabase
+        .from(`${this.tablePrefix}whatsapp_config`)
+        .select('*')
+        .eq('is_active', true)
+        .single();
+
+      if (error || !config) {
+        throw new Error('WhatsApp configuration not found in database');
+      }
+
+      return {
+        accountSid: config.api_token, // In our DB, api_token contains the account SID
+        authToken: config.api_url, // In our DB, api_url contains the auth token
+        fromNumber: config.phone_number_id, // In our DB, phone_number_id contains the WhatsApp number
+        isProduction: false
       };
     }
   }

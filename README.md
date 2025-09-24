@@ -42,6 +42,14 @@ Un'applicazione web moderna per la gestione di clienti e appuntamenti per esteti
   - Distribuzione trattamenti (grafico a torta)
   - Tabelle dettagliate
 
+### 📱 WhatsApp Business Integration
+- **Invio Automatico**: Messaggi di conferma automatici per appuntamenti
+- **Template Personalizzabili**: Messaggi personalizzati con placeholder dinamici
+- **Modalità Produzione/Sviluppo**: Supporto per ambiente di test e produzione
+- **Logging Completo**: Tracciamento di tutti i messaggi inviati
+- **Dashboard Admin**: Gestione centralizzata dei messaggi WhatsApp
+- **Integrazione Twilio**: Utilizzo di Twilio per l'invio via WhatsApp Business API
+
 ## 🛠️ Stack Tecnologico
 
 ### Frontend
@@ -138,7 +146,29 @@ CREATE TABLE isabelle_appointments (
 );
 ```
 
-### 3. Avvia l'Applicazione
+### 3. Configurazione WhatsApp Business (Opzionale)
+Per abilitare l'invio automatico di messaggi WhatsApp:
+
+1. **Copia il file di esempio**:
+   ```bash
+   cp env.example .env
+   ```
+
+2. **Configura le variabili d'ambiente**:
+   ```env
+   # Modalità sviluppo (usa database)
+   VITE_WHATSAPP_MODE=development
+   
+   # Modalità produzione (usa variabili ambiente)
+   VITE_WHATSAPP_MODE=production
+   VITE_TWILIO_ACCOUNT_SID=your_twilio_account_sid
+   VITE_TWILIO_AUTH_TOKEN=your_twilio_auth_token
+   VITE_TWILIO_PHONE_NUMBER=whatsapp:+39XXXXXXXXXX
+   ```
+
+3. **Segui la guida completa**: Vedi `WHATSAPP_BUSINESS_SETUP.md` per istruzioni dettagliate
+
+### 4. Avvia l'Applicazione
 ```bash
 npm run dev
 ```
@@ -180,6 +210,19 @@ Una volta selezionata un'app, l'applicazione include una sidebar con le seguenti
 2. Naviga tra i mesi usando le frecce
 3. Visualizza metriche, grafici e top clienti
 4. Cambia tipo di grafico (fatturato/clienti)
+
+### Gestire WhatsApp Business
+1. Vai su "WhatsApp Admin" nella sidebar
+2. **Panoramica**: Visualizza statistiche dei messaggi inviati
+3. **Appuntamenti**: Gestisci appuntamenti e invia conferme manuali
+4. **Template**: Personalizza i messaggi di conferma
+5. **Log Messaggi**: Visualizza storico completo degli invii
+6. **Impostazioni**: Configura credenziali Twilio (sviluppo)
+
+#### Invio Automatico
+- I messaggi vengono inviati automaticamente per gli appuntamenti del giorno successivo
+- Utilizza il pulsante "Invia Conferme" per invio manuale
+- Monitora lo stato dei messaggi nel dashboard
 
 ## 🎨 Design e UX
 
@@ -257,7 +300,25 @@ npm run build
 3. Deploy automatico su push
 
 ### Variabili Ambiente
-Le credenziali Supabase sono già configurate nel codice. Per produzione, considera di spostarle in variabili ambiente.
+Per la produzione, configura le seguenti variabili ambiente:
+
+#### Supabase (già configurate)
+- `VITE_SUPABASE_URL`: URL del progetto Supabase
+- `VITE_SUPABASE_ANON_KEY`: Chiave anonima Supabase
+
+#### WhatsApp Business (opzionale)
+- `VITE_WHATSAPP_MODE`: `production` o `development`
+- `VITE_TWILIO_ACCOUNT_SID`: Account SID Twilio
+- `VITE_TWILIO_AUTH_TOKEN`: Auth Token Twilio
+- `VITE_TWILIO_PHONE_NUMBER`: Numero WhatsApp Business (formato: `whatsapp:+39XXXXXXXXXX`)
+
+#### Esempio per Vercel/Netlify
+```env
+VITE_WHATSAPP_MODE=production
+VITE_TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+VITE_TWILIO_AUTH_TOKEN=your_auth_token_here
+VITE_TWILIO_PHONE_NUMBER=whatsapp:+39XXXXXXXXXX
+```
 
 ## 🤝 Contributi
 
