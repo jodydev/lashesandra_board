@@ -198,84 +198,30 @@ export class WhatsAppService {
       console.log('🚀 Starting WhatsApp confirmations...');
       console.log('📋 Table prefix:', this.tablePrefix);
       
-      // Get tomorrow's appointments
-      const appointments = await this.getTomorrowAppointments();
-      console.log('📅 Found appointments:', appointments.length);
-      
-      if (appointments.length === 0) {
-        console.log('ℹ️ No appointments found for tomorrow');
-        return { sent: 0, failed: 0, errors: [] };
-      }
-
-      // Get message template
-      const template = await this.getMessageTemplate();
-      console.log('📝 Using template:', template.name);
-
-      const results = { sent: 0, failed: 0, errors: [] as string[] };
-
-      // Process each appointment
-      for (const appointment of appointments) {
-        try {
-          console.log(`📱 Processing appointment for ${appointment.client.nome} ${appointment.client.cognome}`);
-          
-          // Check if message already sent for this appointment
-          const { data: existingMessage } = await supabase
-            .from(`${this.tablePrefix}whatsapp_messages`)
-            .select('id')
-            .eq('appointment_id', appointment.id)
-            .eq('status', 'sent')
-            .single();
-
-          if (existingMessage) {
-            console.log(`⏭️ Message already sent for appointment ${appointment.id}`);
-            continue;
-          }
-
-          // Generate personalized message
-          const messageContent = this.generateMessage(template.content, appointment);
-          console.log('💬 Generated message:', messageContent);
-
-          // Save message to database with pending status
-          const messageData = await this.saveMessage({
-            client_id: appointment.client_id,
-            appointment_id: appointment.id,
-            phone_number: appointment.client.telefono!,
-            message_content: messageContent,
-            status: 'pending'
-          });
-
-          console.log('💾 Message saved to database:', messageData.id);
-
-          // Send message via Twilio WhatsApp API
-          const sendResult = await this.sendTwilioMessage(
-            appointment.client.telefono!,
-            messageContent
-          );
-
-          if (sendResult.success) {
-            await this.updateMessageStatus(messageData.id!, 'sent');
-            results.sent++;
-            console.log(`✅ Message sent successfully to ${appointment.client.nome}`);
-          } else {
-            await this.updateMessageStatus(messageData.id!, 'failed', sendResult.error);
-            results.failed++;
-            results.errors.push(`${appointment.client.nome}: ${sendResult.error}`);
-            console.log(`❌ Failed to send message to ${appointment.client.nome}: ${sendResult.error}`);
-          }
-
-          // Add delay between messages
-          await new Promise(resolve => setTimeout(resolve, 500));
-
-        } catch (error) {
-          results.failed++;
-          const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
-          results.errors.push(`${appointment.client.nome}: ${errorMessage}`);
-          console.error(`❌ Error processing appointment ${appointment.id}:`, error);
+      // Call Edge Function using Supabase client
+      const { data, error } = await supabase.functions.invoke('whatsapp-daily-confirmations-twilio', {
+        body: {
+          table_prefix: this.tablePrefix
         }
+      });
+
+      console.log('📊 Edge Function response:', { data, error });
+
+      if (error) {
+        console.error('❌ Edge Function error:', error);
+        return { 
+          sent: 0, 
+          failed: 0, 
+          errors: [error.message || 'Edge Function Error'] 
+        };
       }
 
-      console.log('✅ WhatsApp confirmations completed:', results);
-      return results;
+      console.log('✅ Edge Function success:', data);
+      return {
+        sent: data?.sent || 0,
+        failed: data?.failed || 0,
+        errors: data?.errors || []
+      };
 
     } catch (error) {
       console.error('❌ WhatsApp service error:', error);
@@ -287,64 +233,6 @@ export class WhatsAppService {
     }
   }
 
-  // Send message via Twilio WhatsApp API
-  private async sendTwilioMessage(
-    phoneNumber: string, 
-    message: string
-  ): Promise<{ success: boolean; error?: string; messageId?: string }> {
-    try {
-      console.log('📱 Sending Twilio WhatsApp message...');
-      console.log('📞 To:', phoneNumber);
-      console.log('💬 Message:', message);
-
-      // Twilio configuration
-      const accountSid = 'AC7c1b8d8823020e99af99f54728dea952';
-      const authToken = 'a72ed944839f3378682ae209c68236a2';
-      const fromNumber = 'whatsapp:+14155238886'; // Twilio WhatsApp Sandbox
-      
-      // Format phone number for WhatsApp
-      const formattedPhone = `whatsapp:${phoneNumber.replace(/\D/g, '')}`;
-      
-      // Create Basic Auth header
-      const credentials = btoa(`${accountSid}:${authToken}`);
-      
-      const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          'From': fromNumber,
-          'To': formattedPhone,
-          'Body': message
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error('❌ Twilio API Error:', response.status, data);
-        return { 
-          success: false, 
-          error: data.message || `Twilio API Error: ${response.status}` 
-        };
-      }
-
-      console.log('✅ Twilio message sent successfully:', data.sid);
-      return { 
-        success: true, 
-        messageId: data.sid 
-      };
-
-    } catch (error) {
-      console.error('❌ Twilio send error:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
-      };
-    }
-  }
 }
 
 // Hook for using WhatsApp service

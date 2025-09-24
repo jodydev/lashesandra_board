@@ -9,7 +9,7 @@ import https from 'https';
 
 // Configurazione Twilio
 const accountSid = 'AC7c1b8d8823020e99af99f54728dea952';
-const authToken = 'a72ed944839f3378682ae209c68236a2';
+const authToken = '595de72983918890d1e0426d4d33a7eb';
 const fromNumber = 'whatsapp:+14155238886'; // Twilio WhatsApp Sandbox
 const toNumber = 'whatsapp:+393336170035'; // Numero di test
 
