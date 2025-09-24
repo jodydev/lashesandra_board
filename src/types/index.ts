@@ -117,3 +117,54 @@ export interface ClientProfileData {
 export interface ClientWithProfile extends Client {
   profile?: ClientProfileData;
 }
+
+// WhatsApp System Types
+export interface WhatsAppMessage {
+  id?: string;
+  client_id: string;
+  appointment_id: string;
+  phone_number: string;
+  message_content: string;
+  status: 'pending' | 'sent' | 'failed' | 'delivered';
+  sent_at?: string;
+  error_message?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface MessageTemplate {
+  id?: string;
+  name: string;
+  content: string;
+  is_default: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface WhatsAppConfig {
+  id?: string;
+  api_url: string;
+  api_token: string;
+  phone_number_id: string;
+  business_account_id: string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AppointmentWithClient extends Appointment {
+  client: Client;
+}
+
+export interface WhatsAppLogEntry {
+  id: string;
+  client_name: string;
+  client_phone: string;
+  appointment_date: string;
+  appointment_time?: string;
+  service: string;
+  message_status: 'pending' | 'sent' | 'failed' | 'delivered';
+  message_content: string;
+  sent_at?: string;
+  error_message?: string;
+}

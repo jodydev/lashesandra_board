@@ -19,6 +19,7 @@ import {
   Home as HomeIcon,
   Close as CloseIcon,
   CheckCircle as CheckCircleIcon,
+  Message as MessageIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -43,6 +44,7 @@ const getMenuItems = (appType: string) => [
   { text: 'Calendario', icon: <CalendarIcon />, path: 'calendar', badge: null },
   { text: 'Statistiche', icon: <ChartIcon />, path: 'overview', badge: null },
   { text: 'Conferma Appuntamenti', icon: <CheckCircleIcon />, path: 'confirmations', badge: 'notification' },
+  { text: 'WhatsApp Admin', icon: <MessageIcon />, path: 'whatsapp-admin', badge: null },
 ];
 
 export default function Layout({ children }: LayoutProps) {
@@ -121,7 +123,7 @@ export default function Layout({ children }: LayoutProps) {
       </div>
 
       {/* Navigation Menu */}
-      <div className="flex-1 p-4 space-y-2">
+      <div className="flex-1 p-4 space-y-2 overflow-y-auto">
         {getMenuItems(appType).map((item, index) => {
           // Check if current path matches the expected app path
           const appPrefix = appType === 'isabellenails' ? '/isabellenails' : '/lashesandra';
