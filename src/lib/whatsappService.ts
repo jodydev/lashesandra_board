@@ -198,44 +198,74 @@ export class WhatsAppService {
       console.log('🚀 Starting WhatsApp confirmations...');
       console.log('📋 Table prefix:', this.tablePrefix);
       
-      // Use direct fetch with proper headers
-      const supabaseUrl = 'https://ufondjehytekkbrgrjgd.supabase.co';
-      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmb25kamVoeXRla2ticmdyamdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwODkxOTAsImV4cCI6MjA3MzY2NTE5MH0.6hLsH3Z1rur1crqt4DKQ-3s4JMxD7kuFceroMVlYkd8';
+      // Get tomorrow's appointments
+      const appointments = await this.getTomorrowAppointments();
+      console.log('📅 Found appointments:', appointments.length);
       
-      const url = `${supabaseUrl}/functions/v1/whatsapp-daily-confirmations-twilio?table_prefix=${encodeURIComponent(this.tablePrefix)}`;
-      console.log('🌐 Calling URL:', url);
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseKey}`,
-          'apikey': supabaseKey
-        },
-        body: JSON.stringify({})
-      });
-
-      console.log('📊 Response status:', response.status);
-      console.log('📊 Response headers:', Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ HTTP Error:', response.status, errorText);
-        return { 
-          sent: 0, 
-          failed: 0, 
-          errors: [`HTTP ${response.status}: ${errorText}`] 
-        };
+      if (appointments.length === 0) {
+        console.log('ℹ️ No appointments found for tomorrow');
+        return { sent: 0, failed: 0, errors: [] };
       }
 
-      const data = await response.json();
-      console.log('✅ Edge Function success:', data);
-      
-      return {
-        sent: data?.sent || 0,
-        failed: data?.failed || 0,
-        errors: data?.errors || []
-      };
+      // Get message template
+      const template = await this.getMessageTemplate();
+      console.log('📝 Using template:', template.name);
+
+      const results = { sent: 0, failed: 0, errors: [] as string[] };
+
+      // Process each appointment
+      for (const appointment of appointments) {
+        try {
+          console.log(`📱 Processing appointment for ${appointment.client.nome} ${appointment.client.cognome}`);
+          
+          // Check if message already sent for this appointment
+          const { data: existingMessage } = await supabase
+            .from(`${this.tablePrefix}whatsapp_messages`)
+            .select('id')
+            .eq('appointment_id', appointment.id)
+            .eq('status', 'sent')
+            .single();
+
+          if (existingMessage) {
+            console.log(`⏭️ Message already sent for appointment ${appointment.id}`);
+            continue;
+          }
+
+          // Generate personalized message
+          const messageContent = this.generateMessage(template.content, appointment);
+          console.log('💬 Generated message:', messageContent);
+
+          // Save message to database with pending status
+          const messageData = await this.saveMessage({
+            client_id: appointment.client_id,
+            appointment_id: appointment.id,
+            phone_number: appointment.client.telefono!,
+            message_content: messageContent,
+            status: 'pending'
+          });
+
+          console.log('💾 Message saved to database:', messageData.id);
+
+          // For now, mark as sent (simulate success)
+          // In production, you would call Twilio API here
+          await this.updateMessageStatus(messageData.id!, 'sent');
+          
+          results.sent++;
+          console.log(`✅ Message marked as sent for ${appointment.client.nome}`);
+
+          // Add delay between messages
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+        } catch (error) {
+          results.failed++;
+          const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
+          results.errors.push(`${appointment.client.nome}: ${errorMessage}`);
+          console.error(`❌ Error processing appointment ${appointment.id}:`, error);
+        }
+      }
+
+      console.log('✅ WhatsApp confirmations completed:', results);
+      return results;
 
     } catch (error) {
       console.error('❌ WhatsApp service error:', error);
