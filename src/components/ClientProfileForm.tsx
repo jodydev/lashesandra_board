@@ -17,6 +17,7 @@ import {
 } from 'react-icons/fi';
 import { useAppColors } from '../hooks/useAppColors';
 import { useToast } from '../hooks/useToast';
+import { useApp } from '../contexts/AppContext';
 
 interface ClientProfileFormProps {
   client: Client;
@@ -73,6 +74,16 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
   
   const colors = useAppColors();
   const { showSuccess, showError } = useToast();
+  const { appType } = useApp();
+
+  const textPrimaryColor = '#2C2C2C';
+  const textSecondaryColor = '#7A7A7A';
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#FFF6FA';
+  const surfaceColor = '#FFFFFF';
+  const accentDark = colors.primaryDark;
+  const accentGradient = colors.cssGradient;
+  const accentSoft = `${colors.primary}29`;
+  const accentSofter = `${colors.primary}14`;
 
   // Helper function per colori dinamici delle checkbox
   const getCheckboxColors = (isActive: boolean) => {
@@ -299,7 +310,11 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
   ] as const;
 
   return (
-    <div ref={containerRef} >
+    <div
+      ref={containerRef}
+      className="min-h-screen"
+      style={{ backgroundColor }}
+    >
       {/* Floating Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div 
@@ -319,25 +334,50 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
           animate={{ opacity: 1, y: 0 }}
           className="mb-12"
         >
-          <div className="flex items-center justify-between mb-6">
+          <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
-            Scheda Cliente
-          </h1>
-                <p className="text-lg text-gray-600 dark:text-gray-400 mt-1">
-            {client.nome} {client.cognome}
-          </p>
+              <div className="space-y-3">
+                <div
+                  className="inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-semibold shadow-sm"
+                  style={{ backgroundColor: accentSofter, color: accentDark }}
+                >
+                  <FiUser className="h-4 w-4" />
+                  Profilo cliente
+                </div>
+                <div>
+                  <h1
+                    className="text-3xl font-semibold tracking-tight dark:text-white"
+                    style={{ color: textPrimaryColor }}
+                  >
+                    Scheda Cliente
+                  </h1>
+                  <p
+                    className="mt-1 text-lg dark:text-gray-400"
+                    style={{ color: textSecondaryColor }}
+                  >
+                    {client.nome} {client.cognome}
+                  </p>
+                </div>
               </div>
-        </div>
+            </div>
             
             <div className="flex items-center space-x-4">
               <div className="text-right">
-                <div className="text-sm text-gray-500 dark:text-gray-400">Completamento</div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{progress}%</div>
+                <div
+                  className="text-sm"
+                  style={{ color: textSecondaryColor }}
+                >
+                  Completamento
+                </div>
+                <div
+                  className="text-2xl font-semibold dark:text-white"
+                  style={{ color: textPrimaryColor }}
+                >
+                  {progress}%
+                </div>
               </div>
-              <div className="w-16 h-16 relative">
-                <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 36 36">
+              <div className="relative h-16 w-16">
+                <svg className="h-16 w-16 transform -rotate-90" viewBox="0 0 36 36">
                   <path
                     className="text-gray-200 dark:text-gray-700"
                     stroke="currentColor"
@@ -346,7 +386,6 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
                   <motion.path
-                    className={colors.textPrimary}
                     stroke="currentColor"
                     strokeWidth="3"
                     fill="none"
@@ -354,7 +393,8 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                     initial={{ pathLength: 0 }}
                     animate={{ pathLength: progress / 100 }}
-                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                    transition={{ duration: 0.5, ease: 'easeInOut' }}
+                    style={{ color: accentDark }}
                   />
                 </svg>
               </div>
@@ -362,12 +402,13 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
             <motion.div
-              className={`h-full ${colors.bgGradient} rounded-full`}
+              className="h-full rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
+              transition={{ duration: 0.5, ease: 'easeInOut' }}
+              style={{ background: accentGradient }}
             />
           </div>
         </motion.div>
@@ -378,7 +419,11 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6"
+            className="rounded-2xl border p-6 shadow-xl"
+            style={{
+              background: `linear-gradient(135deg, ${surfaceColor}F6, rgba(255,255,255,0.92))`,
+              borderColor: accentSofter,
+            }}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {sections.map((section, index) => {
@@ -430,7 +475,11 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden"
+            className="rounded-2xl border shadow-xl overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${surfaceColor}F6, rgba(255,255,255,0.92))`,
+              borderColor: accentSofter,
+            }}
           >
             <AnimatePresence mode="wait">
               {/* Informazioni Personali */}
@@ -448,10 +497,16 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                       <FiUser className={`w-6 h-6 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                      <h2
+                        className="text-2xl font-bold dark:text-gray-100"
+                        style={{ color: textPrimaryColor }}
+                      >
                         Informazioni Personali
                       </h2>
-                      <p className="text-gray-600 dark:text-gray-400 mt-1">
+                      <p
+                        className="mt-1 dark:text-gray-400"
+                        style={{ color: textSecondaryColor }}
+                      >
                         Dati anagrafici e informazioni di contatto
                       </p>
                     </div>
@@ -546,11 +601,21 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                         <motion.div
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          className={`p-4 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl border ${colors.borderPrimary} dark:${colors.borderPrimary}`}
+                          className={`rounded-xl border p-4 dark:${colors.bgPrimaryDark}`}
+                          style={{
+                            backgroundColor: accentSofter,
+                            borderColor: accentSoft,
+                          }}
                         >
                           <div className="flex items-center">
-                            <div className={`w-2 h-2 ${colors.bgGradient} rounded-full mr-3`}></div>
-                            <span className={`text-sm font-medium ${colors.textPrimary} dark:${colors.textPrimaryDark}`}>
+                            <div
+                              className="mr-3 h-2 w-2 rounded-full"
+                              style={{ background: accentGradient }}
+                            />
+                            <span
+                              className="text-sm font-medium dark:text-gray-100"
+                              style={{ color: accentDark }}
+                            >
                               Età: {new Date().getFullYear() - new Date(formData.data_nascita).getFullYear()} anni
                             </span>
                           </div>
@@ -576,10 +641,16 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                       <FiEye className={`w-6 h-6 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                      <h2
+                        className="text-2xl font-bold dark:text-gray-100"
+                        style={{ color: textPrimaryColor }}
+                      >
                         Caratteristiche Occhi
                       </h2>
-                      <p className="text-gray-600 dark:text-gray-400 mt-1">
+                      <p
+                        className="mt-1 dark:text-gray-400"
+                        style={{ color: textSecondaryColor }}
+                      >
                         Morfologia e caratteristiche specifiche degli occhi
                       </p>
                     </div>
@@ -705,10 +776,16 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                       <FiHeart className={`w-6 h-6 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    Profilo Cliente
-                  </h2>
-                      <p className="text-gray-600 dark:text-gray-400 mt-1">
+                      <h2
+                        className="text-2xl font-bold dark:text-gray-100"
+                        style={{ color: textPrimaryColor }}
+                      >
+                        Profilo Cliente
+                      </h2>
+                      <p
+                        className="mt-1 dark:text-gray-400"
+                        style={{ color: textSecondaryColor }}
+                      >
                         Allergie, condizioni mediche e note importanti
                       </p>
                     </div>
@@ -829,10 +906,16 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                         <FiCalendar className={`w-6 h-6 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
                       </div>
                       <div>
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        <h2
+                          className="text-2xl font-bold dark:text-gray-100"
+                          style={{ color: textPrimaryColor }}
+                        >
                           Trattamenti
-                    </h2>
-                        <p className="text-gray-600 dark:text-gray-400 mt-1">
+                        </h2>
+                        <p
+                          className="mt-1 dark:text-gray-400"
+                          style={{ color: textSecondaryColor }}
+                        >
                           Storico e dettagli dei trattamenti effettuati ({formData.trattamenti.length})
                         </p>
                       </div>
@@ -842,7 +925,8 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                       onClick={addTreatment}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className={`flex items-center px-6 py-3 ${colors.bgGradient} text-white rounded-xl hover:opacity-90 transition-all duration-200 shadow-lg ${colors.shadowPrimary} font-semibold`}
+                      className="flex items-center rounded-xl px-6 py-3 text-white transition-all duration-200 shadow-lg font-semibold"
+                      style={{ background: accentGradient }}
                     >
                       <FiPlus className="w-5 h-5 mr-2" />
                       Aggiungi Trattamento
@@ -891,7 +975,8 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                           onClick={addTreatment}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          className={`inline-flex items-center px-6 py-3 ${colors.bgGradient} text-white rounded-xl hover:opacity-90 transition-all duration-200 shadow-lg ${colors.shadowPrimary} font-semibold`}
+                          className="inline-flex items-center px-6 py-3 rounded-xl text-white transition-all duration-200 shadow-lg font-semibold hover:opacity-90"
+                          style={{ background: accentGradient }}
                         >
                           <FiPlus className="w-5 h-5 mr-2" />
                           Aggiungi Primo Trattamento
@@ -909,43 +994,55 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6"
+            className="flex flex-col sm:flex-row justify-between items-center gap-4 rounded-2xl border p-6 shadow-xl backdrop-blur-xl"
+            style={{
+              background: `linear-gradient(135deg, ${surfaceColor}F5, rgba(255,255,255,0.9))`,
+              borderColor: accentSofter,
+            }}
           >
-            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-              <div className={`w-2 h-2 ${colors.bgGradient} rounded-full mr-2`}></div>
+            <div
+              className="flex items-center text-sm dark:text-gray-400"
+              style={{ color: textSecondaryColor }}
+            >
+              <div
+                className="mr-2 h-2 w-2 rounded-full"
+                style={{ background: accentGradient }}
+              ></div>
               <span>Profilo {progress}% completato</span>
             </div>
 
             <div className="flex gap-4">
               <motion.button
-              type="button"
-              onClick={onCancel}
+                type="button"
+                onClick={onCancel}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 font-semibold"
-            >
-              Annulla
+                className="rounded-xl border-2 px-6 py-3 font-semibold transition-all duration-200 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                style={{ borderColor: accentSofter, color: textSecondaryColor }}
+              >
+                Annulla
               </motion.button>
               <motion.button
-              type="submit"
-              disabled={isLoading}
+                type="submit"
+                disabled={isLoading}
                 whileHover={!isLoading ? { scale: 1.02 } : {}}
                 whileTap={!isLoading ? { scale: 0.98 } : {}}
-                className={`flex items-center px-8 py-3 ${colors.bgGradient} text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg ${colors.shadowPrimary} font-semibold`}
-            >
-              {isLoading ? (
-                <>
+                className="flex items-center rounded-xl px-8 py-3 text-white transition-all duration-200 shadow-lg font-semibold hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                style={{ background: accentGradient }}
+              >
+                {isLoading ? (
+                  <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3" />
-                  Salvataggio...
-                </>
-              ) : (
-                <>
+                    Salvataggio...
+                  </>
+                ) : (
+                  <>
                     <FiSave className="w-5 h-5 mr-3" />
-                  Salva Scheda
-                </>
-              )}
+                    Salva Scheda
+                  </>
+                )}
               </motion.button>
-          </div>
+            </div>
           </motion.div>
         </form>
       </div>

@@ -20,6 +20,7 @@ import {
   X,
   Heart,
   Smile,
+  ArrowRight,
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -99,6 +100,15 @@ export default function HomePage() {
   };
 
   const stats = calculateStats();
+  const textPrimaryColor = '#2C2C2C';
+  const textSecondaryColor = '#7A7A7A';
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#ffffff';
+  const neutralSurfaceColor = '#FFFFFF';
+  const accentColor = colors.primary;
+  const accentDark = colors.primaryDark;
+  const accentGradient = colors.cssGradient;
+  const accentSoft = `${colors.primary}29`;
+  const accentSofter = `${colors.primary}14`;
 
   const quickActions = [
     {
@@ -204,17 +214,24 @@ export default function HomePage() {
   // Loading state
   if (loading) {
     return (
-      <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-white dark:from-gray-900 dark:via-gray-900 flex items-center justify-center px-4 ${
-        appType === 'isabellenails' 
-          ? 'to-purple-50/30 dark:to-purple-950/20' 
-          : 'to-pink-50/30 dark:to-pink-950/20'
-      }`}>
-        <div className="text-center">
-          <div className={`inline-flex items-center gap-2 px-4 py-2 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl ${colors.textPrimary} dark:${colors.textPrimaryDark} text-sm font-medium mb-6`}>
-            <Sparkles className="w-4 h-4 animate-pulse" />
-            Caricamento dati...
+      <div
+        className="min-h-screen flex items-center justify-center px-6 dark:bg-gray-950"
+        style={{ backgroundColor }}
+      >
+        <div className="space-y-6 text-center">
+          <div
+            className={`inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-semibold shadow-sm ${colors.bgPrimary} dark:${colors.bgPrimaryDark} ${colors.textPrimary} dark:${colors.textPrimaryDark}`}
+          >
+            <Sparkles className="h-4 w-4 animate-pulse" />
+            Caricamento dati in corso
           </div>
-          <div className={`w-8 h-8 border-4 ${colors.borderPrimary} border-t-${colors.primary} rounded-full animate-spin mx-auto`}></div>
+          <div
+            className="mx-auto h-12 w-12 rounded-full border-[3px] border-dashed animate-spin"
+            style={{
+              borderColor: accentSoft,
+              borderTopColor: 'transparent',
+            }}
+          />
         </div>
       </div>
     );
@@ -223,16 +240,32 @@ export default function HomePage() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-pink-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-pink-950/20 flex items-center justify-center px-4">
-        <div className="text-center max-w-md mx-auto">
-          <div className="p-4 bg-red-100 dark:bg-red-950/30 rounded-xl text-red-600 dark:text-red-400 mb-4">
-            <X className="w-8 h-8 mx-auto mb-2" />
-            <h3 className="font-semibold">Errore di caricamento</h3>
-            <p className="text-sm">{error}</p>
+      <div
+        className="min-h-screen flex items-center justify-center px-6 dark:bg-gray-950"
+        style={{ backgroundColor }}
+      >
+        <div className="max-w-md rounded-3xl border border-red-200/70 bg-white/90 p-8 text-center shadow-xl dark:border-red-500/20 dark:bg-gray-900/90">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400">
+            <X className="h-6 w-6" />
           </div>
+          <h3
+            className="text-xl font-semibold dark:text-white"
+            style={{ color: textPrimaryColor }}
+          >
+            Errore nel caricamento
+          </h3>
+          <p
+            className="mt-2 text-sm dark:text-gray-400"
+            style={{ color: textSecondaryColor }}
+          >
+            {error}
+          </p>
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-pink-600 text-white rounded-xl font-semibold hover:bg-pink-700 transition-colors"
+            className="mt-6 inline-flex items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold text-white transition-all duration-300 ease-in-out hover:shadow-lg"
+            style={{
+              background: accentGradient,
+            }}
           >
             Riprova
           </button>
@@ -242,264 +275,397 @@ export default function HomePage() {
   }
 
   return (
-    <section>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
-        {/* Hero Section */}
-        <div className="text-center mb-12 sm:mb-16">
-          <div className={`inline-flex items-center gap-2 px-3 sm:px-4 py-2 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl ${colors.textPrimary} dark:${colors.textPrimaryDark} text-xs sm:text-sm font-medium mb-4 sm:mb-6`}>
-            <Sparkles className="w-3 sm:w-4 h-3 sm:h-4" />
-            {appType === 'isabellenails' ? 'Benvenuta nel tuo spazio di lavoro migliore amica del mio amore' : 'Benvenuto nel tuo spazio di lavoro amore mio'}
-          </div>
-          
-          <h1 className={`text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold bg-gradient-to-r from-gray-900 via-${colors.primary} to-gray-900 dark:from-white dark:via-${colors.primaryLight} dark:to-white bg-clip-text text-transparent mb-4 sm:mb-6 leading-tight px-2`}>
-            {appType === 'isabellenails' ? 'Isabelle Nails Board' : 'LashesAndra Board'}
-          </h1>
-          
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed mb-6 sm:mb-8 px-4">
-            La piattaforma completa per gestire il tuo business estetico con eleganza e professionalità.
-            Monitora clienti, appuntamenti e performance in un'unica soluzione moderna.
-          </p>
-
-          {/* Stats Grid - Mobile responsive */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-8 sm:mb-12">
-            {statsData.map((stat) => (
-              <div key={stat.label} className="group">
-                <div className={`
-                  relative p-3 sm:p-4 lg:p-6 rounded-xl bg-white dark:bg-gray-800 
-                  border border-gray-200 dark:border-gray-700
-                  shadow-lg hover:shadow-lg transition-all duration-300
-                  hover:border-${stat.color}-200 dark:hover:border-${stat.color}-800
-                `}>
-                  <div className="flex items-center justify-between mb-2 sm:mb-3">
-                    <div className={`
-                      p-1.5 sm:p-2 rounded-xl bg-${stat.color}-100 dark:bg-${stat.color}-950/30
-                      text-${stat.color}-600 dark:text-${stat.color}-400
-                      group-hover:scale-110 transition-transform duration-300
-                    `}>
-                      <stat.icon className="w-3 sm:w-4 lg:w-5 h-3 sm:h-4 lg:h-5" />
-                    </div>
-                    <div className={`
-                      text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl
-                      bg-${stat.color}-100 dark:bg-${stat.color}-950/30
-                      text-${stat.color}-600 dark:text-${stat.color}-400
-                    `}>
-                      {stat.trend}
-                    </div>
-                  </div>
-                  
-                  <div className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                    {stat.value}
-                  </div>
-                  
-                  <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white mb-1">
-                    {stat.label}
-                  </div>
-                  
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {stat.description}
-                  </div>
+    <section
+      className="relative min-h-screen pb-20 dark:bg-gray-950"
+      style={{ backgroundColor }}
+    >
+      <div className="relative mx-auto max-w-[1200px] px-6 py-4 xl:max-w-[1280px] xl:py-6">
+        {/* Hero */}
+        <header className="mb-10 rounded-3xl border border-white/60 bg-white/90 p-8 shadow-xl backdrop-blur-xl dark:border-gray-800/60 dark:bg-gray-900/80 xl:mb-12">
+          <div className="flex flex-col gap-8 xl:flex-row xl:items-center xl:justify-between">
+            <div className="max-w-[620px] space-y-5">
+              <div
+                className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-semibold tracking-wide ${colors.bgPrimary} dark:${colors.bgPrimaryDark} ${colors.textPrimary} dark:${colors.textPrimaryDark}`}
+              >
+                <Sparkles className="h-4 w-4" />
+                {appType === 'isabellenails'
+                  ? 'Isabelle Nails • Dashboard professionale'
+                  : 'LashesAndra • Dashboard professionale'}
+              </div>
+              <div>
+                <h1
+                  className="text-4xl font-semibold tracking-tight dark:text-white xl:text-5xl"
+                  style={{ color: textPrimaryColor }}
+                >
+                  {appType === 'isabellenails'
+                    ? 'Organizza il tuo studio con eleganza.'
+                    : 'Gestisci il tuo beauty business con grazia.'}
+                </h1>
+                <p
+                  className="mt-3 text-base dark:text-gray-300 xl:text-lg"
+                  style={{ color: textSecondaryColor }}
+                >
+                  Monitoraggio appuntamenti, clienti e performance in un’unica
+                  interfaccia pensata per i tablet professionali.
+                </p>
+              </div>
+              <div
+                className="flex flex-wrap items-center gap-3 text-sm dark:text-gray-400"
+                style={{ color: textSecondaryColor }}
+              >
+                <div
+                  className="inline-flex items-center gap-2 rounded-full px-3 py-1 dark:bg-gray-800/80"
+                  style={{ backgroundColor: neutralSurfaceColor }}
+                >
+                  <Zap className="h-4 w-4" style={{ color: accentColor }} />
+                  Aggiornato al {dayjs().format('DD MMM YYYY')}
+                </div>
+                <div
+                  className="inline-flex items-center gap-2 rounded-full px-3 py-1 dark:bg-gray-800/80"
+                  style={{ backgroundColor: neutralSurfaceColor }}
+                >
+                  <Heart className="h-4 w-4" style={{ color: accentColor }} />
+                  {appType === 'isabellenails'
+                    ? 'Pensato per i tuoi clienti'
+                    : 'Creato con amore per te'}
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
-        {/* Notifications Widget */}
-        <div className="mb-8 sm:mb-12">
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-                Notifiche Appuntamenti
-              </h3>
+            <div
+              className="flex w-full flex-col gap-4 rounded-3xl p-6 shadow-inner dark:via-gray-800/70 dark:to-gray-800/50 xl:max-w-sm"
+              style={{
+                background: `linear-gradient(135deg, ${accentSofter} 0%, rgba(255,255,255,0.92) 65%, rgba(255,255,255,0.98) 100%)`,
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <span
+                  className="text-sm font-medium dark:text-gray-400"
+                  style={{ color: textSecondaryColor }}
+                >
+                  Metriche chiave
+                </span>
+                <span
+                  className="rounded-full px-3 py-1 text-xs font-semibold shadow-sm dark:bg-gray-800"
+                  style={{ backgroundColor: neutralSurfaceColor, color: accentDark }}
+                >
+                  Questo mese
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div
+                  className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm transition-colors duration-300 ease-in-out dark:border-gray-700/60 dark:bg-gray-900/80"
+                  style={{
+                    backdropFilter: 'blur(6px)',
+                    borderColor: accentSoft,
+                  }}
+                >
+                  <p
+                    className="text-xs font-medium uppercase tracking-wide dark:text-gray-400"
+                    style={{ color: textSecondaryColor }}
+                  >
+                    Entrate
+                  </p>
+                  <p
+                    className="mt-2 text-2xl font-semibold dark:text-white"
+                    style={{ color: textPrimaryColor }}
+                  >
+                    {stats.currentMonthRevenue === 0
+                      ? '€0'
+                      : `€${(stats.currentMonthRevenue / 1000).toFixed(1)}K`}
+                  </p>
+                  <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-emerald-500 dark:text-emerald-400">
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    {stats.revenueTrend}
+                  </p>
+                </div>
+                <div
+                  className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm transition-colors duration-300 ease-in-out dark:border-gray-700/60 dark:bg-gray-900/80"
+                  style={{
+                    backdropFilter: 'blur(6px)',
+                    borderColor: accentSoft,
+                  }}
+                >
+                  <p
+                    className="text-xs font-medium uppercase tracking-wide dark:text-gray-400"
+                    style={{ color: textSecondaryColor }}
+                  >
+                    Appuntamenti
+                  </p>
+                  <p
+                    className="mt-2 text-2xl font-semibold dark:text-white"
+                    style={{ color: textPrimaryColor }}
+                  >
+                    {stats.currentMonthAppointments}
+                  </p>
+                  <p
+                    className="mt-2 inline-flex items-center gap-1 text-xs font-semibold"
+                    style={{ color: accentDark }}
+                  >
+                    <Calendar className="h-3.5 w-3.5" />
+                    {stats.appointmentsTrend}
+                  </p>
+                </div>
+              </div>
               <button
-                onClick={() => {
-                  const appPrefix = appType === 'isabellenails' ? '/isabellenails' : '/lashesandra';
-                  navigate(`${appPrefix}/confirmations`);
+                onClick={() => navigate(`/${appType}/appointments`)}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white transition-all duration-300 ease-in-out hover:shadow-lg"
+                style={{
+                  background: accentGradient,
                 }}
-                className={`px-4 py-2 ${colors.bgGradient} text-white rounded-xl font-medium hover:${colors.gradientFromLight} hover:${colors.gradientToLight} transition-colors text-sm sm:text-base`}
               >
-                Vai alle conferme
+                <Plus className="h-4 w-4" />
+                Nuovo appuntamento
               </button>
             </div>
-            <NotificationSummary />
           </div>
-        </div>
+        </header>
 
-        {/* Quick Actions */}
-        <div className="mb-12 sm:mb-16">
-          <div className="flex items-center gap-3 mb-6 sm:mb-8">
-            <div className={`p-2 rounded-xl ${colors.bgPrimary} dark:${colors.bgPrimaryDark}`}>
-              <Zap className={`w-4 sm:w-5 h-4 sm:h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
-            </div>
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-              Azioni Rapide
-            </h2>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {quickActions.map((action) => (
-              <div
-                key={action.title}
-                className="group cursor-pointer hover:scale-105 hover:-translate-y-1 transition-all duration-300"
-                onClick={() => navigate(action.path)}
-              >
-                <div className="relative overflow-hidden rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-lg transition-all duration-500">
-                  {/* Gradient Header */}
-                  <div className={`
-                    relative p-4 sm:p-6 bg-gradient-to-br ${action.gradient} text-white
-                    group-hover:scale-105 transition-transform duration-500 origin-top
-                  `}>
-                    <div className="flex items-center justify-between mb-3 sm:mb-4">
-                      <div className="p-2 sm:p-3 rounded-xl bg-white/20 backdrop-blur-sm">
-                        <action.icon className="w-5 sm:w-6 h-5 sm:h-6" />
-                      </div>
-                      {action.badge && (
-                        <div className="px-2 sm:px-3 py-1 rounded-xl bg-white/20 backdrop-blur-sm text-xs font-semibold">
-                          {action.badge}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <h3 className="text-lg sm:text-xl font-bold mb-2">{action.title}</h3>
-                    <p className="text-white/90 text-sm leading-relaxed">{action.description}</p>
-                    
-                    {/* Decorative Pattern */}
-                    <div className="absolute -top-4 -right-4 w-16 sm:w-24 h-16 sm:h-24 rounded-full bg-white/10 blur-xl" />
-                    <div className="absolute -bottom-2 -left-2 w-12 sm:w-16 h-12 sm:h-16 rounded-full bg-white/5" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Features Section */}
-        <div className="mb-16 sm:mb-20">
-          <div className="text-center mb-12 sm:mb-16">
-            <div className="flex items-center justify-center gap-4 mb-4 sm:mb-6">
-              <div className="relative">
-                <div className={`absolute inset-0 ${colors.primary}/20 rounded-xl blur-xl`} />
-                <div className={`relative p-2 sm:p-3 rounded-xl ${colors.bgGradient} shadow-lg`}>
-                  <Target className="w-5 sm:w-6 h-5 sm:h-6 text-white" />
-                </div>
-              </div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
-                Funzionalità Principali
-              </h2>
-            </div>
-            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed px-4">
-              Scopri tutti gli strumenti avanzati che trasformeranno il modo di gestire il tuo business estetico
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-10">
-            {features.map((feature, index) => (
-              <div
-                key={feature.title}
-                className="group hover:-translate-y-2 transition-all duration-300"
-              >
-                <div className="relative h-full">
-                  {/* Background Glow Effect */}
-                  <div className={`absolute -inset-1 ${colors.bgGradientLight} rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-700`} />
-                  
-                  {/* Main Card */}
-                  <div className={`relative h-full p-6 sm:p-8 lg:p-10 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-lg hover:shadow-lg ${colors.shadowPrimaryLight} transition-all duration-700 overflow-hidden`}>
-                    
-                    {/* Top Accent Line */}
-                    <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-${feature.color}-400 to-${feature.color}-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`} />
-                    
-                    <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
-                      {/* Icon Container */}
-                      <div className="relative flex-shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                        {/* Icon Background Glow */}
-                        <div className={`absolute inset-0 bg-${feature.color}-500/20 rounded-xl blur-lg scale-110 opacity-0 group-hover:opacity-100 transition-all duration-500`} />
-                        
-                        {/* Icon Container */}
-                        <div className={`
-                          relative p-3 sm:p-4 lg:p-5 rounded-xl
-                          bg-gradient-to-br from-${feature.color}-50 to-${feature.color}-100
-                          dark:from-${feature.color}-950/30 dark:to-${feature.color}-900/20
-                          border border-${feature.color}-200/50 dark:border-${feature.color}-800/30
-                          shadow-lg shadow-${feature.color}-500/10
-                          group-hover:shadow-lg group-hover:shadow-${feature.color}-500/20
-                          transition-all duration-500
-                        `}>
-                          <feature.icon className={`w-6 sm:w-7 lg:w-8 h-6 sm:h-7 lg:h-8 text-${feature.color}-600 dark:text-${feature.color}-400`} />
-                        </div>
-                      </div>
-                      
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className={`
-                            text-lg sm:text-xl lg:text-2xl font-bold mb-3 sm:mb-4
-                            text-${feature.color}-600 dark:text-${feature.color}-400
-                            group-hover:text-${feature.color}-700 dark:group-hover:text-${feature.color}-300
-                            transition-colors duration-300
-                          `}
-                        >
-                          {feature.title}
-                        </h3>
-                        
-                        <p className="text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-300 leading-relaxed group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-300">
-                          {feature.description}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Floating Elements */}
-                    <div className={`absolute top-6 right-6 w-2 h-2 rounded-full ${colors.primaryLight}/30 group-hover:${colors.primaryLight}/60 transition-colors duration-500`} />
-                    <div className={`absolute bottom-8 right-8 w-1 h-1 rounded-full ${colors.primaryLight}/40 group-hover:${colors.primaryLight}/80 transition-colors duration-500`} />
-                    
-                    {/* Hover Gradient Overlay */}
-                    <div className={`
-                      absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100
-                      bg-gradient-to-br from-${feature.color}-50/30 via-transparent to-${feature.color}-100/20
-                      dark:from-${feature.color}-950/20 dark:via-transparent dark:to-${feature.color}-900/10
-                      transition-opacity duration-700 pointer-events-none
-                    `} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Call to Action */}
-        {appType !== 'isabellenails' && (
-          <div>
-            <div className={`relative overflow-hidden rounded-xl ${colors.bgGradient} p-6 sm:p-8 lg:p-12 text-center text-white`}>
-              <div className="relative z-10">
-                <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl text-xs sm:text-sm font-medium mb-4 sm:mb-6">
-                  Realizzato dal tuo Amore <Heart className="w-3 sm:w-4 h-3 sm:h-4" />
-                </div>
-                
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 px-2">
-                  Ricordati sempre quanto il tuo fidanzato ti ama.
-                </h2>
-                
-                <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed px-4">
-                  Lui ci sarà sempre per te, dovrai solamente dargli la possibilità di farlo.
-                </p>
-                
-                <button
-                  onClick={() => setShowLoveDialog(true)}
-                  className={`inline-flex items-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-white ${colors.textPrimary} rounded-xl font-semibold text-base sm:text-lg shadow-lg hover:shadow-lg transition-all duration-300 hover:scale-105`}
+        {/* Stats */}
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-4 xl:gap-6">
+          {statsData.map((stat) => (
+            <div
+              key={stat.label}
+              className="relative group rounded-3xl border border-white/70 bg-white/90 p-5 shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl dark:border-gray-800/60 dark:bg-gray-900/80"
+            >
+              <div className="absolute top-4 right-4">
+                <span
+                  className={`rounded-full bg-${stat.color}-100 px-2.5 py-1 text-xs font-semibold text-${stat.color}-600 shadow-sm dark:bg-${stat.color}-500/10 dark:text-${stat.color}-300`}
                 >
-                  <span className="hidden sm:inline">Clicca qui per ricordarti quanto il tuo fidanzato ti ama</span>
-                  <span className="sm:hidden">Messaggio d'amore</span>
-                  <Heart className="w-4 sm:w-5 h-4 sm:h-5" />
+                  {stat.trend}
+                </span>
+              </div>
+              <p
+                className="text-3xl font-semibold dark:text-white"
+                style={{ color: textPrimaryColor }}
+              >
+                {stat.value}
+              </p>
+              <p
+                className="mt-2 text-sm font-medium dark:text-gray-400"
+                style={{ color: textSecondaryColor }}
+              >
+                {stat.label}
+              </p>
+              <p
+                className="mt-1 text-xs dark:text-gray-500"
+                style={{ color: `${textSecondaryColor}CC` }}
+              >
+                {stat.description}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Main Content */}
+        <div className="mt-10 grid grid-cols-1 gap-6 xl:mt-12 xl:grid-cols-12">
+          <div className="space-y-6 xl:col-span-7">
+            <div className="rounded-3xl border border-white/70 bg-white/95 p-6 shadow-lg transition-shadow duration-300 ease-in-out hover:shadow-xl dark:border-gray-800/60 dark:bg-gray-900/80">
+              <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3
+                    className="text-xl font-semibold dark:text-white"
+                    style={{ color: textPrimaryColor }}
+                  >
+                    Notifiche Appuntamenti
+                  </h3>
+                  <p
+                    className="text-sm dark:text-gray-400"
+                    style={{ color: textSecondaryColor }}
+                  >
+                    Gestisci conferme e aggiornamenti in tempo reale.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    const appPrefix =
+                      appType === 'isabellenails'
+                        ? '/isabellenails'
+                        : '/lashesandra';
+                    navigate(`${appPrefix}/confirmations`);
+                  }}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-white transition-all duration-300 ease-in-out hover:shadow-lg"
+                  style={{
+                    background: accentGradient,
+                  }}
+                >
+                  Vai alle conferme
+                  <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
-              
-              {/* Background Decorations */}
-              <div className="absolute -top-16 sm:-top-24 -right-16 sm:-right-24 w-32 sm:w-48 h-32 sm:h-48 rounded-full bg-white/10 blur-3xl" />
-              <div className="absolute -bottom-12 sm:-bottom-16 -left-12 sm:-left-16 w-24 sm:w-32 h-24 sm:h-32 rounded-full bg-white/5 blur-2xl" />
-              <div className="absolute top-1/2 left-1/4 w-2 h-2 rounded-full bg-white/30" />
-              <div className="absolute top-1/3 right-1/3 w-1 h-1 rounded-full bg-white/40" />
-              <div className="absolute bottom-1/3 left-1/2 w-1.5 h-1.5 rounded-full bg-white/20" />
+   
+                <NotificationSummary />
+            </div>
+
+            <div className="rounded-3xl border border-white/70 bg-white/95 p-6 shadow-lg dark:border-gray-800/60 dark:bg-gray-900/80">
+              <div className="flex items-center justify-between">
+                <h2
+                  className="text-xl font-semibold dark:text-white"
+                  style={{ color: textPrimaryColor }}
+                >
+                  Funzionalità Principali
+                </h2>
+                <div
+                  className={`flex h-10 w-10 items-center justify-center rounded-2xl ${colors.bgPrimary} dark:${colors.bgPrimaryDark}`}
+                >
+                  <Target className={`h-5 w-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
+                </div>
+              </div>
+              <p
+                className="mt-2 text-sm dark:text-gray-400"
+                style={{ color: textSecondaryColor }}
+              >
+                Tutti gli strumenti per seguire clienti, appuntamenti e
+                performance con precisione.
+              </p>
+              <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {features.map((feature) => (
+                  <div
+                    key={feature.title}
+                    className="group flex h-full flex-col gap-4 rounded-2xl border border-white/70 bg-white/90 p-5 shadow-sm transition-all duration-300 ease-in-out hover:-translate-y-1 dark:border-gray-800/60 dark:bg-gray-900/80"
+                    style={{
+                      borderColor: accentSofter,
+                      boxShadow:
+                        '0 20px 35px -24px rgba(17, 24, 39, 0.3)',
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-${feature.color}-100/80 text-${feature.color}-500 dark:bg-${feature.color}-500/15 dark:text-${feature.color}-300`}
+                      >
+                        <feature.icon className="h-6 w-6" />
+                      </div>
+                      <h3
+                        className="text-lg font-semibold dark:text-white"
+                        style={{ color: textPrimaryColor }}
+                      >
+                        {feature.title}
+                      </h3>
+                    </div>
+                    <p
+                      className="text-sm dark:text-gray-400"
+                      style={{ color: textSecondaryColor }}
+                    >
+                      {feature.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        )}
+
+          <div className="space-y-6 xl:col-span-5">
+            <div className="rounded-3xl border border-white/70 bg-white/95 p-6 shadow-lg transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl dark:border-gray-800/60 dark:bg-gray-900/80">
+              <div className="flex items-center justify-between">
+                <h2
+                  className="text-xl font-semibold dark:text-white"
+                  style={{ color: textPrimaryColor }}
+                >
+                  Azioni Rapide
+                </h2>
+                <div
+                  className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold dark:bg-gray-800/70 dark:text-gray-400"
+                  style={{
+                    backgroundColor: neutralSurfaceColor,
+                    color: textSecondaryColor,
+                  }}
+                >
+                  <Zap className="h-3.5 w-3.5" style={{ color: accentColor }} />
+                  Focus quotidiano
+                </div>
+              </div>
+              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {quickActions.map((action) => (
+                  <button
+                    key={action.title}
+                    onClick={() => navigate(action.path)}
+                    className="group relative flex h-full flex-col gap-3 rounded-2xl border border-white/70 bg-white/90 p-5 text-left shadow-sm transition-all duration-300 ease-in-out hover:-translate-y-1 dark:border-gray-800/60 dark:bg-gray-900/80"
+                    style={{
+                      borderColor: accentSofter,
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span
+                        className="flex h-11 w-11 items-center justify-center rounded-2xl"
+                        style={{
+                          backgroundColor: `${accentColor}1A`,
+                          color: accentDark,
+                        }}
+                      >
+                        <action.icon className="h-5 w-5" />
+                      </span>
+                      {action.badge && (
+                        <span
+                          className="rounded-full px-2.5 py-1 text-xs font-semibold"
+                          style={{
+                            backgroundColor: `${accentColor}24`,
+                            color: accentDark,
+                          }}
+                        >
+                          {action.badge}
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <h3
+                        className="text-sm font-semibold dark:text-white"
+                        style={{ color: textPrimaryColor }}
+                      >
+                        {action.title}
+                      </h3>
+                      <p
+                        className="text-xs dark:text-gray-400"
+                        style={{ color: textSecondaryColor }}
+                      >
+                        {action.description}
+                      </p>
+                    </div>
+                    {action.stats && (
+                      <div
+                        className="mt-auto flex items-center gap-2 text-xs font-semibold"
+                        style={{ color: accentDark }}
+                      >
+                        <Star className="h-4 w-4" />
+                        {action.stats}
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {appType !== 'isabellenails' && (
+              <div
+                className="relative overflow-hidden rounded-3xl border border-white/60 p-8 text-center text-white shadow-2xl"
+                style={{ background: accentGradient }}
+              >
+                <div className="relative z-10 space-y-5">
+                  <div className="inline-flex items-center gap-2 rounded-2xl bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90">
+                    Realizzato dal tuo amore
+                    <Heart className="h-4 w-4" />
+                  </div>
+                  <h2 className="text-3xl font-semibold tracking-tight xl:text-3xl">
+                    Ricordati quanto sei amata, ogni giorno.
+                  </h2>
+                  <p className="text-base text-white/85">
+                    Sono qui per accompagnarti in ogni passo. Premi il pulsante
+                    e prenditi un momento solo per noi.
+                  </p>
+                  <button
+                    onClick={() => setShowLoveDialog(true)}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-6 py-3 text-sm font-semibold transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-lg"
+                    style={{ color: accentColor }}
+                  >
+                    Messaggio d’amore
+                    <Heart className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="pointer-events-none absolute -right-20 top-10 h-52 w-52 rounded-full bg-white/15 blur-3xl" />
+                <div className="pointer-events-none absolute -left-16 bottom-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Love Dialog - Mobile responsive */}

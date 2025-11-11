@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, AlertCircle, Heart } from 'lucide-react';
+import { alpha, useTheme } from '@mui/material/styles';
 import { useAuth } from '../contexts/AuthContext';
 
 interface FormData {
@@ -25,6 +26,45 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const theme = useTheme();
+  const primary = theme.palette.primary.main;
+  const primaryLight = theme.palette.primary.light;
+  const primaryDark = theme.palette.primary.dark;
+  const background = theme.palette.background.default;
+  const surface = theme.palette.background.paper;
+  const textPrimaryColor = theme.palette.text.primary;
+  const textSecondaryColor = theme.palette.text.secondary;
+  const paletteStyles = {
+    '--primary': primary,
+    '--primary-light': primaryLight,
+    '--accent': primaryDark,
+    '--secondary': background,
+    '--surface': surface,
+    '--text-primary': textPrimaryColor,
+    '--text-secondary': textSecondaryColor,
+    '--border-muted': alpha(textPrimaryColor, 0.08),
+  } as React.CSSProperties;
+  const glassPanelStyle: React.CSSProperties = {
+    backgroundColor: alpha(surface, 0.86),
+    borderColor: alpha(textPrimaryColor, 0.04),
+    boxShadow: `0 24px 64px -32px ${alpha(textPrimaryColor, 0.32)}`,
+  };
+  const heroCardStyle: React.CSSProperties = {
+    backgroundColor: alpha(surface, 0.74),
+    boxShadow: `0 18px 44px -28px ${alpha(primaryDark, 0.45)}`,
+  };
+  const formCardStyle: React.CSSProperties = {
+    backgroundColor: surface,
+    boxShadow: `0 24px 64px -40px ${alpha(textPrimaryColor, 0.35)}`,
+  };
+  const statsCardStyle: React.CSSProperties = {
+    backgroundColor: alpha(surface, 0.7),
+  };
+  const iconShadow = `0 18px 36px -18px ${alpha(primaryDark, 0.4)}`;
+  const accentShadow = `0 24px 50px -20px ${alpha(primaryDark, 0.55)}`;
+  const accentShadowHover = `0 28px 60px -24px ${alpha(primaryDark, 0.6)}`;
+  const heroGlowStyle: React.CSSProperties = { backgroundColor: alpha(primary, 0.22) };
+  const accentGlowStyle: React.CSSProperties = { backgroundColor: alpha(primaryDark, 0.16) };
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -115,183 +155,182 @@ export default function LoginPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+      <div style={paletteStyles} className="min-h-screen bg-[color:var(--secondary)] flex items-center justify-center">
+        <div
+          className="animate-spin rounded-full h-12 w-12 border-b-2"
+          style={{ borderColor: alpha(primary, 0.2), borderBottomColor: primary }}
+        />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
-        {/* Logo/Header */}
-        <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg"
-          >
-            <span className="text-2xl font-bold text-white"><Heart /></span>
-          </motion.div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Benvenuta
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Accedi al tuo account per continuare
-          </p>
-        </div>
+    <div style={paletteStyles} className="relative min-h-screen bg-[color:var(--secondary)] text-[color:var(--text-primary)]">
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -left-32 -top-24 h-96 w-96 rounded-full blur-3xl" style={heroGlowStyle} />
+        <div className="absolute -right-24 -bottom-20 h-[28rem] w-[28rem] rounded-full blur-3xl" style={accentGlowStyle} />
+      </div>
 
-        {/* Login Form */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700"
-        >
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* General Error */}
-            {errors.general && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-start space-x-3"
-                role="alert"
-                aria-live="polite"
-              >
-                <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-700 dark:text-red-400">{errors.general}</p>
-              </motion.div>
-            )}
-
-            {/* Email Field */}
-            <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Email
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  onKeyPress={handleKeyPress}
-                  className={`block w-full pl-10 pr-3 py-3 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
-                    errors.email
-                      ? 'border-red-300 dark:border-red-600 focus:ring-red-500'
-                      : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                  placeholder="inserisci@email.com"
-                  aria-invalid={!!errors.email}
-                  aria-describedby={errors.email ? 'email-error' : undefined}
-                />
-              </div>
-              {errors.email && (
-                <motion.p
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  id="email-error"
-                  className="text-sm text-red-600 dark:text-red-400"
-                >
-                  {errors.email}
-                </motion.p>
-              )}
-            </div>
-
-            {/* Password Field */}
-            <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  onKeyPress={handleKeyPress}
-                  className={`block w-full pl-10 pr-12 py-3 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
-                    errors.password
-                      ? 'border-red-300 dark:border-red-600 focus:ring-red-500'
-                      : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                  placeholder="••••••••"
-                  aria-invalid={!!errors.password}
-                  aria-describedby={errors.password ? 'password-error' : undefined}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                  aria-label={showPassword ? 'Nascondi password' : 'Mostra password'}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
-                </button>
-              </div>
-              {errors.password && (
-                <motion.p
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  id="password-error"
-                  className="text-sm text-red-600 dark:text-red-400"
-                >
-                  {errors.password}
-                </motion.p>
-              )}
-            </div>
-
-            {/* Submit Button */}
-            <motion.button
-              type="submit"
-              disabled={isSubmitting || loading}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+      <div className="relative flex min-h-screen flex-col px-6 py-10 xl:px-16 xl:py-12">
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4 }}
+              className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[color:var(--primary)] to-[color:var(--accent)]"
+              style={{ boxShadow: iconShadow }}
             >
-              {isSubmitting ? (
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>Accesso in corso...</span>
-                </div>
-              ) : (
-                'Accedi'
-              )}
-            </motion.button>
-          </form>
-
-          {/* Footer */}
-          <div className="mt-8 text-center">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Solo per utenti autorizzati
-            </p>
+              <Heart className="h-7 w-7 text-white" />
+            </motion.div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--accent)]">Lashesandra Studio</p>
+              <h1 className="text-base font-semibold text-[color:var(--text-primary)]">Area Riservata</h1>
+            </div>
           </div>
-        </motion.div>
+        </header>
 
-        {/* Background decoration */}
-        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-200 dark:bg-pink-900/20 rounded-full opacity-20 blur-3xl"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-pink-300 dark:bg-pink-800/20 rounded-full opacity-20 blur-3xl"></div>
-        </div>
-      </motion.div>
+        <main className="mt-12 flex flex-1 items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="grid w-full max-w-3xl grid-cols-1 gap-8 rounded-[2.5rem] border p-10 backdrop-blur"
+            style={glassPanelStyle}
+          >
+
+ 
+
+              <div >
+                <div className="mb-8 space-y-2">
+                  <h2 className="text-3xl font-semibold text-[color:var(--text-primary)]">Bentornata</h2>
+                  <p className="text-sm text-[color:var(--text-secondary)]">
+                    Accedi con le tue credenziali per proseguire nella tua dashboard professionale.
+                  </p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-7">
+                  {errors.general && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50/80 px-4 py-3"
+                      role="alert"
+                      aria-live="polite"
+                    >
+                      <AlertCircle className="h-5 w-5 text-red-500" />
+                      <p className="text-sm text-red-600">{errors.general}</p>
+                    </motion.div>
+                  )}
+
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium text-[color:var(--text-primary)]">
+                      Email
+                    </label>
+                    <div className="relative">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                        <Mail className="h-5 w-5 text-[color:var(--text-secondary)]" />
+                      </div>
+                      <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        onKeyPress={handleKeyPress}
+                        className={`w-full rounded-2xl border bg-[color:var(--surface)] px-12 py-3 text-[color:var(--text-primary)] placeholder:text-[color:var(--text-secondary)] focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/40 transition-all duration-200 ${
+                          errors.email ? 'border-red-300 focus:border-red-400 focus:ring-red-200' : 'border-[color:var(--border-muted)]'
+                        }`}
+                        placeholder="nome@email.com"
+                        aria-invalid={!!errors.email}
+                        aria-describedby={errors.email ? 'email-error' : undefined}
+                      />
+                    </div>
+                    {errors.email && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        id="email-error"
+                        className="text-sm text-red-500"
+                      >
+                        {errors.email}
+                      </motion.p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="password" className="text-sm font-medium text-[color:var(--text-primary)]">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                        <Lock className="h-5 w-5 text-[color:var(--text-secondary)]" />
+                      </div>
+                      <input
+                        id="password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        autoComplete="current-password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        onKeyPress={handleKeyPress}
+                        className={`w-full rounded-2xl border bg-[color:var(--surface)] px-12 py-3 text-[color:var(--text-primary)] placeholder:text-[color:var(--text-secondary)] focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/40 transition-all duration-200 ${
+                          errors.password ? 'border-red-300 focus:border-red-400 focus:ring-red-200' : 'border-[color:var(--border-muted)]'
+                        }`}
+                        placeholder="••••••••"
+                        aria-invalid={!!errors.password}
+                        aria-describedby={errors.password ? 'password-error' : undefined}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 flex items-center pr-4 text-[color:var(--text-secondary)] transition-colors hover:text-[color:var(--accent)] focus:text-[color:var(--accent)]"
+                        aria-label={showPassword ? 'Nascondi password' : 'Mostra password'}
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                    {errors.password && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        id="password-error"
+                        className="text-sm text-red-500"
+                      >
+                        {errors.password}
+                      </motion.p>
+                    )}
+                  </div>
+
+                  <motion.button
+                    type="submit"
+                    disabled={isSubmitting || loading}
+                    whileHover={{ scale: 1.01, boxShadow: accentShadowHover }}
+                    whileTap={{ scale: 0.99 }}
+                    className="group relative flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[color:var(--primary)] to-[color:var(--accent)] px-4 py-3 text-base font-semibold text-white transition-all duration-300 ease-out disabled:cursor-not-allowed disabled:bg-gradient-to-r disabled:from-gray-300 disabled:to-gray-400"
+                    style={{ boxShadow: accentShadow }}
+                  >
+                    {isSubmitting ? (
+                      <div className="flex items-center gap-2">
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/80 border-t-transparent" />
+                        <span>Accesso in corso...</span>
+                      </div>
+                    ) : (
+                      'Accedi'
+                    )}
+                  </motion.button>
+                </form>
+
+                <div className="mt-10 text-center text-xs uppercase tracking-[0.25em] text-[color:var(--text-secondary)]">
+                  Solo per utenti autorizzati
+                </div>
+              </div>
+   
+   
+          </motion.div>
+        </main>
+      </div>
     </div>
   );
 }

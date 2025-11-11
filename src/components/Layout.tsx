@@ -260,57 +260,6 @@ export default function Layout({ children }: LayoutProps) {
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <CssBaseline />
       
-      {/* Modern App Bar */}
-      <AppBar
-        position="fixed"
-        elevation={0}
-        sx={{
-          width: { md: `calc(100% - ${drawerWidth}px)` },
-          ml: { md: `${drawerWidth}px` },
-          background: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
-          color: theme.palette.text.primary,
-        }}
-      >
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
-          <Box display="flex" alignItems="center" gap={2}>
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ 
-                mr: 2, 
-                display: { md: 'none' },
-                color: theme.palette.text.primary,
-              }}
-            >
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 600 }}>
-              {getMenuItems(appType).find(item => {
-                const appPrefix = appType === 'isabellenails' ? '/isabellenails' : '/lashesandra';
-                const expectedPath = `${appPrefix}/${item.path}`;
-                return location.pathname === expectedPath || 
-                       (location.pathname === appPrefix && item.path === 'home');
-              })?.text || 'Dashboard'}
-            </Typography>
-          </Box>
-          
-          <Box display="flex" alignItems="center" gap={2}>
-            <NotificationBadge 
-              variant="header" 
-              onClick={() => {
-                const appPrefix = appType === 'isabellenails' ? '/isabellenails' : '/lashesandra';
-                navigate(`${appPrefix}/confirmations`);
-              }}
-            />
-          </Box>
-          
-        </Toolbar>
-      </AppBar>
-      
       {/* Navigation Drawer */}
       <Box
         component="nav"
@@ -362,7 +311,7 @@ export default function Layout({ children }: LayoutProps) {
           background: 'linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%)',
         }}
       >
-        <Toolbar />
+
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -370,7 +319,6 @@ export default function Layout({ children }: LayoutProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            style={{ padding: '24px', minHeight: 'calc(100vh - 64px)' }}
           >
             {children}
           </motion.div>

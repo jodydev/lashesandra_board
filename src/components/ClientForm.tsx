@@ -140,7 +140,7 @@ export default function ClientForm({ clientId, onSuccess, onCancel }: ClientForm
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
-              className="space-y-6"
+              className="space-y-6 mb-4"
             >
               {/* Header Section */}
               <motion.div

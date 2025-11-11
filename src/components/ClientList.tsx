@@ -17,6 +17,7 @@ import { Dialog, DialogContent } from '@mui/material';
 import type { Client, Appointment } from '../types';
 import { useSupabaseServices } from '../lib/supabaseService';
 import { useAppColors } from '../hooks/useAppColors';
+import { useApp } from '../contexts/AppContext';
 import ClientForm from './ClientForm';
 import { formatCurrency } from '../lib/utils';
 import dayjs from 'dayjs';
@@ -24,6 +25,7 @@ import dayjs from 'dayjs';
 export default function ClientList() {
   const { clientService, appointmentService } = useSupabaseServices();
   const colors = useAppColors();
+  const { appType } = useApp();
   const [clients, setClients] = useState<Client[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,6 +97,16 @@ export default function ClientList() {
     setSelectedClient(null);
   };
 
+  const textPrimaryColor = '#2C2C2C';
+  const textSecondaryColor = '#7A7A7A';
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#ffffff';
+  const surfaceColor = '#FFFFFF';
+  const accentColor = colors.primary;
+  const accentDark = colors.primaryDark;
+  const accentGradient = colors.cssGradient;
+  const accentSoft = `${colors.primary}29`;
+  const accentSofter = `${colors.primary}14`;
+
   // Filter and search clients
   const filteredClients = clients.filter(client => {
     const matchesSearch = 
@@ -144,7 +156,10 @@ export default function ClientList() {
   // Loading skeleton
   if (loading) {
     return (
-      <div className="min-h-screen">
+      <div
+        className="min-h-screen"
+        style={{ backgroundColor }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           {/* Header Skeleton */}
           <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 mb-6 sm:mb-8">
@@ -191,8 +206,11 @@ export default function ClientList() {
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor }}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
         {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -200,11 +218,18 @@ export default function ClientList() {
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 mb-6 sm:mb-8"
         >
-          <div className="space-y-2">
-            <h1 className={`text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-${colors.primary} to-gray-900 dark:from-white dark:via-${colors.primaryLight} dark:to-white bg-clip-text text-transparent`}>
+          <div className="space-y-3">
+           
+            <h1
+              className="text-3xl font-semibold sm:text-4xl lg:text-5xl tracking-tight dark:text-white"
+              style={{ color: textPrimaryColor }}
+            >
               Gestione Clienti
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base lg:text-lg">
+            <p
+              className="text-sm sm:text-base lg:text-lg dark:text-gray-300"
+              style={{ color: textSecondaryColor }}
+            >
               Visualizza e gestisci tutti i tuoi clienti con eleganza
             </p>
           </div>
@@ -213,7 +238,10 @@ export default function ClientList() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleAddClient}
-            className={`group relative w-full sm:w-auto inline-flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 ${colors.bgGradient} hover:${colors.gradientFromLight} hover:${colors.gradientToLight} text-white font-semibold rounded-xl shadow-lg ${colors.shadowPrimary} hover:${colors.shadowPrimary} transition-all duration-300`}
+            className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-2 sm:gap-3 px-5 sm:px-7 py-3 text-white font-semibold rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl"
+            style={{
+              background: accentGradient,
+            }}
           >
             <Plus className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:rotate-90 duration-300" />
             <span className="text-sm sm:text-base">Nuovo Cliente</span>
@@ -234,66 +262,74 @@ export default function ClientList() {
               value: totalClients,
               subtitle: `${regularClients} abituali, ${newClients} nuovi`,
               icon: Users,
-              gradient: `${colors.gradientFrom} ${colors.gradientTo}`,
-              bgGradient: `${colors.bgGradientHover} dark:${colors.bgPrimaryDark}`,
-              delay: 0.1
+              delay: 0.1,
             },
             {
               title: 'Clienti Attivi',
               value: activeClientsThisMonth,
               subtitle: 'questo mese',
               icon: Calendar,
-              gradient: `${colors.gradientFrom} ${colors.gradientTo}`,
-              bgGradient: `${colors.bgGradientHover} dark:${colors.bgPrimaryDark}`,
-              delay: 0.2
+              delay: 0.2,
             },
             {
               title: 'Clienti Abituali',
               value: regularClients,
               subtitle: 'abituali',
               icon: Users,
-              gradient: `${colors.gradientFrom} ${colors.gradientTo}`,
-              bgGradient: `${colors.bgGradientHover} dark:${colors.bgPrimaryDark}`,
-              delay: 0.3
+              delay: 0.3,
             },
             {
               title: 'Clienti Nuovi',
               value: newClients,
               subtitle: 'nuovi',
               icon: Users,
-              gradient: `${colors.gradientFrom} ${colors.gradientTo}`,
-              bgGradient: `${colors.bgGradientHover} dark:${colors.bgPrimaryDark}`,
-              delay: 0.4
-            }
-          ].map((stat) => (
+              delay: 0.4,
+            },
+          ].map((stat, index) => (
             <motion.div
               key={stat.title}
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.5, delay: stat.delay, ease: [0.22, 1, 0.36, 1] }}
-              className={`relative overflow-hidden bg-gradient-to-br ${stat.bgGradient} backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-white/20 dark:border-gray-800/50 shadow-lg hover:shadow-lg transition-all duration-300 group cursor-pointer`}
+              className="group relative overflow-hidden rounded-2xl border p-5 sm:p-6 shadow-lg transition-all duration-300 hover:-translate-y-1"
+              style={{
+                background: `linear-gradient(135deg, rgba(255,255,255,0.95) 0%, ${accentSofter} 100%)`,
+                borderColor: accentSoft,
+              }}
             >
               <div className="flex items-center justify-between">
-                <div className="space-y-1 sm:space-y-2 flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors truncate">
+                <div className="flex-1 min-w-0 space-y-1.5 sm:space-y-2">
+                  <p
+                    className="text-xs sm:text-sm font-medium uppercase tracking-wide"
+                    style={{ color: textSecondaryColor }}
+                  >
                     {stat.title}
                   </p>
-                  <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
+                  <p
+                    className="text-2xl font-semibold dark:text-white"
+                    style={{ color: textPrimaryColor }}
+                  >
                     {stat.value}
                   </p>
                   {stat.subtitle && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors truncate">
+                    <p
+                      className="text-xs sm:text-sm truncate dark:text-gray-300"
+                      style={{ color: `${textSecondaryColor}CC` }}
+                    >
                       {stat.subtitle}
                     </p>
                   )}
                 </div>
-                <div className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${stat.gradient} shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0`}>
-                  <stat.icon className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
+                <div
+                  className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg transition-transform duration-300 group-hover:scale-105 sm:h-14 sm:w-14"
+                  style={{ background: accentGradient }}
+                >
+                  <stat.icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
               </div>
               
               {/* Subtle animation overlay */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
             </motion.div>
           ))}
         </motion.div>
@@ -306,43 +342,68 @@ export default function ClientList() {
             transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="mb-6 sm:mb-8"
           >
-            <div className="flex items-center gap-3 mb-4 sm:mb-6">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600">
+            <div className="mb-5 flex items-center gap-3 sm:mb-6">
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-2xl shadow-lg"
+                style={{ background: accentGradient }}
+              >
                 <Star className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+              <h2
+                className="text-lg font-semibold dark:text-white sm:text-xl"
+                style={{ color: textPrimaryColor }}
+              >
                 Top Clienti per Fatturato
               </h2>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {topSpendingClients.map((client, index) => (
                 <motion.div
                   key={client.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
-                  className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-800/50 shadow-lg hover:shadow-lg transition-all duration-300 group"
+                  className="rounded-2xl border p-4 sm:p-5 shadow-lg transition-all duration-300 hover:-translate-y-1"
+                  style={{
+                    background: `linear-gradient(135deg, ${surfaceColor}F2, ${accentSofter})`,
+                    borderColor: accentSoft,
+                  }}
                 >
                   <div className="flex items-center gap-3 sm:gap-4">
                     <div className="relative flex-shrink-0">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center text-white font-bold text-sm sm:text-lg">
+                      <div
+                        className="flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-semibold text-white sm:h-12 sm:w-12 sm:text-lg"
+                        style={{ background: accentGradient }}
+                      >
                         {index + 1}
                       </div>
                       {index === 0 && (
                         <div className="absolute -top-1 -right-1">
-                          <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-amber-500" />
+                          <Sparkles
+                            className="w-3 h-3 sm:w-4 sm:h-4"
+                            style={{ color: accentColor }}
+                          />
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 dark:text-white truncate text-sm sm:text-base">
+                    <div className="min-w-0 flex-1">
+                      <h3
+                        className="truncate text-sm font-semibold dark:text-white sm:text-base"
+                        style={{ color: textPrimaryColor }}
+                      >
                         {client.nome} {client.cognome}
                       </h3>
-                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
+                      <p
+                        className="text-xs sm:text-sm truncate dark:text-gray-400"
+                        style={{ color: textSecondaryColor }}
+                      >
                         {client.tipo_cliente === 'nuovo' ? 'Nuovo cliente' : 'Cliente abituale'}
                       </p>
-                      <p className="text-sm sm:text-lg font-bold text-amber-600 dark:text-amber-400 mt-1">
+                      <p
+                        className="mt-1 text-sm font-semibold sm:text-lg"
+                        style={{ color: accentDark }}
+                      >
                         {formatCurrency(client.calculatedRevenue)}
                       </p>
                     </div>
@@ -373,44 +434,61 @@ export default function ClientList() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-800/50 shadow-lg mb-6 sm:mb-8"
+          className="mb-6 rounded-2xl border p-4 shadow-lg sm:mb-8 sm:p-6"
+          style={{
+            background: `linear-gradient(135deg, ${surfaceColor}F5, rgba(255,255,255,0.92))`,
+            borderColor: accentSofter,
+          }}
         >
-          <div className="flex flex-col space-y-4 lg:flex-row lg:space-y-0 lg:gap-4 lg:items-center lg:justify-between">
+          <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:gap-4 lg:space-y-0">
             {/* Search Bar */}
-            <div className="relative flex-1 max-w-full lg:max-w-md">
-              <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+            <div className="relative max-w-full flex-1 lg:max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 sm:left-4 sm:h-5 sm:w-5" />
               <input
                 type="text"
                 placeholder="Cerca clienti..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className={`w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 ${colors.focusRing} focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 text-sm sm:text-base`}
+                className="w-full rounded-xl border bg-white/80 px-10 py-2.5 text-sm text-gray-900 shadow-inner transition-all duration-200 placeholder:text-gray-500 focus:outline-none sm:px-12 sm:py-3 sm:text-base dark:bg-gray-800 dark:text-white"
+                style={{ borderColor: accentSoft }}
               />
             </div>
 
             {/* Filter Chips */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0">
-              <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mr-1 sm:mr-2 flex-shrink-0" />
-              <div className="flex gap-2 min-w-max">
+              <Filter className="mr-1 h-4 w-4 flex-shrink-0 text-gray-400 sm:mr-2 sm:h-5 sm:w-5" />
+              <div className="flex min-w-max gap-2">
                 {[
                   { key: 'all', label: 'Tutti', count: clients.length },
                   { key: 'nuovo', label: 'Nuovi', count: newClients },
-                  { key: 'abituale', label: 'Abituali', count: clients.length - newClients }
-                ].map((filter) => (
-                  <motion.button
-                    key={filter.key}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setFilterType(filter.key as any)}
-                    className={`px-3 sm:px-4 py-2 rounded-xl font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap ${
-                      filterType === filter.key
-                        ? `${colors.bgGradient} text-white shadow-lg ${colors.shadowPrimary}`
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    {filter.label} ({filter.count})
-                  </motion.button>
-                ))}
+                  { key: 'abituale', label: 'Abituali', count: clients.length - newClients },
+                ].map((filter) => {
+                  const isActive = filterType === filter.key;
+                  return (
+                    <motion.button
+                      key={filter.key}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setFilterType(filter.key as any)}
+                      className={`whitespace-nowrap rounded-xl px-3 py-2 text-xs font-medium sm:px-4 sm:text-sm ${
+                        isActive ? 'text-white shadow-lg' : 'text-gray-700 dark:text-gray-300'
+                      }`}
+                      style={
+                        isActive
+                          ? {
+                              background: accentGradient,
+                              boxShadow: '0px 12px 24px -12px rgba(0,0,0,0.25)',
+                            }
+                          : {
+                              backgroundColor: `${surfaceColor}F2`,
+                              border: `1px solid ${accentSofter}`,
+                            }
+                      }
+                    >
+                      {filter.label} ({filter.count})
+                    </motion.button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -431,106 +509,143 @@ export default function ClientList() {
                 initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                transition={{ 
-                  duration: 0.4, 
+                transition={{
+                  duration: 0.4,
                   delay: index * 0.05,
-                  ease: [0.22, 1, 0.36, 1]
+                  ease: [0.22, 1, 0.36, 1],
                 }}
-                className={`group relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-gray-200/50 dark:border-gray-800/50 shadow-lg hover:shadow-lg ${colors.shadowPrimaryLight} transition-all duration-300 cursor-pointer`}
+                className="group relative rounded-2xl border p-4 shadow-lg transition-all duration-300 hover:-translate-y-1 sm:p-6"
+                style={{
+                  background: `linear-gradient(135deg, ${surfaceColor}F8, rgba(255,255,255,0.9))`,
+                  borderColor: accentSofter,
+                }}
               >
                 {/* Client Avatar and Info */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                <div className="mb-4 flex items-start justify-between">
+                  <div className="flex flex-1 min-w-0 items-center space-x-3 sm:space-x-4">
                     <div className="relative flex-shrink-0">
-                      <div className={`w-12 h-12 sm:w-14 sm:h-14 ${colors.bgGradient} rounded-xl flex items-center justify-center text-white font-bold text-base sm:text-lg shadow-lg ${colors.shadowPrimary} group-hover:scale-110 transition-transform duration-300`}>
+                      <div
+                        className={`flex h-12 w-12 items-center justify-center rounded-xl text-base font-semibold text-white shadow-lg transition-transform duration-300 group-hover:scale-110 sm:h-14 sm:w-14 sm:text-lg ${colors.shadowPrimary}`}
+                        style={{ background: accentGradient }}
+                      >
                         {client.nome.charAt(0).toUpperCase()}
                       </div>
-                      {client.tipo_cliente === 'nuovo' && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full flex items-center justify-center">
-                          <Star className="w-2 h-2 sm:w-3 sm:h-3 text-white" />
+                        {client.tipo_cliente === 'nuovo' && (
+                          <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-5 sm:w-5">
+                            <Star className="h-2 w-2 sm:h-3 sm:w-3" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <h3
+                          className="truncate text-sm font-semibold dark:text-white sm:text-lg"
+                          style={{ color: textPrimaryColor }}
+                        >
+                          {client.nome} {client.cognome}
+                        </h3>
+                        <div
+                          className={`inline-flex items-center rounded-xl px-2 py-1 text-xs font-medium sm:px-2.5`}
+                          style={{
+                            backgroundColor:
+                              client.tipo_cliente === 'nuovo' ? '#DCFCE7' : accentSofter,
+                            color:
+                              client.tipo_cliente === 'nuovo' ? '#047857' : accentDark,
+                          }}
+                        >
+                          {client.tipo_cliente === 'nuovo' ? 'Nuovo Cliente' : 'Cliente Abituale'}
                         </div>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-1 flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-lg truncate">
-                        {client.nome} {client.cognome}
-                      </h3>
-                      <div className={`inline-flex items-center px-2 sm:px-2.5 py-1 rounded-xl text-xs font-medium ${
-                        client.tipo_cliente === 'nuovo'
-                          ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                          : `${colors.bgPrimary} ${colors.textPrimary}`
-                      }`}>
-                        {client.tipo_cliente === 'nuovo' ? 'Nuovo Cliente' : 'Cliente Abituale'}
                       </div>
+                    </div>
+
+                    {/* Actions Menu */}
+                    <div className="flex flex-shrink-0 items-center space-x-1 sm:space-x-2">
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handleEditClient(client)}
+                        className="rounded-xl border bg-white/70 p-2 transition-colors duration-200 hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
+                        style={{ borderColor: accentSofter }}
+                      >
+                        <Edit3 className="h-3 w-3 text-gray-600 sm:h-4 sm:w-4 dark:text-gray-400" />
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handleDeleteClient(client)}
+                        className="rounded-xl border bg-white/70 p-2 transition-colors duration-200 hover:bg-red-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-red-900/30"
+                        style={{ borderColor: '#FECACA' }}
+                      >
+                        <Trash2 className="h-3 w-3 text-gray-600 sm:h-4 sm:w-4 dark:text-gray-400" />
+                      </motion.button>
                     </div>
                   </div>
 
-                  {/* Actions Menu */}
-                  <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => handleEditClient(client)}
-                      className={`p-2 bg-gray-100 dark:bg-gray-800 ${colors.bgHover} dark:${colors.bgHoverDark} rounded-xl transition-colors duration-200 group/btn`}
-                    >
-                      <Edit3 className={`w-3 h-3 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400 ${colors.textHover} dark:${colors.textHoverDark}`} />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => handleDeleteClient(client)}
-                      className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-colors duration-200 group/btn"
-                    >
-                      <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400 group-hover/btn:text-red-600 dark:group-hover/btn:text-red-400" />
-                    </motion.button>
+                  {/* Contact Information */}
+                  <div className="mb-4 space-y-2 sm:space-y-3">
+                    {client.telefono && (
+                      <div className="flex items-center space-x-3 text-xs sm:text-sm">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 text-gray-600 shadow-inner dark:bg-gray-800 dark:text-gray-400">
+                          <Phone className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </div>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">
+                          {client.telefono}
+                        </span>
+                      </div>
+                    )}
+
+                    {client.email && (
+                      <div className="flex items-center space-x-3 text-xs sm:text-sm">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 text-gray-600 shadow-inner dark:bg-gray-800 dark:text-gray-400">
+                          <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </div>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">
+                          {client.email}
+                        </span>
+                      </div>
+                    )}
+
+                    {client.tipo_trattamento && (
+                      <div className="flex items-center space-x-3 text-xs sm:text-sm">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 text-gray-600 shadow-inner dark:bg-gray-800 dark:text-gray-400">
+                          <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </div>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">
+                          {client.tipo_trattamento}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                </div>
 
-                {/* Contact Information */}
-                <div className="space-y-2 sm:space-y-3 mb-4">
-                  {client.telefono && (
-                    <div className="flex items-center space-x-3 text-xs sm:text-sm">
-                      <div className="p-1.5 sm:p-2 bg-gray-100 dark:bg-gray-800 rounded-xl flex-shrink-0">
-                        <Phone className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400" />
-                      </div>
-                      <span className="text-gray-700 dark:text-gray-300 font-medium truncate">{client.telefono}</span>
+                  {/* Revenue Information */}
+                  <div className="border-t pt-3 sm:pt-4" style={{ borderColor: accentSofter }}>
+                    <div className="flex items-center justify-between">
+                      <span
+                        className="text-xs sm:text-sm"
+                        style={{ color: textSecondaryColor }}
+                      >
+                        Spesa Totale
+                      </span>
+                      <span
+                        className="text-sm font-semibold sm:text-lg"
+                        style={{
+                          background: accentGradient,
+                          WebkitBackgroundClip: 'text',
+                          color: 'transparent',
+                        }}
+                      >
+                        {formatCurrency(client.spesa_totale)}
+                      </span>
                     </div>
-                  )}
-                  
-                  {client.email && (
-                    <div className="flex items-center space-x-3 text-xs sm:text-sm">
-                      <div className="p-1.5 sm:p-2 bg-gray-100 dark:bg-gray-800 rounded-xl flex-shrink-0">
-                        <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400" />
-                      </div>
-                      <span className="text-gray-700 dark:text-gray-300 font-medium truncate">{client.email}</span>
-                    </div>
-                  )}
-
-                  {client.tipo_trattamento && (
-                    <div className="flex items-center space-x-3 text-xs sm:text-sm">
-                      <div className="p-1.5 sm:p-2 bg-gray-100 dark:bg-gray-800 rounded-xl flex-shrink-0">
-                        <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400" />
-                      </div>
-                      <span className="text-gray-700 dark:text-gray-300 font-medium truncate">{client.tipo_trattamento}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Revenue Information */}
-                <div className="pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-800">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Spesa Totale</span>
-                    <span className={`font-bold text-sm sm:text-lg ${colors.bgGradient} bg-clip-text text-transparent`}>
-                      {formatCurrency(client.spesa_totale)}
-                    </span>
                   </div>
-                </div>
 
-                {/* Hover overlay */}
-                <div className={`absolute inset-0 ${colors.bgGradientLight} opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl pointer-events-none`} />
-              </motion.div>
-            ))}
+                  {/* Hover overlay */}
+                  <div
+                    className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                    style={{ background: accentSofter }}
+                  />
+                </motion.div>
+              ))}
           </AnimatePresence>
         </motion.div>
 
@@ -540,28 +655,41 @@ export default function ClientList() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="text-center py-12 sm:py-16 bg-white dark:bg-gray-900 rounded-xl shadow-lg"
+            className="rounded-2xl border p-10 text-center shadow-lg sm:p-14"
+            style={{
+              background: `linear-gradient(135deg, ${surfaceColor}F7, rgba(255,255,255,0.9))`,
+              borderColor: accentSofter,
+            }}
           >
-            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
-              <Users className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
+            <div
+              className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl"
+              style={{ background: accentSofter }}
+            >
+              <Users className="h-10 w-10 text-gray-400" />
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            <h3
+              className="mb-2 text-lg font-semibold dark:text-white sm:text-xl"
+              style={{ color: textPrimaryColor }}
+            >
               {searchTerm || filterType !== 'all' ? 'Nessun cliente trovato' : 'Nessun cliente ancora'}
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6 sm:mb-8 text-sm sm:text-base px-4">
-              {searchTerm || filterType !== 'all' 
+            <p
+              className="mx-auto mb-6 max-w-lg text-sm sm:text-base"
+              style={{ color: textSecondaryColor }}
+            >
+              {searchTerm || filterType !== 'all'
                 ? 'Prova a modificare i filtri di ricerca'
-                : 'Inizia aggiungendo il tuo primo cliente'
-              }
+                : 'Inizia aggiungendo il tuo primo cliente'}
             </p>
             {(!searchTerm && filterType === 'all') && (
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleAddClient}
-                className={`inline-flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 ${colors.bgGradient} text-white font-semibold rounded-xl shadow-lg ${colors.shadowPrimary} hover:${colors.shadowPrimary} transition-all duration-300 text-sm sm:text-base`}
+                className="inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 sm:text-base"
+                style={{ background: accentGradient }}
               >
-                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
                 Aggiungi Cliente
               </motion.button>
             )}
