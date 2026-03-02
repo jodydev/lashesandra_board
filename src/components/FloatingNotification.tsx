@@ -82,7 +82,7 @@ export default function FloatingNotification() {
           stiffness: 300, 
           damping: 30 
         }}
-        className="fixed bottom-10 right-10 lg:right-6 z-50 max-w-sm"
+        className="fixed bottom-10 right-10 lg:right-6 z-50 max-w-md"
       >
         <div className={`${content.color} ${content.textColor} rounded-2xl shadow-2xl border-2 ${content.borderColor} overflow-hidden`}>
           {/* Header */}

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ChevronLeft,
   ChevronRight,
@@ -11,17 +11,17 @@ import {
   Activity,
 } from 'lucide-react';
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarController,
+  BarElement,
+  ArcElement,
+  DoughnutController,
   Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
+  Legend,
+} from 'chart.js';
+import { Bar, Doughnut } from 'react-chartjs-2';
 import dayjs from 'dayjs';
 import type { MonthlyStats } from '../types';
 import { useSupabaseServices } from '../lib/supabaseService';
@@ -29,89 +29,251 @@ import { useAppColors } from '../hooks/useAppColors';
 import { useApp } from '../contexts/AppContext';
 import { formatCurrency } from '../lib/utils';
 
-
-// Modern metric card component with glass morphism effect
-const MetricCard = ({ icon: Icon, title, value, trend, delay = 0, colors }: {
-  icon: any;
-  title: string;
-  value: string | number;
-  trend?: string;
-  delay?: number;
-  colors: any;
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay }}
-    className={`group relative overflow-hidden rounded-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:${colors.borderPrimary} dark:hover:${colors.borderPrimary} transition-all duration-300 hover:shadow-lg ${colors.shadowPrimaryLight}`}
-  >
-    <div className={`absolute inset-0 ${colors.bgGradientLight} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-    <div className="relative p-4 sm:p-6">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-            <div className={`p-2 sm:p-2.5 rounded-xl ${colors.bgGradient} text-white shadow-lg ${colors.shadowPrimary}`}>
-              <Icon size={16} className="sm:w-5 sm:h-5" />
-            </div>
-            <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">{title}</span>
-          </div>
-          <div className="space-y-1">
-            <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{value}</div>
-            {trend && (
-              <div className="text-xs text-green-600 dark:text-green-400 font-medium">
-                {trend}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  </motion.div>
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarController,
+  BarElement,
+  ArcElement,
+  DoughnutController,
+  Tooltip,
+  Legend,
 );
 
-// Modern chart container with enhanced styling
-const ChartContainer = ({ title, children, actions }: {
+const textPrimaryColor = '#2C2C2C';
+const textSecondaryColor = '#7A7A7A';
+const surfaceColor = '#FFFFFF';
+
+// Stat card (stile carosello: no shadow, icon con gradient, card più grande)
+function StatCard({
+  icon: Icon,
+  title,
+  value,
+  accentSofter,
+  accentGradient,
+}: Readonly<{
+  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
+  title: string;
+  value: string | number;
+  accentSofter: string;
+  accentGradient: string;
+}>) {
+  return (
+    <div
+      className="group relative overflow-hidden rounded-2xl border p-6 sm:p-7"
+      style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex-1 min-w-0 space-y-2 sm:space-y-2.5">
+          <p className="text-xs sm:text-sm font-medium uppercase tracking-wide" style={{ color: textSecondaryColor }}>
+            {title}
+          </p>
+          <p className="text-2xl sm:text-3xl font-semibold dark:text-white truncate" style={{ color: textPrimaryColor }}>
+            {value}
+          </p>
+        </div>
+        <span
+          className="flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 items-center justify-center rounded-xl"
+          style={{ background: accentGradient }}
+          aria-hidden
+        >
+          <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" strokeWidth={2} aria-hidden />
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// Grafico a barre Chart.js — ottimizzato per mobile (touch, responsive, leggibile)
+function MonthlyBarChart({
+  data,
+  dataKey,
+  formatValue,
+  barColor,
+  textPrimaryColor,
+}: Readonly<{
+  data: Array<{ day: number; revenue: number; clients: number }>;
+  dataKey: 'revenue' | 'clients';
+  formatValue: (value: number) => string;
+  barColor: string;
+  textPrimaryColor: string;
+}>) {
+  const chartData = useMemo(
+    () => ({
+      labels: data.map((d) => String(d.day)),
+      datasets: [
+        {
+          label: dataKey === 'revenue' ? 'Fatturato' : 'Clienti',
+          data: data.map((d) => d[dataKey]),
+          backgroundColor: barColor,
+          borderRadius: 6,
+        },
+      ],
+    }),
+    [data, dataKey, barColor],
+  );
+
+  const options = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' as const },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(255,255,255,0.96)',
+          titleColor: textPrimaryColor,
+          bodyColor: textPrimaryColor,
+          borderColor: '#e5e7eb',
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 12,
+          callbacks: {
+            label: (ctx: { raw: number }) => formatValue(Number(ctx.raw)),
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            maxRotation: 45,
+            minRotation: 0,
+            font: { size: 11 },
+            color: textPrimaryColor,
+            maxTicksLimit: 12,
+          },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,0.06)' },
+          ticks: {
+            font: { size: 11 },
+            color: textPrimaryColor,
+            callback: (value: number | string) => (typeof value === 'number' ? formatValue(value) : value),
+          },
+        },
+      },
+    }),
+    [formatValue, textPrimaryColor],
+  );
+
+  return (
+    <div className="h-[220px] sm:h-[260px] w-full">
+      <Bar data={chartData} options={options} />
+    </div>
+  );
+}
+
+// Grafico a ciambella Chart.js — distribuzione trattamenti, mobile-first (legenda sotto, tap-friendly)
+function TreatmentDoughnutChart({
+  data,
+  textPrimaryColor,
+  formatCurrencyFn,
+}: Readonly<{
+  data: Array<{ name: string; value: number; color: string }>;
+  textPrimaryColor: string;
+  formatCurrencyFn: (n: number) => string;
+}>) {
+  const chartData = useMemo(
+    () => ({
+      labels: data.map((d) => d.name),
+      datasets: [
+        {
+          data: data.map((d) => d.value),
+          backgroundColor: data.map((d) => d.color),
+          borderWidth: 0,
+        },
+      ],
+    }),
+    [data],
+  );
+
+  const options = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '58%',
+      plugins: {
+        legend: {
+          position: 'bottom' as const,
+          labels: {
+            padding: 14,
+            usePointStyle: true,
+            font: { size: 12 },
+            color: textPrimaryColor,
+            pointStyle: 'circle',
+          },
+        },
+        tooltip: {
+          backgroundColor: 'rgba(255,255,255,0.96)',
+          titleColor: textPrimaryColor,
+          bodyColor: textPrimaryColor,
+          borderColor: '#e5e7eb',
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 12,
+          callbacks: {
+            label: (ctx: { label: string; raw: number; dataset: { data: number[] } }) => {
+              const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+              const pct = total > 0 ? ((Number(ctx.raw) / total) * 100).toFixed(0) : '0';
+              return `${ctx.label}: ${formatCurrencyFn(Number(ctx.raw))} (${pct}%)`;
+            },
+          },
+        },
+      },
+    }),
+    [textPrimaryColor, formatCurrencyFn],
+  );
+
+  return (
+    <div className="h-[280px] sm:h-[320px] w-full">
+      <Doughnut data={chartData} options={options} />
+    </div>
+  );
+}
+
+// Chart container (stile ClientList: bordo, titolo, no motion)
+function ChartContainer({
+  title,
+  children,
+  actions,
+  accentSofter,
+  textPrimaryColor,
+}: Readonly<{
   title: string;
   children: React.ReactNode;
   actions?: React.ReactNode;
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.6 }}
-    className="rounded-2xl bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg shadow-black/5 overflow-hidden"
-  >
-    <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-800">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
-        {actions}
+  accentSofter: string;
+  textPrimaryColor: string;
+}>) {
+  return (
+    <div
+      className="rounded-2xl shadow-lg overflow-hidden border"
+      style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
+    >
+      <div className="p-4 sm:p-6 border-b" style={{ borderColor: accentSofter }}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+          <h3 className="text-base sm:text-lg font-semibold" style={{ color: textPrimaryColor }}>
+            {title}
+          </h3>
+          {actions}
+        </div>
       </div>
+      <div className="p-4 sm:p-6">{children}</div>
     </div>
-    <div className="p-4 sm:p-6">
-      {children}
-    </div>
-  </motion.div>
-);
-
-// Enhanced loading skeleton
-const LoadingSkeleton = () => (
-  <div className="space-y-4 sm:space-y-6">
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-      {[...Array(4)].map((_, i) => (
-        <div key={i} className="h-24 sm:h-32 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
-      ))}
-    </div>
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-      <div className="lg:col-span-2 h-64 sm:h-96 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
-      <div className="h-64 sm:h-96 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
-    </div>
-  </div>
-);
+  );
+}
 
 export default function MonthlyOverview() {
+  const navigate = useNavigate();
   const { statsService } = useSupabaseServices();
   const colors = useAppColors();
   const { appType } = useApp();
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#ffffff';
+  const accentColor = colors.primary;
+  const accentGradient = colors.cssGradient;
+  const accentSofter = `${colors.primary}14`;
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [stats, setStats] = useState<MonthlyStats | null>(null);
   const [dailyStats, setDailyStats] = useState<Array<{ day: number; revenue: number; clients: number }>>([]);
@@ -128,13 +290,13 @@ export default function MonthlyOverview() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const [monthlyData, dailyData, treatmentData] = await Promise.all([
         statsService.getMonthlyStats(currentDate.year(), currentDate.month() + 1),
         statsService.getDailyStats(currentDate.year(), currentDate.month() + 1),
         statsService.getTreatmentDistribution(currentDate.year(), currentDate.month() + 1)
       ]);
-      
+
       setStats(monthlyData);
       setDailyStats(dailyData);
       setTreatmentDistribution(treatmentData);
@@ -164,108 +326,161 @@ export default function MonthlyOverview() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-3 sm:p-6">
-        <div className="max-w-7xl mx-auto">
-          <LoadingSkeleton />
+      <div className="min-h-screen" style={{ backgroundColor }}>
+        <header
+          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
+          style={{ borderColor: accentSofter }}
+        >
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1.5 font-medium transition-opacity hover:opacity-90"
+            style={{ color: accentColor }}
+            aria-label="Indietro"
+          >
+            <ChevronLeft className="h-6 w-6" />
+            <span>Indietro</span>
+          </button>
+          <h1
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white"
+            style={{ color: textPrimaryColor }}
+          >
+            Panoramica Mensile
+          </h1>
+          <div className="h-9 w-9" />
+        </header>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white dark:bg-gray-900 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-100 dark:border-gray-800">
+                <div className="flex items-center space-x-3 sm:space-x-4">
+                  <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gray-200 dark:bg-gray-800 rounded-xl" />
+                  <div className="space-y-2 flex-1">
+                    <div className="h-4 sm:h-6 bg-gray-200 dark:bg-gray-800 rounded w-12 sm:w-16" />
+                    <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-800 rounded w-16 sm:w-24" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div className="lg:col-span-2 h-64 sm:h-96 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
+            <div className="h-64 sm:h-96 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-${colors.primaryLight}/30 to-gray-100 dark:from-gray-900 dark:via-${colors.primaryDark}/10 dark:to-gray-800`}>
-      <div className="max-w-7xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-8">
-        {/* Header with enhanced navigation */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row items-start justify-between gap-4"
+    <div className="min-h-screen" style={{ backgroundColor }}>
+      {/* Header navigazione: Indietro | Panoramica Mensile (stile ClientList) */}
+      <header
+        className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
+        style={{ borderColor: accentSofter }}
+      >
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 font-medium transition-opacity hover:opacity-90"
+          style={{ color: accentColor }}
+          aria-label="Indietro"
         >
-          <div className="space-y-1 w-full">
-            <h1 className={`text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 via-${colors.primary} to-gray-600 dark:from-white dark:via-${colors.primaryLight} dark:to-gray-300 bg-clip-text text-transparent`}>
-              Panoramica Mensile
-            </h1>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-              Analisi dettagliata delle performance del mese
-            </p>
-          </div>
-          
-          {/* Enhanced month navigation */}
-          <div className="flex items-center justify-center w-full sm:w-auto gap-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-2 shadow-lg">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+          <ChevronLeft className="h-6 w-6" />
+          <span>Indietro</span>
+        </button>
+        <h1
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white"
+          style={{ color: textPrimaryColor }}
+        >
+          Panoramica Mensile
+        </h1>
+        <div className="h-9 w-9" />
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-6 sm:space-y-8">
+        {/* Barra navigazione mese (stile riga filtri ClientList) */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="flex items-center justify-center sm:justify-start gap-2 rounded-2xl border p-2 shadow-sm bg-white dark:bg-gray-900" style={{ borderColor: accentSofter }}>
+            <button
+              type="button"
               onClick={handlePreviousMonth}
-              className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-2 rounded-xl transition-opacity hover:opacity-90"
+              style={{ color: textSecondaryColor }}
+              aria-label="Mese precedente"
             >
-              <ChevronLeft size={18} className="sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400" />
-            </motion.button>
-            
+              <ChevronLeft size={18} className="sm:w-5 sm:h-5" />
+            </button>
             <div className="flex items-center gap-2 px-3 sm:px-4 py-2 min-w-[160px] sm:min-w-[200px] justify-center">
-              <Calendar size={14} className={`sm:w-4 sm:h-4 ${colors.textPrimary}`} />
-              <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+              <Calendar size={14} className="sm:w-4 sm:h-4" style={{ color: accentColor }} />
+              <span className="text-sm sm:text-base font-semibold capitalize" style={{ color: textPrimaryColor }}>
                 {currentDate.format('MMMM YYYY')}
               </span>
             </div>
-            
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
+              type="button"
               onClick={handleNextMonth}
-              className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-2 rounded-xl transition-opacity hover:opacity-90"
+              style={{ color: textSecondaryColor }}
+              aria-label="Mese successivo"
             >
-              <ChevronRight size={18} className="sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400" />
-            </motion.button>
+              <ChevronRight size={18} className="sm:w-5 sm:h-5" />
+            </button>
           </div>
-        </motion.div>
+        </div>
 
-        {/* Error state with better styling */}
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="p-3 sm:p-4 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 text-sm sm:text-base"
-            >
-              {error}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Error (stile ClientList) */}
+        {error && (
+          <div className="p-4 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-xl">
+            <p className="text-red-800 dark:text-red-200 font-medium text-sm sm:text-base">{error}</p>
+          </div>
+        )}
 
-        {/* Enhanced metrics grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-          <MetricCard
-            icon={Users}
-            title="Clienti Totali"
-            value={stats?.totalClients || 0}
-            trend="+12% vs mese scorso"
-            delay={0.1}
-            colors={colors}
-          />
-          <MetricCard
-            icon={Euro}
-            title="Fatturato Totale"
-            value={formatCurrency(stats?.totalRevenue || 0)}
-            trend="+8% vs mese scorso"
-            delay={0.2}
-            colors={colors}
-          />
-          <MetricCard
-            icon={TrendingUp}
-            title="Media per Cliente"
-            value={formatCurrency(stats?.averageRevenuePerClient || 0)}
-            trend="+5% vs mese scorso"
-            delay={0.3}
-            colors={colors}
-          />
-          <MetricCard
-            icon={Star}
-            title="Top Clienti"
-            value={stats?.topClients.length || 0}
-            delay={0.4}
-            colors={colors}
-          />
+        {/* Carosello statistiche scrollabile */}
+        <div className="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+          <div
+            className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory scrollbar-thin"
+            style={{ scrollbarWidth: 'thin' }}
+          >
+
+            <div className="flex-shrink-0 w-[min(88vw,320px)] sm:w-72 snap-center">
+              <StatCard
+                icon={Euro}
+                title="Fatturato Totale"
+                value={formatCurrency(stats?.totalRevenue ?? 0)}
+                accentSofter={accentSofter}
+                accentGradient={accentGradient}
+              />
+            </div>
+            <div className="flex-shrink-0 w-[min(88vw,320px)] sm:w-72 snap-center">
+              <StatCard
+                icon={Users}
+                title="Clienti Totali"
+                value={stats?.totalClients ?? 0}
+                accentSofter={accentSofter}
+                accentGradient={accentGradient}
+              />
+            </div>
+
+            <div className="flex-shrink-0 w-[min(88vw,320px)] sm:w-72 snap-center">
+              <StatCard
+                icon={TrendingUp}
+                title="Media per Cliente"
+                value={formatCurrency(stats?.averageRevenuePerClient ?? 0)}
+                accentSofter={accentSofter}
+                accentGradient={accentGradient}
+              />
+            </div>
+            <div className="flex-shrink-0 w-[min(88vw,320px)] sm:w-72 snap-center">
+              <StatCard
+                icon={Star}
+                title="Top Clienti"
+                value={stats?.topClients?.length ?? 0}
+                accentSofter={accentSofter}
+                accentGradient={accentGradient}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Charts section with improved layout */}
@@ -274,82 +489,52 @@ export default function MonthlyOverview() {
           <div className="lg:col-span-2">
             <ChartContainer
               title="Andamento Mensile"
+              accentSofter={accentSofter}
+              textPrimaryColor={textPrimaryColor}
               actions={
-                <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button
+                    type="button"
                     onClick={() => setChartType('revenue')}
-                    className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-2xl text-xs sm:text-sm font-medium whitespace-nowrap ${chartType === 'revenue' ? 'text-white' : 'text-gray-600 dark:text-gray-400'
+                      }`}
+                    style={
                       chartType === 'revenue'
-                        ? `${colors.bgGradient} text-white shadow-lg ${colors.shadowPrimary}`
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                    }`}
+                        ? { background: accentGradient }
+                        : { backgroundColor: surfaceColor, border: `1px solid ${accentSofter}` }
+                    }
                   >
                     <Euro size={14} className="inline mr-1" />
-                    <span className="hidden sm:inline">Fatturato</span>
-                    <span className="sm:hidden">€</span>
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    <span className="">Fatturato</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setChartType('clients')}
-                    className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-2xl text-xs sm:text-sm font-medium whitespace-nowrap ${chartType === 'clients' ? 'text-white' : 'text-gray-600 dark:text-gray-400'
+                      }`}
+                    style={
                       chartType === 'clients'
-                        ? `${colors.bgGradient} text-white shadow-lg ${colors.shadowPrimary}`
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                    }`}
+                        ? { background: accentGradient }
+                        : { backgroundColor: surfaceColor, border: `1px solid ${accentSofter}` }
+                    }
                   >
                     <Users size={14} className="inline mr-1" />
-                    <span className="hidden sm:inline">Clienti</span>
-                    <span className="sm:hidden">👥</span>
-                  </motion.button>
+                    <span className="">Clienti</span>
+                  </button>
                 </div>
               }
             >
-              <div className="h-64 sm:h-80">
+              <div className="min-h-[220px] sm:min-h-[260px]">
                 {getRevenueChartData().length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={getRevenueChartData()}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis 
-                        dataKey="day" 
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: '#6b7280', fontSize: 10 }}
-                        className="sm:text-xs"
-                      />
-                      <YAxis 
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: '#6b7280', fontSize: 10 }}
-                        className="sm:text-xs"
-                      />
-                      <Tooltip 
-                        contentStyle={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                          border: 'none',
-                          borderRadius: '12px',
-                          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
-                          fontSize: '12px',
-                        }}
-                        formatter={(value) => [
-                          chartType === 'revenue' ? formatCurrency(Number(value)) : value,
-                          chartType === 'revenue' ? 'Fatturato' : 'Clienti'
-                        ]}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey={chartType === 'revenue' ? 'revenue' : 'clients'} 
-                        stroke={appType === 'lashesandra' ? '#E91E63' : '#9C27B0'}
-                        strokeWidth={2}
-                        dot={{ fill: appType === 'lashesandra' ? '#E91E63' : '#9C27B0', strokeWidth: 2, r: 3 }}
-                        activeDot={{ r: 5, stroke: appType === 'lashesandra' ? '#E91E63' : '#9C27B0', strokeWidth: 2 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  <MonthlyBarChart
+                    data={getRevenueChartData()}
+                    dataKey={chartType === 'revenue' ? 'revenue' : 'clients'}
+                    formatValue={chartType === 'revenue' ? formatCurrency : String}
+                    barColor={appType === 'lashesandra' ? '#E91E63' : '#9C27B0'}
+                    textPrimaryColor={textPrimaryColor}
+                  />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center justify-center h-[220px] sm:h-[260px]" style={{ color: textSecondaryColor }}>
                     <div className="text-center">
                       <Activity size={32} className="sm:w-12 sm:h-12 mx-auto mb-4 opacity-50" />
                       <p className="text-sm sm:text-base">Nessun dato disponibile per questo mese</p>
@@ -360,75 +545,55 @@ export default function MonthlyOverview() {
             </ChartContainer>
           </div>
 
-          {/* Enhanced pie chart */}
-          <ChartContainer title="Distribuzione Trattamenti">
-            <div className="h-64 sm:h-80">
-              {getTreatmentDistribution().length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={getTreatmentDistribution()}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${((percent as number) * 100).toFixed(0)}%`}
-                      outerRadius={window.innerWidth < 640 ? 60 : 80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      style={{ fontSize: window.innerWidth < 640 ? '10px' : '12px' }}
-                    >
-                      {getTreatmentDistribution().map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        border: 'none',
-                        borderRadius: '12px',
-                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
-                        fontSize: '12px',
-                      }}
-                      formatter={(value) => [formatCurrency(Number(value)), 'Fatturato']}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-                  <div className="text-center">
-                    <Activity size={32} className="sm:w-12 sm:h-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-sm sm:text-base">Nessun dato disponibile per questo mese</p>
-                  </div>
+          {/* Distribuzione trattamenti — Chart.js Doughnut, mobile-first */}
+          <ChartContainer title="Distribuzione Trattamenti" accentSofter={accentSofter} textPrimaryColor={textPrimaryColor}>
+            {getTreatmentDistribution().length > 0 ? (
+              <TreatmentDoughnutChart
+                data={getTreatmentDistribution()}
+                textPrimaryColor={textPrimaryColor}
+                formatCurrencyFn={formatCurrency}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-[280px] sm:h-[320px]" style={{ color: textSecondaryColor }}>
+                <div className="text-center">
+                  <Activity size={40} className="sm:w-16 sm:h-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-base sm:text-lg">Nessun dato disponibile per questo mese</p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </ChartContainer>
         </div>
 
-        {/* Enhanced top clients table */}
-        <ChartContainer title="Top Clienti per Fatturato">
+        {/* Top clienti (stile ClientList: card semplici, no motion) */}
+        <ChartContainer title="Top Clienti per Fatturato" accentSofter={accentSofter} textPrimaryColor={textPrimaryColor}>
           <div className="space-y-3 sm:space-y-4">
             {stats?.topClients.map((item, index) => (
-              <motion.div
+              <div
                 key={item.client.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
                 className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
                 <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {index < 3 && (
-                      <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold text-white ${
-                        index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' :
-                        index === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500' :
-                        'bg-gradient-to-r from-orange-400 to-orange-500'
-                      }`}>
+                      <div
+                        className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold text-white"
+                        style={
+                          index === 0
+                            ? { background: 'linear-gradient(135deg, #FACC15, #EAB308)' }
+                            : index === 1
+                              ? { background: 'linear-gradient(135deg, #9CA3AF, #6B7280)' }
+                              : { background: 'linear-gradient(135deg, #FB923C, #EA580C)' }
+                        }
+                      >
                         {index + 1}
                       </div>
                     )}
-                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${colors.bgGradient} flex items-center justify-center text-white font-semibold text-xs sm:text-sm`}>
-                      {item.client.nome.charAt(0)}{item.client.cognome.charAt(0)}
+                    <div
+                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-white font-semibold text-xs sm:text-sm shadow-lg"
+                      style={{ background: accentGradient }}
+                    >
+                      {item.client.nome.charAt(0)}
+                      {item.client.cognome.charAt(0)}
                     </div>
                   </div>
                   <div className="min-w-0 flex-1">
@@ -438,20 +603,30 @@ export default function MonthlyOverview() {
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4 flex-shrink-0">
-                  <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${
-                    item.client.tipo_cliente === 'nuovo' 
-                      ? `${colors.bgPrimary} ${colors.textPrimary} dark:${colors.bgPrimaryDark} dark:${colors.textPrimaryDark}`
-                      : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                  }`}>
+                  <span
+                    className="px-2 sm:px-3 py-1 rounded-xl text-xs font-medium"
+                    style={
+                      item.client.tipo_cliente === 'nuovo'
+                        ? { backgroundColor: accentSofter, color: colors.primaryDark }
+                        : { backgroundColor: '#DCFCE7', color: '#047857' }
+                    }
+                  >
                     {item.client.tipo_cliente === 'nuovo' ? 'Nuovo' : 'Abituale'}
                   </span>
                   <div className="text-right">
-                    <div className={`font-bold ${colors.textPrimary} dark:${colors.textPrimaryDark} text-sm sm:text-base`}>
+                    <div
+                      className="font-bold text-sm sm:text-base"
+                      style={{
+                        background: accentGradient,
+                        WebkitBackgroundClip: 'text',
+                        color: 'transparent',
+                      }}
+                    >
                       {formatCurrency(item.revenue)}
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
             {(!stats?.topClients || stats.topClients.length === 0) && (
               <div className="text-center py-8 sm:py-12 text-gray-500 dark:text-gray-400">

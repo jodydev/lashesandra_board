@@ -1,25 +1,17 @@
-import React, { useState, useRef } from 'react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import React, { useState } from 'react';
 import type { Treatment, EyeLengthMap } from '../types';
 import EyeSchemaCanvas from './EyeSchemaCanvas';
-import { 
-  FiTrash2, 
-  FiPlus, 
-  FiCalendar, 
-  FiChevronDown,
-  FiChevronUp,
-  FiEdit3,
-  FiSave,
-  FiClock,
-  FiDollarSign,
-  FiSettings,
-  FiCheck,
-  FiAlertCircle,
-  FiInfo,
-  FiEye,
-  FiTarget,
-  FiZap
-} from 'react-icons/fi';
+import {
+  Trash2,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  Settings,
+  Check,
+  AlertCircle,
+  Target,
+  Zap,
+} from 'lucide-react';
 import { useAppColors } from '../hooks/useAppColors';
 
 interface TreatmentFormProps {
@@ -38,19 +30,13 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
   isLast
 }) => {
   const [isExpanded, setIsExpanded] = useState(isLast);
-  const [isEditing, setIsEditing] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [completionPercentage, setCompletionPercentage] = useState(0);
-  
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start end", "end start"]
-  });
-  
-  const y = useTransform(scrollYProgress, [0, 1], [20, -20]);
-  
+
   const colors = useAppColors();
+  const textPrimary = '#2C2C2C';
+  const textSecondary = '#7A7A7A';
+  const accentSofter = `${colors.primary}14`;
 
   // Calcola il progresso di completamento del trattamento
   React.useEffect(() => {
@@ -132,64 +118,40 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
   const curvaturaOptions = ['A', 'B', 'C', 'D', 'L', 'L+', 'M', 'M+'];
 
   return (
-    <motion.div
-      ref={containerRef}
-      layout
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -20, scale: 0.95 }}
+    <div
+      role="group"
       onClick={(e) => e.stopPropagation()}
-      className="relative bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden group"
-      style={{ y }}
+      onKeyDown={(e) => e.stopPropagation()}
+      className="relative overflow-hidden"
     >
-      {/* Floating Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div 
-          className={`absolute -top-20 -right-20 w-40 h-40 ${colors.bgGradientLight} dark:opacity-5 rounded-full blur-2xl`}
-          animate={{ 
-            scale: [1, 1.1, 1],
-            opacity: [0.1, 0.2, 0.1]
-          }}
-          transition={{ 
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-      </div>
-
-      {/* Header con Progress */}
-      <div className="relative p-6 border-b border-gray-200/50 dark:border-gray-700/50">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <motion.div 
-              className={`w-12 h-12 ${colors.bgGradient} rounded-2xl flex items-center justify-center shadow-lg`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+      {/* Header con progresso — più padding e touch target 44px+ */}
+      <div className="relative px-5 sm:px-6 lg:px-8 py-5 sm:py-6 border-b" style={{ borderColor: accentSofter }}>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
+              style={{ background: colors.cssGradient }}
             >
-              <span className="text-lg font-bold text-white">
-                {index + 1}
-              </span>
-            </motion.div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+              <span className="text-lg font-bold text-white">{index + 1}</span>
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-lg sm:text-xl font-bold truncate" style={{ color: textPrimary }}>
                 Trattamento #{index + 1}
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm truncate" style={{ color: textSecondary }}>
                 {isExpanded ? 'Modifica i dettagli' : 'Clicca per espandere'}
               </p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-3">
-            {/* Progress Indicator */}
-            <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="hidden sm:flex items-center gap-2">
               <div className="text-right">
-                <div className="text-xs text-gray-500 dark:text-gray-400">Completamento</div>
-                <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{completionPercentage}%</div>
+                <div className="text-xs" style={{ color: textSecondary }}>Completamento</div>
+                <div className="text-lg font-bold" style={{ color: textPrimary }}>{completionPercentage}%</div>
               </div>
-              <div className="w-12 h-12 relative">
-                <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+              <div className="w-10 h-10 relative flex-shrink-0">
+                <svg className="w-10 h-10 transform -rotate-90" viewBox="0 0 36 36">
                   <path
                     className="text-gray-200 dark:text-gray-700"
                     stroke="currentColor"
@@ -197,148 +159,128 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
                     fill="none"
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
-                  <motion.path
-                    className={colors.textPrimary}
-                    stroke="currentColor"
+                  <path
+                    stroke={colors.primary}
                     strokeWidth="3"
                     fill="none"
                     strokeLinecap="round"
+                    pathLength={1}
+                    strokeDasharray="1"
+                    strokeDashoffset={1 - completionPercentage / 100}
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    initial={{ pathLength: 0 }}
-                    animate={{ pathLength: completionPercentage / 100 }}
-                    transition={{ duration: 0.5, ease: "easeInOut" }}
                   />
                 </svg>
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex items-center gap-2">
-              <motion.button
+              <button
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   setIsExpanded(!isExpanded);
                 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`p-3 rounded-xl transition-all duration-200 ${
-                  isExpanded 
-                    ? `${colors.bgPrimary} dark:${colors.bgPrimaryDark} ${colors.textPrimary} dark:${colors.textPrimaryDark}` 
-                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                className={`min-w-[44px] min-h-[44px] flex items-center justify-center p-3 rounded-xl transition-opacity hover:opacity-90 ${
+                  isExpanded ? 'opacity-100' : 'opacity-80'
                 }`}
+                style={
+                  isExpanded
+                    ? { background: colors.cssGradient, color: '#fff' }
+                    : { color: textSecondary, backgroundColor: accentSofter }
+                }
                 aria-label={isExpanded ? 'Comprimi' : 'Espandi'}
               >
-                {isExpanded ? <FiChevronUp className="w-5 h-5" /> : <FiChevronDown className="w-5 h-5" />}
-              </motion.button>
-              
-              <motion.button
+                {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              </button>
+              <button
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   onRemove();
                 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="p-3 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all duration-200"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-3 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
                 aria-label="Rimuovi trattamento"
               >
-                <FiTrash2 className="w-5 h-5" />
-              </motion.button>
+                <Trash2 className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Progress Bar */}
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-          <motion.div
-            className={`h-full ${colors.bgGradient} rounded-full`}
-            initial={{ width: 0 }}
-            animate={{ width: `${completionPercentage}%` }}
-            transition={{ duration: 0.5, ease: "easeInOut" }}
+        <div className="mt-4 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+          <div
+            className="h-full rounded-full transition-[width] duration-300"
+            style={{ width: `${completionPercentage}%`, background: colors.cssGradient }}
           />
         </div>
       </div>
 
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="p-6 space-y-8"
+      {isExpanded && (
+          <div className="px-5 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-10"
           >
-            {/* Informazioni Base */}
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center mb-6">
-                <div className={`p-3 rounded-xl ${colors.bgPrimary} dark:${colors.bgPrimaryDark} mr-4`}>
-                  <FiSettings className={`w-5 h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
-                </div>
+            {/* Informazioni Base — più spazio e campi più grandi */}
+            <div className="" >
+              <div className="flex items-center gap-4 mb-8">
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <h4 className="text-lg font-semibold" style={{ color: textPrimary }}>
                     Informazioni Base
                   </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm" style={{ color: textSecondary }}>
                     Dettagli principali del trattamento
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                    <FiCalendar className="inline w-4 h-4 mr-2" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold" style={{ color: textPrimary }}>
+                    <Calendar className="w-4 h-4" />
                     Data Trattamento
-                    <span className="text-red-500 ml-1">*</span>
+                    <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
                       type="date"
                       value={treatment.data}
                       onChange={(e) => handleFieldChange('data', e.target.value)}
-                      className={`w-full px-4 py-3 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all duration-200 ${
-                        validationErrors.data 
-                          ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500' 
-                          : `border-gray-200 dark:border-gray-600 focus:ring-2 ${colors.focusRing} focus:border-transparent`
+                      className={`w-full min-h-[44px] px-4 py-3 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors ${
+                        validationErrors.data
+                          ? 'border-red-300 dark:border-red-600 focus:ring-2 focus:ring-red-500 focus:border-red-500'
+                          : 'border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-offset-0 focus:border-transparent'
                       }`}
                       aria-describedby={validationErrors.data ? 'data-error' : undefined}
                     />
                     {treatment.data && !validationErrors.data && (
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <FiCheck className="w-4 h-4 text-green-500" />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <Check className="w-5 h-5 text-green-500" />
                       </div>
                     )}
                     {validationErrors.data && (
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <FiAlertCircle className="w-4 h-4 text-red-500" />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <AlertCircle className="w-5 h-5 text-red-500" />
                       </div>
                     )}
                   </div>
                   {validationErrors.data && (
-                    <p id="data-error" className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center">
-                      <FiAlertCircle className="w-4 h-4 mr-1" />
+                    <p id="data-error" className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
                       {validationErrors.data}
                     </p>
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                    <FiTarget className="inline w-4 h-4 mr-2" />
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold" style={{ color: textPrimary }}>
+                    <Target className="w-4 h-4" />
                     Curvatura
-                    <span className="text-red-500 ml-1">*</span>
+                    <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={treatment.curvatura}
                     onChange={(e) => handleFieldChange('curvatura', e.target.value)}
-                    className={`w-full px-4 py-3 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all duration-200 ${
-                      treatment.curvatura 
-                        ? `border-gray-200 dark:border-gray-600 focus:ring-2 ${colors.focusRing} focus:border-transparent` 
-                        : `border-gray-200 dark:border-gray-600 focus:ring-2 ${colors.focusRing} focus:border-transparent`
-                    }`}
+                    className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
                   >
                     <option value="">Seleziona curvatura</option>
                     {curvaturaOptions.map(option => (
@@ -346,18 +288,18 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
                     ))}
                   </select>
                   {treatment.curvatura && (
-                    <div className="mt-2 flex items-center text-green-600 dark:text-green-400">
-                      <FiCheck className="w-4 h-4 mr-1" />
-                      <span className="text-sm">Curvatura selezionata</span>
+                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                      <Check className="w-4 h-4 flex-shrink-0" />
+                      <span>Curvatura selezionata</span>
                     </div>
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                    <FiZap className="inline w-4 h-4 mr-2" />
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold" style={{ color: textPrimary }}>
+                    <Zap className="w-4 h-4" />
                     Spessore (mm)
-                    <span className="text-red-500 ml-1">*</span>
+                    <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -368,31 +310,31 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
                       value={treatment.spessore}
                       onChange={(e) => handleFieldChange('spessore', parseFloat(e.target.value))}
                       placeholder="0.07"
-                      className={`w-full px-4 py-3 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all duration-200 ${
-                        validationErrors.spessore 
-                          ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500' 
-                          : `border-gray-200 dark:border-gray-600 focus:ring-2 ${colors.focusRing} focus:border-transparent`
+                      className={`w-full min-h-[44px] px-4 py-3 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors ${
+                        validationErrors.spessore
+                          ? 'border-red-300 dark:border-red-600 focus:ring-2 focus:ring-red-500 focus:border-red-500'
+                          : 'border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-offset-0 focus:border-transparent'
                       }`}
                       aria-describedby={validationErrors.spessore ? 'spessore-error' : 'spessore-help'}
                     />
                     {treatment.spessore && !validationErrors.spessore && (
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <FiCheck className="w-4 h-4 text-green-500" />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <Check className="w-5 h-5 text-green-500" />
                       </div>
                     )}
                     {validationErrors.spessore && (
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <FiAlertCircle className="w-4 h-4 text-red-500" />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <AlertCircle className="w-5 h-5 text-red-500" />
                       </div>
                     )}
                   </div>
                   {validationErrors.spessore && (
-                    <p id="spessore-error" className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center">
-                      <FiAlertCircle className="w-4 h-4 mr-1" />
+                    <p id="spessore-error" className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
                       {validationErrors.spessore}
                     </p>
                   )}
-                  <p id="spessore-help" className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  <p id="spessore-help" className="text-xs" style={{ color: textSecondary }}>
                     Range: 0.05 - 0.20 mm
                   </p>
                 </div>
@@ -400,9 +342,9 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
             </div>
 
             {/* Lunghezze e schema occhio */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium" style={{ color: textPrimary }}>
                   Lunghezze (es. 7-13 mm)
                 </label>
                 <input
@@ -410,7 +352,7 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
                   value={treatment.lunghezze}
                   onChange={(e) => handleFieldChange('lunghezze', e.target.value)}
                   placeholder="es. 7-13 mm"
-                  className={`w-full px-3 py-2 border-2 ${colors.borderPrimary} dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors duration-200`}
+                  className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
                 />
               </div>
 
@@ -420,10 +362,10 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
               />
             </div>
 
-            {/* Dettagli trattamento */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {/* Dettagli trattamento — grid con gap maggiore */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium" style={{ color: textPrimary }}>
                   Colla
                 </label>
                 <input
@@ -431,12 +373,11 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
                   value={treatment.colla}
                   onChange={(e) => handleFieldChange('colla', e.target.value)}
                   placeholder="Nome prodotto"
-                  className={`w-full px-3 py-2 border-2 ${colors.borderPrimary} dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors duration-200`}
+                  className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium" style={{ color: textPrimary }}>
                   Tenuta
                 </label>
                 <input
@@ -444,12 +385,11 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
                   value={treatment.tenuta}
                   onChange={(e) => handleFieldChange('tenuta', e.target.value)}
                   placeholder="es. 4 settimane"
-                  className={`w-full px-3 py-2 border-2 ${colors.borderPrimary} dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors duration-200`}
+                  className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium" style={{ color: textPrimary }}>
                   Colore ciglia
                 </label>
                 <input
@@ -457,12 +397,11 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
                   value={treatment.colore_ciglia}
                   onChange={(e) => handleFieldChange('colore_ciglia', e.target.value)}
                   placeholder="es. nere"
-                  className={`w-full px-3 py-2 border-2 ${colors.borderPrimary} dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors duration-200`}
+                  className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium" style={{ color: textPrimary }}>
                   Tempo applicazione
                 </label>
                 <input
@@ -470,63 +409,66 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
                   value={treatment.tempo_applicazione}
                   onChange={(e) => handleFieldChange('tempo_applicazione', e.target.value)}
                   placeholder="es. 2h"
-                  className={`w-full px-3 py-2 border-2 ${colors.borderPrimary} dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors duration-200`}
+                  className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
                 />
               </div>
             </div>
 
-            {/* Refill */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            {/* Refill — touch target più grandi */}
+            <div className="space-y-4">
+              <label className="block text-sm font-medium" style={{ color: textPrimary }}>
                 Refill
               </label>
-              <div className="flex gap-4">
-                <label className="flex items-center">
+              <div className="flex flex-wrap gap-6">
+                <label className="flex items-center gap-3 min-h-[44px] cursor-pointer">
                   <input
                     type="radio"
                     name={`refill-${index}`}
                     value="si"
                     checked={treatment.refill === 'si'}
                     onChange={(e) => handleFieldChange('refill', e.target.value)}
-                    className="w-4 h-4 accent-pink-600 bg-gray-100 border-gray-300 rounded-xl focus:ring-pink-500 dark:focus:ring-pink-600 dark:ring-offset-gray-800 focus:ring-2"                  />
-                  <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Sì</span>
+                    className="w-5 h-5 accent-pink-600 bg-gray-100 border-gray-300 rounded-full focus:ring-2 focus:ring-pink-500 dark:focus:ring-pink-600 dark:ring-offset-gray-800"
+                  />
+                  <span className="text-sm" style={{ color: textPrimary }}>Sì</span>
                 </label>
-                <label className="flex items-center">
+                <label className="flex items-center gap-3 min-h-[44px] cursor-pointer">
                   <input
                     type="radio"
                     name={`refill-${index}`}
                     value="no"
                     checked={treatment.refill === 'no'}
                     onChange={(e) => handleFieldChange('refill', e.target.value)}
-                    className="w-4 h-4 accent-pink-600 bg-gray-100 border-gray-300 rounded-xl focus:ring-pink-500 dark:focus:ring-pink-600 dark:ring-offset-gray-800 focus:ring-2"                  />
-                  <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">No</span>
+                    className="w-5 h-5 accent-pink-600 bg-gray-100 border-gray-300 rounded-full focus:ring-2 focus:ring-pink-500 dark:focus:ring-pink-600 dark:ring-offset-gray-800"
+                  />
+                  <span className="text-sm" style={{ color: textPrimary }}>No</span>
                 </label>
               </div>
             </div>
 
-            {/* Bigodini */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            {/* Bigodini — griglia più ariosa */}
+            <div className="space-y-4">
+              <label className="block text-sm font-medium" style={{ color: textPrimary }}>
                 Bigodini
               </label>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {bigodiniOptions.map(bigodino => (
-                  <label key={bigodino} className="flex items-center">
+                  <label key={bigodino} className="flex items-center gap-3 min-h-[44px] cursor-pointer">
                     <input
                       type="checkbox"
                       checked={treatment.bigodini?.includes(bigodino) || false}
                       onChange={(e) => handleBigodiniChange(bigodino, e.target.checked)}
-                      className="w-4 h-4 accent-pink-600 bg-gray-100 border-gray-300 rounded-xl focus:ring-pink-500 dark:focus:ring-pink-600 dark:ring-offset-gray-800 focus:ring-2"                    />
-                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">{bigodino}</span>
+                      className="w-5 h-5 accent-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-2 focus:ring-pink-500 dark:focus:ring-pink-600 dark:ring-offset-gray-800"
+                    />
+                    <span className="text-sm" style={{ color: textPrimary }}>{bigodino}</span>
                   </label>
                 ))}
               </div>
             </div>
 
             {/* Colore e prezzo */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium" style={{ color: textPrimary }}>
                   Colore
                 </label>
                 <input
@@ -534,12 +476,11 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
                   value={treatment.colore}
                   onChange={(e) => handleFieldChange('colore', e.target.value)}
                   placeholder="Colore"
-                  className={`w-full px-3 py-2 border-2 ${colors.borderPrimary} dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors duration-200`}
+                  className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium" style={{ color: textPrimary }}>
                   Prezzo (€)
                 </label>
                 <input
@@ -548,14 +489,13 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
                   min="0"
                   value={treatment.prezzo}
                   onChange={(e) => handleFieldChange('prezzo', parseFloat(e.target.value))}
-                  className={`w-full px-3 py-2 border-2 ${colors.borderPrimary} dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors duration-200`}
+                  className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
                 />
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+          </div>
+      )}
+    </div>
   );
 };
 

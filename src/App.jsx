@@ -179,32 +179,34 @@ export default function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            } />
-            <Route path="/" element={
-              <ProtectedRoute>
-                <AppSelector />
-              </ProtectedRoute>
-            } />
-            <Route path="/lashesandra/*" element={
-              <ProtectedRoute>
-                <LashesAndraApp />
-              </ProtectedRoute>
-            } />
-            <Route path="/isabellenails/*" element={
-              <ProtectedRoute>
-                <IsabelleNailsApp />
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
+        <AppProvider appType="lashesandra">
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              } />
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <AppSelector />
+                </ProtectedRoute>
+              } />
+              <Route path="/lashesandra/*" element={
+                <ProtectedRoute>
+                  <LashesAndraApp />
+                </ProtectedRoute>
+              } />
+              <Route path="/isabellenails/*" element={
+                <ProtectedRoute>
+                  <IsabelleNailsApp />
+                </ProtectedRoute>
+              } />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </AppProvider>
       </AuthProvider>
     </ThemeProvider>
   );

@@ -97,3 +97,15 @@ temp/
 *.njsproj
 *.sln
 *.sw?
+
+# Android
+android/
+
+# iOS
+ios/
+
+# Windows
+windows/
+
+# macOS
+macos/

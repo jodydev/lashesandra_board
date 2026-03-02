@@ -1,20 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
-
+import React, { useState, useEffect } from 'react';
 import type { Client, ClientProfileData, EyeCharacteristics, ClientProfile, Treatment } from '../types';
 import TreatmentForm from './TreatmentForm';
-import { 
-  FiUser, 
-  FiEye, 
-  FiHeart, 
-  FiCalendar, 
-  FiPlus, 
-  FiSave, 
-  FiArrowLeft,
-  FiCheck,
-  FiAlertCircle,
-  FiInfo
-} from 'react-icons/fi';
+import {
+  User,
+  Eye,
+  Heart,
+  Calendar,
+  Plus,
+  Save,
+  ChevronLeft,
+  Check,
+  AlertCircle,
+  Info,
+} from 'lucide-react';
 import { useAppColors } from '../hooks/useAppColors';
 import { useToast } from '../hooks/useToast';
 import { useApp } from '../contexts/AppContext';
@@ -63,15 +61,7 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
   const [activeSection, setActiveSection] = useState<'personal' | 'eyes' | 'profile' | 'treatments'>('personal');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [progress, setProgress] = useState(0);
-  
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start end", "end start"]
-  });
-  
-  const y = useTransform(scrollYProgress, [0, 1], [50, -50]);
-  
+
   const colors = useAppColors();
   const { showSuccess, showError } = useToast();
   const { appType } = useApp();
@@ -279,223 +269,107 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
   };
 
   const sections = [
-    { 
-      id: 'personal', 
-      label: 'Informazioni Personali', 
-      icon: FiUser,
-      description: 'Dati anagrafici e contatti',
-      color: 'blue'
-    },
-    { 
-      id: 'eyes', 
-      label: 'Caratteristiche Occhi', 
-      icon: FiEye,
-      description: 'Morfologia e caratteristiche',
-      color: 'purple'
-    },
-    { 
-      id: 'profile', 
-      label: 'Profilo Cliente', 
-      icon: FiHeart,
-      description: 'Allergie e condizioni mediche',
-      color: 'green'
-    },
-    { 
-      id: 'treatments', 
-      label: 'Trattamenti', 
-      icon: FiCalendar,
-      description: 'Storico e dettagli trattamenti',
-      color: 'orange'
-    }
+    { id: 'personal', label: 'Informazioni Personali', icon: User, description: 'Dati anagrafici e contatti' },
+    { id: 'eyes', label: 'Caratteristiche Occhi', icon: Eye, description: 'Morfologia e caratteristiche' },
+    { id: 'profile', label: 'Profilo Cliente', icon: Heart, description: 'Allergie e condizioni mediche' },
+    { id: 'treatments', label: 'Trattamenti', icon: Calendar, description: 'Storico e dettagli trattamenti' },
   ] as const;
 
+  const accentColor = colors.primary;
+
   return (
-    <div
-      ref={containerRef}
-      className="min-h-screen"
-      style={{ backgroundColor }}
-    >
-      {/* Floating Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <motion.div 
-          style={{ y }}
-          className={`absolute -top-40 -right-40 w-80 h-80 ${colors.bgGradientLight} dark:opacity-10 rounded-full blur-3xl`}
-        />
-        <motion.div 
-          style={{ y: useTransform(scrollYProgress, [0, 1], [-50, 50]) }}
-          className={`absolute -bottom-40 -left-40 w-96 h-96 ${colors.bgGradientLight} dark:opacity-10 rounded-full blur-3xl`}
-        />
-      </div>
-
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Modern Header with Progress */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-12"
+    <div className="min-h-screen" style={{ backgroundColor }}>
+      {/* Header navigazione: Indietro | Scheda Cliente (stile ClientList) */}
+      <header
+        className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
+        style={{ borderColor: accentSofter }}
+      >
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex items-center gap-1.5 font-medium transition-opacity hover:opacity-90"
+          style={{ color: accentColor }}
+          aria-label="Indietro"
         >
-          <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="space-y-3">
-                <div
-                  className="inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-semibold shadow-sm"
-                  style={{ backgroundColor: accentSofter, color: accentDark }}
-                >
-                  <FiUser className="h-4 w-4" />
-                  Profilo cliente
-                </div>
-                <div>
-                  <h1
-                    className="text-3xl font-semibold tracking-tight dark:text-white"
-                    style={{ color: textPrimaryColor }}
-                  >
-                    Scheda Cliente
-                  </h1>
-                  <p
-                    className="mt-1 text-lg dark:text-gray-400"
-                    style={{ color: textSecondaryColor }}
-                  >
-                    {client.nome} {client.cognome}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <div
-                  className="text-sm"
-                  style={{ color: textSecondaryColor }}
-                >
-                  Completamento
-                </div>
-                <div
-                  className="text-2xl font-semibold dark:text-white"
-                  style={{ color: textPrimaryColor }}
-                >
-                  {progress}%
-                </div>
-              </div>
-              <div className="relative h-16 w-16">
-                <svg className="h-16 w-16 transform -rotate-90" viewBox="0 0 36 36">
-                  <path
-                    className="text-gray-200 dark:text-gray-700"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    fill="none"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                  <motion.path
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    fill="none"
-                    strokeLinecap="round"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    initial={{ pathLength: 0 }}
-                    animate={{ pathLength: progress / 100 }}
-                    transition={{ duration: 0.5, ease: 'easeInOut' }}
-                    style={{ color: accentDark }}
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
+          <ChevronLeft className="h-6 w-6" />
+          <span>Indietro</span>
+        </button>
+        <h1
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white truncate max-w-[60%]"
+          style={{ color: textPrimaryColor }}
+        >
+          {client.nome} {client.cognome}
+        </h1>
+        <button
+          type="submit"
+          form="client-profile-form"
+          disabled={isLoading}
+          className="font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+          style={{ color: accentColor }}
+          aria-label="Salva"
+        >
+          Salva
+        </button>
+      </header>
 
-          {/* Progress Bar */}
-          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-            <motion.div
-              className="h-full rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.5, ease: 'easeInOut' }}
-              style={{ background: accentGradient }}
-            />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Progress */}
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 rounded-2xl px-3 py-2" style={{ backgroundColor: accentSofter }}>
+            <span className="text-xs font-semibold" style={{ color: accentDark }}>Grado completamento: {progress}%</span>
           </div>
-        </motion.div>
+          <div className="h-2 flex-1 max-w-xs rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progress}%`, background: accentGradient }} />
+          </div>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Modern Navigation */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="rounded-2xl border p-6 shadow-xl"
-            style={{
-              background: `linear-gradient(135deg, ${surfaceColor}F6, rgba(255,255,255,0.92))`,
-              borderColor: accentSofter,
-            }}
+        <form id="client-profile-form" onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+          {/* Section navigation (stile ClientList: chip buttons) */}
+          <div
+            className="rounded-2xl border p-4 sm:p-6 shadow-lg"
+            style={{ background: `linear-gradient(135deg, ${surfaceColor}F6, rgba(255,255,255,0.92))`, borderColor: accentSofter }}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {sections.map((section, index) => {
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {sections.map((section) => {
                 const Icon = section.icon;
                 const isActive = activeSection === section.id;
-                const colorClasses = {
-                  blue: isActive ? `${colors.bgPrimary} ${colors.borderPrimary} ${colors.textPrimary} dark:${colors.bgPrimaryDark} dark:${colors.borderPrimary} dark:${colors.textPrimaryDark}` : `hover:${colors.bgPrimary} hover:${colors.borderHover} dark:hover:${colors.bgPrimaryDark}`,
-                  purple: isActive ? `${colors.bgPrimary} ${colors.borderPrimary} ${colors.textPrimary} dark:${colors.bgPrimaryDark} dark:${colors.borderPrimary} dark:${colors.textPrimaryDark}` : `hover:${colors.bgPrimary} hover:${colors.borderHover} dark:hover:${colors.bgPrimaryDark}`,
-                  green: isActive ? `${colors.bgPrimary} ${colors.borderPrimary} ${colors.textPrimary} dark:${colors.bgPrimaryDark} dark:${colors.borderPrimary} dark:${colors.textPrimaryDark}` : `hover:${colors.bgPrimary} hover:${colors.borderHover} dark:hover:${colors.bgPrimaryDark}`,
-                  orange: isActive ? `${colors.bgPrimary} ${colors.borderPrimary} ${colors.textPrimary} dark:${colors.bgPrimaryDark} dark:${colors.borderPrimary} dark:${colors.textPrimaryDark}` : `hover:${colors.bgPrimary} hover:${colors.borderHover} dark:hover:${colors.bgPrimaryDark}`
-                };
-                
                 return (
-                  <motion.button
+                  <button
                     key={section.id}
                     type="button"
                     onClick={() => setActiveSection(section.id)}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-200 text-left group ${
-                      isActive 
-                        ? colorClasses[section.color as keyof typeof colorClasses]
-                        : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                    className={`flex flex-col items-center p-3 sm:p-4 rounded-xl border-2 text-left transition-all duration-200 ${
+                      isActive
+                        ? 'text-white border-transparent'
+                        : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
                     }`}
-                    style={{ animationDelay: `${index * 0.1}s` }}
+                    style={isActive ? { background: accentGradient } : undefined}
                   >
-                    <div className="flex items-center w-full mb-2">
-                      <Icon className={`w-5 h-5 mr-2 ${isActive ? '' : 'group-hover:scale-110 transition-transform duration-200'}`} />
-                      <span className="font-semibold text-sm">{section.label}</span>
+                    <div className="flex items-center w-full mb-1">
+                      <span className="font-semibold text-sm truncate">{section.label}</span>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center leading-relaxed">
+                    <p className="text-xs text-start leading-relaxed opacity-90 truncate w-full">
                       {section.description}
                     </p>
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeSection"
-                        className="absolute inset-0 rounded-xl border-2 border-current opacity-20"
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                      />
-                    )}
-                  </motion.button>
+
+                  </button>
                 );
               })}
             </div>
-          </motion.div>
+          </div>
 
           {/* Form Sections */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="rounded-2xl border shadow-xl overflow-hidden"
+          <div
+            className="rounded-2xl border shadow-lg overflow-hidden"
             style={{
               background: `linear-gradient(135deg, ${surfaceColor}F6, rgba(255,255,255,0.92))`,
               borderColor: accentSofter,
             }}
           >
-            <AnimatePresence mode="wait">
               {/* Informazioni Personali */}
               {activeSection === 'personal' && (
-                <motion.div
-                  key="personal"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="p-8"
-                >
-                  <div className="flex items-center mb-8">
-                    <div className={`p-3 rounded-xl ${colors.bgPrimary} dark:${colors.bgPrimaryDark} mr-4`}>
-                      <FiUser className={`w-6 h-6 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
-                    </div>
+                <div className="p-6 sm:p-8">
+                  <div className="flex items-center mb-6 sm:mb-8">
                     <div>
                       <h2
                         className="text-2xl font-bold dark:text-gray-100"
@@ -526,7 +400,7 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                             className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                           />
                           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                            <FiInfo className="w-4 h-4 text-gray-400" />
+                            <Info className="w-4 h-4 text-gray-400" />
                           </div>
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
@@ -547,7 +421,7 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                             className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                           />
                           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                            <FiInfo className="w-4 h-4 text-gray-400" />
+                            <Info className="w-4 h-4 text-gray-400" />
                           </div>
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
@@ -576,18 +450,18 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                           />
                           {formData.data_nascita && !validationErrors.data_nascita && (
                             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                              <FiCheck className="w-4 h-4 text-green-500" />
+                              <Check className="w-4 h-4 text-green-500" />
                             </div>
                           )}
                           {validationErrors.data_nascita && (
                             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                              <FiAlertCircle className="w-4 h-4 text-red-500" />
+                              <AlertCircle className="w-4 h-4 text-red-500" />
                             </div>
                           )}
                         </div>
                         {validationErrors.data_nascita && (
                           <p id="data_nascita-error" className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center">
-                            <FiAlertCircle className="w-4 h-4 mr-1" />
+                            <AlertCircle className="w-4 h-4 mr-1" />
                             {validationErrors.data_nascita}
                           </p>
                         )}
@@ -598,10 +472,8 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
 
                       {/* Age Display */}
                       {formData.data_nascita && !validationErrors.data_nascita && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className={`rounded-xl border p-4 dark:${colors.bgPrimaryDark}`}
+                        <div
+                          className="rounded-xl border p-4"
                           style={{
                             backgroundColor: accentSofter,
                             borderColor: accentSoft,
@@ -619,27 +491,17 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                               Età: {new Date().getFullYear() - new Date(formData.data_nascita).getFullYear()} anni
                             </span>
                           </div>
-                        </motion.div>
+                        </div>
                       )}
                     </div>
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {/* Caratteristiche Occhi */}
               {activeSection === 'eyes' && (
-                <motion.div
-                  key="eyes"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="p-8"
-                >
-                  <div className="flex items-center mb-8">
-                    <div className={`p-3 rounded-xl ${colors.bgPrimary} dark:${colors.bgPrimaryDark} mr-4`}>
-                      <FiEye className={`w-6 h-6 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
-                    </div>
+                <div className="p-6 sm:p-8">
+                  <div className="flex items-center mb-6 sm:mb-8">
                     <div>
                       <h2
                         className="text-2xl font-bold dark:text-gray-100"
@@ -677,18 +539,18 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                         />
                         {formData.caratteristiche_occhi.colore_occhi && !validationErrors.colore_occhi && (
                           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                            <FiCheck className="w-4 h-4 text-green-500" />
+                            <Check className="w-4 h-4 text-green-500" />
                           </div>
                         )}
                         {validationErrors.colore_occhi && (
                           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                            <FiAlertCircle className="w-4 h-4 text-red-500" />
+                            <AlertCircle className="w-4 h-4 text-red-500" />
                           </div>
                         )}
                       </div>
                       {validationErrors.colore_occhi && (
                         <p id="colore_occhi-error" className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center">
-                          <FiAlertCircle className="w-4 h-4 mr-1" />
+                          <AlertCircle className="w-4 h-4 mr-1" />
                           {validationErrors.colore_occhi}
                         </p>
                       )}
@@ -706,75 +568,57 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                         { key: 'foltezza_ciglia_naturali', label: 'Foltezza Ciglia Naturali', options: ['rade', 'medie', 'folte'], icon: '👁️' },
                         { key: 'direzione_crescita_ciglia', label: 'Direzione Crescita Ciglia', options: ['in_basso', 'dritte', 'in_alto'], icon: '👁️' }
                       ].map(({ key, label, options, icon }) => (
-                        <motion.div
+                        <div
                           key={key}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.1 }}
-                          className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200"
+                          className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200"
                         >
                           <div className="flex items-center mb-4">
                             <span className="text-2xl mr-3">{icon}</span>
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          {label}
+                              {label}
                             </h3>
                           </div>
                           <div className="space-y-3">
                             {options.map((option) => (
-                              <motion.label
+                              <label
                                 key={option}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                                className={`flex items-center p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                                   formData.caratteristiche_occhi[key as keyof EyeCharacteristics] === option
-                                    ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} ${colors.textPrimary} dark:${colors.textPrimaryDark}`
-                                    : `border-gray-200 dark:border-gray-600 hover:${colors.borderHover} dark:hover:${colors.borderPrimary} text-gray-700 dark:text-gray-300`
+                                    ? 'border-transparent text-white'
+                                    : 'border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                                 }`}
+                                style={formData.caratteristiche_occhi[key as keyof EyeCharacteristics] === option ? { background: accentGradient } : undefined}
                               >
-                              <input
-                                type="radio"
-                                name={key}
-                                value={option}
-                                checked={formData.caratteristiche_occhi[key as keyof EyeCharacteristics] === option}
-                                onChange={(e) => handleEyeCharacteristicsChange(key as keyof EyeCharacteristics, e.target.value)}
-                                  className={`w-4 h-4 ${colors.textPrimary} accent-pink-500 bg-gray-100 border-gray-300 focus:ring-2 ${colors.focusRing} dark:focus:ring-${colors.focusRing} dark:ring-offset-gray-800`}
+                                <input
+                                  type="radio"
+                                  name={key}
+                                  value={option}
+                                  checked={formData.caratteristiche_occhi[key as keyof EyeCharacteristics] === option}
+                                  onChange={(e) => handleEyeCharacteristicsChange(key as keyof EyeCharacteristics, e.target.value)}
+                                  className="w-4 h-4 accent-pink-500 bg-gray-100 border-gray-300 focus:ring-2 focus:ring-offset-0 dark:bg-gray-700 dark:border-gray-600"
                                 />
                                 <span className="ml-3 text-sm font-medium capitalize">
-                                {option.replace('_', ' ')}
-                              </span>
+                                  {option.replace('_', ' ')}
+                                </span>
                                 {formData.caratteristiche_occhi[key as keyof EyeCharacteristics] === option && (
-                                  <motion.div
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    className="ml-auto"
-                                  >
-                                    <FiCheck className={`w-4 h-4 ${colors.textPrimary}`} />
-                                  </motion.div>
+                                  <div className="ml-auto">
+                                    <Check className="w-4 h-4" style={{ color: formData.caratteristiche_occhi[key as keyof EyeCharacteristics] === option ? 'white' : undefined }} />
+                                  </div>
                                 )}
-                              </motion.label>
-                          ))}
+                              </label>
+                            ))}
+                          </div>
                         </div>
-                        </motion.div>
                       ))}
                       </div>
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {/* Profilo Cliente */}
               {activeSection === 'profile' && (
-                <motion.div
-                  key="profile"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="p-8"
-                >
-                  <div className="flex items-center mb-8">
-                    <div className={`p-3 rounded-xl ${colors.bgPrimary} dark:${colors.bgPrimaryDark} mr-4`}>
-                      <FiHeart className={`w-6 h-6 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
-                    </div>
+                <div className="p-6 sm:p-8">
+                  <div className="flex items-center mb-6 sm:mb-8">
                     <div>
                       <h2
                         className="text-2xl font-bold dark:text-gray-100"
@@ -807,11 +651,8 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                         const checkboxColors = getCheckboxColors(isActive);
                         
                         return (
-                        <motion.div
+                        <div
                           key={key}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.1 }}
                           className={`relative p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer hover:shadow-lg ${checkboxColors.container}`}
                           onClick={() => handleProfileChange(key as keyof ClientProfile, !(formData.profilo_cliente[key as keyof ClientProfile] as boolean))}
                         >
@@ -821,7 +662,7 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                                 type="checkbox"
                                 checked={formData.profilo_cliente[key as keyof ClientProfile] as boolean}
                                 onChange={(e) => handleProfileChange(key as keyof ClientProfile, e.target.checked)}
-                                className={`w-5 h-5 ${colors.textPrimary} accent-pink-500 dark:accent-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-2 ${colors.focusRing} dark:focus:ring-${colors.focusRing} dark:ring-offset-gray-800`}
+                                className="w-5 h-5 accent-pink-500 dark:accent-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-2 focus:ring-offset-0 dark:bg-gray-700 dark:border-gray-600"
                               />
                             </div>
                             <div className="ml-4 flex-1">
@@ -836,39 +677,33 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                               </p>
                             </div>
                             {formData.profilo_cliente[key as keyof ClientProfile] as boolean && (
-                              <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="absolute top-4 right-4"
-                              >
-                                <FiCheck className={`w-5 h-5 ${checkboxColors.icon}`} />
-                              </motion.div>
+                              <div className="absolute top-4 right-4">
+                                <Check className={`w-5 h-5 ${checkboxColors.icon}`} />
+                              </div>
                             )}
                           </div>
-                        </motion.div>
+                        </div>
                         );
                       })}
                     </div>
 
                     {/* Note Section */}
-                    <div className={`${colors.bgGradientLight} rounded-2xl p-6 border ${colors.borderPrimary} dark:${colors.borderPrimary}`}>
-                      <label className="block text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                        Note Aggiuntive
-                        <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
-                          (max 500 caratteri)
-                        </span>
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+                      <label className="block text-base font-semibold text-gray-800 dark:text-gray-100 mb-4">
+                        Note aggiuntive
+                        <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">(max 500 caratteri)</span>
                       </label>
                       <div className="relative">
-                      <textarea
-                        value={formData.profilo_cliente.note || ''}
-                        onChange={(e) => handleProfileChange('note', e.target.value)}
-                        rows={4}
-                          placeholder="Note aggiuntive sul cliente, preferenze particolari, allergie specifiche..."
-                          className={`w-full px-4 py-3 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all duration-200 resize-none ${
-                            validationErrors.note 
-                              ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500' 
-                              : `${colors.borderPrimary} dark:${colors.borderPrimary} focus:ring-2 ${colors.focusRing} focus:border-transparent`
-                          }`}
+                        <textarea
+                          value={formData.profilo_cliente.note || ''}
+                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleProfileChange('note', e.target.value)}
+                          rows={4}
+                          placeholder="Scrivi qui eventuali note sul cliente, preferenze o avvertenze importanti..."
+                          className={`w-full px-4 py-3 border-2 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-all duration-200 resize-none
+                            ${validationErrors.note
+                              ? 'border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-gray-400 focus:border-gray-400'
+                              : 'border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-gray-400 focus:border-gray-400'
+                            }`}
                           aria-describedby={validationErrors.note ? 'note-error' : 'note-help'}
                           maxLength={500}
                         />
@@ -877,157 +712,129 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                         </div>
                       </div>
                       {validationErrors.note && (
-                        <p id="note-error" className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center">
-                          <FiAlertCircle className="w-4 h-4 mr-1" />
+                        <p id="note-error" className="text-sm text-red-500 dark:text-red-400 mt-2 flex items-center gap-1">
+                          <AlertCircle className="w-4 h-4" />
                           {validationErrors.note}
                         </p>
                       )}
                       <p id="note-help" className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                        Inserisci informazioni aggiuntive che potrebbero essere utili per il trattamento
+                        Inserisci solo informazioni utili e brevi che possono facilitare il servizio.
                       </p>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               )}
 
-              {/* Trattamenti */}
+              {/* Trattamenti — layout più arioso e facile da usare */}
               {activeSection === 'treatments' && (
-                <motion.div
-                  key="treatments"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="p-8"
-                >
-                  <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center">
-                      <div className={`p-3 rounded-xl ${colors.bgPrimary} dark:${colors.bgPrimaryDark} mr-4`}>
-                        <FiCalendar className={`w-6 h-6 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
-                      </div>
-                      <div>
-                        <h2
-                          className="text-2xl font-bold dark:text-gray-100"
-                          style={{ color: textPrimaryColor }}
-                        >
-                          Trattamenti
-                        </h2>
-                        <p
-                          className="mt-1 dark:text-gray-400"
-                          style={{ color: textSecondaryColor }}
-                        >
-                          Storico e dettagli dei trattamenti effettuati ({formData.trattamenti.length})
-                        </p>
-                      </div>
+                <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8 sm:mb-10">
+                    <div>
+                      <h2
+                        className="text-2xl sm:text-3xl font-bold dark:text-gray-100"
+                        style={{ color: textPrimaryColor }}
+                      >
+                        Trattamenti
+                      </h2>
+                      <p
+                        className="mt-2 text-base dark:text-gray-400"
+                        style={{ color: textSecondaryColor }}
+                      >
+                        Storico e dettagli dei trattamenti effettuati ({formData.trattamenti.length})
+                      </p>
                     </div>
-                    <motion.button
+                    <button
                       type="button"
                       onClick={addTreatment}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="flex items-center rounded-xl px-6 py-3 text-white transition-all duration-200 shadow-lg font-semibold"
+                      className="flex items-center justify-center gap-2 rounded-xl px-6 py-4 min-h-[48px] text-white transition-opacity hover:opacity-90 shadow-lg font-semibold flex-shrink-0"
                       style={{ background: accentGradient }}
                     >
-                      <FiPlus className="w-5 h-5 mr-2" />
+                      <Plus className="w-5 h-5" />
                       Aggiungi Trattamento
-                    </motion.button>
+                    </button>
                   </div>
 
-                  <div className="space-y-6">
-                    <AnimatePresence>
-                      {formData.trattamenti.map((treatment, index) => (
-                        <motion.div
-                          key={treatment.id || index}
-                          initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                          transition={{ duration: 0.3, ease: "easeInOut" }}
-                          className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-200"
-                        >
-                          <TreatmentForm
+                  <div className="space-y-8">
+                    {formData.trattamenti.map((treatment, index) => (
+                      <div
+                        key={treatment.id || index}
+                        className="rounded-2xl border overflow-hidden shadow-sm"
+                        style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
+                      >
+                        <TreatmentForm
                           treatment={treatment}
                           index={index}
                           onChange={(updatedTreatment) => handleTreatmentChange(index, updatedTreatment)}
                           onRemove={() => removeTreatment(index)}
                           isLast={index === formData.trattamenti.length - 1}
                         />
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
+                      </div>
+                    ))}
 
                     {formData.trattamenti.length === 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600"
+                      <div
+                        className="text-center rounded-2xl border-2 border-dashed py-20 sm:py-24 px-6 sm:px-8"
+                        style={{ borderColor: accentSofter, backgroundColor: `${backgroundColor}80` }}
                       >
-                        <div className={`w-20 h-20 mx-auto mb-6 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-full flex items-center justify-center`}>
-                          <FiCalendar className={`w-10 h-10 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
-                        </div>
-                        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                          Nessun trattamento registrato
-                        </h3>
-                        <p className="text-gray-600 dark:text-gray-400 mb-6">
-                          Inizia aggiungendo il primo trattamento per questo cliente
-                        </p>
-                        <motion.button
-                          type="button"
-                          onClick={addTreatment}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="inline-flex items-center px-6 py-3 rounded-xl text-white transition-all duration-200 shadow-lg font-semibold hover:opacity-90"
+                        <div
+                          className="w-24 h-24 mx-auto mb-8 rounded-full flex items-center justify-center shadow-lg"
                           style={{ background: accentGradient }}
                         >
-                          <FiPlus className="w-5 h-5 mr-2" />
+                          <Calendar className="w-12 h-12 text-white" />
+                        </div>
+                        <h3
+                          className="text-xl sm:text-2xl font-semibold mb-3"
+                          style={{ color: textPrimaryColor }}
+                        >
+                          Nessun trattamento registrato
+                        </h3>
+                        <p
+                          className="text-base mb-8 max-w-sm mx-auto"
+                          style={{ color: textSecondaryColor }}
+                        >
+                          Inizia aggiungendo il primo trattamento per questo cliente
+                        </p>
+                        <button
+                          type="button"
+                          onClick={addTreatment}
+                          className="inline-flex items-center gap-2 px-8 py-4 min-h-[48px] rounded-xl text-white transition-opacity hover:opacity-90 shadow-lg font-semibold"
+                          style={{ background: accentGradient }}
+                        >
+                          <Plus className="w-5 h-5" />
                           Aggiungi Primo Trattamento
-                        </motion.button>
-                      </motion.div>
+                        </button>
+                      </div>
                     )}
                   </div>
-                </motion.div>
+                </div>
               )}
-            </AnimatePresence>
-          </motion.div>
+          </div>
 
-          {/* Modern Actions */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex flex-col sm:flex-row justify-between items-center gap-4 rounded-2xl border p-6 shadow-xl backdrop-blur-xl"
+          {/* Actions (stile ClientList) */}
+          <div
+            className="flex flex-col sm:flex-row justify-between items-center gap-4 rounded-2xl border p-6 shadow-lg"
             style={{
               background: `linear-gradient(135deg, ${surfaceColor}F5, rgba(255,255,255,0.9))`,
               borderColor: accentSofter,
             }}
           >
-            <div
-              className="flex items-center text-sm dark:text-gray-400"
-              style={{ color: textSecondaryColor }}
-            >
-              <div
-                className="mr-2 h-2 w-2 rounded-full"
-                style={{ background: accentGradient }}
-              ></div>
-              <span>Profilo {progress}% completato</span>
+            <div className="flex items-center text-sm" style={{ color: textSecondaryColor }}>
+              <span>Grado completamento profilo: <span className="font-bold text-pink-500">{progress}%</span></span>
             </div>
 
             <div className="flex gap-4">
-              <motion.button
+              <button
                 type="button"
                 onClick={onCancel}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="rounded-xl border-2 px-6 py-3 font-semibold transition-all duration-200 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                className="rounded-xl border-2 px-6 py-3 font-semibold transition-opacity hover:opacity-90 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                 style={{ borderColor: accentSofter, color: textSecondaryColor }}
               >
                 Annulla
-              </motion.button>
-              <motion.button
+              </button>
+              <button
                 type="submit"
                 disabled={isLoading}
-                whileHover={!isLoading ? { scale: 1.02 } : {}}
-                whileTap={!isLoading ? { scale: 0.98 } : {}}
-                className="flex items-center rounded-xl px-8 py-3 text-white transition-all duration-200 shadow-lg font-semibold hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center rounded-xl px-8 py-3 text-white transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg font-semibold"
                 style={{ background: accentGradient }}
               >
                 {isLoading ? (
@@ -1037,13 +844,13 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                   </>
                 ) : (
                   <>
-                    <FiSave className="w-5 h-5 mr-3" />
+                    <Save className="w-5 h-5 mr-3" />
                     Salva Scheda
                   </>
                 )}
-              </motion.button>
+              </button>
             </div>
-          </motion.div>
+          </div>
         </form>
       </div>
     </div>

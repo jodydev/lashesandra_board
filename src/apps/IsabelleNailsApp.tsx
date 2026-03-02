@@ -4,6 +4,7 @@ import DynamicThemeProvider from '../components/DynamicThemeProvider';
 import Layout from '../components/Layout';
 import HomePage from '../pages/HomePage';
 import ClientsPage from '../pages/ClientsPage';
+import ClientFormPage from '../pages/ClientFormPage';
 import CalendarPage from '../pages/CalendarPage';
 import OverviewPage from '../pages/OverviewPage';
 import AppointmentsPage from '../pages/AppointmentsPage';
@@ -20,6 +21,8 @@ export default function IsabelleNailsApp() {
             <Route path="/" element={<Navigate to="/isabellenails/home" replace />} />
             <Route path="home" element={<HomePage />} />
             <Route path="clients" element={<ClientsPage />} />
+            <Route path="clients/new" element={<ClientFormPage />} />
+            <Route path="clients/:id/edit" element={<ClientFormPage />} />
             <Route path="appointments" element={<AppointmentsPage />} />
             <Route path="confirmations" element={<AppointmentsConfirmationPage />} />
             <Route path="calendar" element={<CalendarPage />} />

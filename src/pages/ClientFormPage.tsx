@@ -1,22 +1,31 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useApp } from '../contexts/AppContext';
 import ClientForm from '../components/ClientForm';
 
-export default function ClientFormPage() {
-  const navigate = useNavigate();
+const backgroundColor = (appType: string) => (appType === 'isabellenails' ? '#F7F3FA' : '#ffffff');
 
-  const handleSuccess = () => {
-    navigate('/clients');
+export default function ClientFormPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { appType } = useApp();
+
+  const goBackToList = () => {
+    navigate('..', { relative: 'path' });
   };
 
-  const handleCancel = () => {
-    navigate('/clients');
+  const handleRequestDelete = () => {
+    navigate('..', { relative: 'path', state: { confirmDeleteId: id } });
   };
 
   return (
-    <ClientForm
-      onSuccess={handleSuccess}
-      onCancel={handleCancel}
-    />
+    <div className="h-full min-h-[100dvh] flex flex-col" style={{ backgroundColor: backgroundColor(appType) }}>
+      <ClientForm
+        clientId={id}
+        onSuccess={goBackToList}
+        onCancel={goBackToList}
+        onRequestDelete={id ? handleRequestDelete : undefined}
+      />
+    </div>
   );
 }

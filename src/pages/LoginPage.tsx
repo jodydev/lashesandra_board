@@ -1,34 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, AlertCircle, Heart } from 'lucide-react';
+import { AlertCircle, Heart, ScanFace } from 'lucide-react';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useAuth } from '../contexts/AuthContext';
+import { isFaceIdAvailable, performFaceIdAuth } from '../lib/faceIdPlugin';
 
-interface FormData {
-  email: string;
-  password: string;
-}
+/** Credenziali usate dopo riconoscimento Face ID (app single-user, mock). */
+const FACE_ID_EMAIL = 'lasheshandra@gmail.com';
+const FACE_ID_PASSWORD = 'Test123';
 
-interface FormErrors {
-  email?: string;
-  password?: string;
-  general?: string;
-}
+const DEBUG = true; // log di debug – disattivare in produzione
+const log = (...args: unknown[]) => DEBUG && console.log('[LoginPage]', ...args);
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { user, signIn, loading } = useAuth();
-  const [formData, setFormData] = useState<FormData>({
-    email: '',
-    password: '',
-  });
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [faceIdAvailable, setFaceIdAvailable] = useState(false);
+  const [faceIdLoading, setFaceIdLoading] = useState(true);
+  const [faceIdSubmitting, setFaceIdSubmitting] = useState(false);
+  const faceIdTouchHandledRef = useRef(false);
+
+  log('render', { user: user?.email, loading, faceIdLoading, faceIdAvailable, faceIdSubmitting, error });
   const theme = useTheme();
   const primary = theme.palette.primary.main;
-  const primaryLight = theme.palette.primary.light;
   const primaryDark = theme.palette.primary.dark;
   const background = theme.palette.background.default;
   const surface = theme.palette.background.paper;
@@ -36,29 +32,16 @@ export default function LoginPage() {
   const textSecondaryColor = theme.palette.text.secondary;
   const paletteStyles = {
     '--primary': primary,
-    '--primary-light': primaryLight,
     '--accent': primaryDark,
     '--secondary': background,
     '--surface': surface,
     '--text-primary': textPrimaryColor,
     '--text-secondary': textSecondaryColor,
-    '--border-muted': alpha(textPrimaryColor, 0.08),
   } as React.CSSProperties;
   const glassPanelStyle: React.CSSProperties = {
     backgroundColor: alpha(surface, 0.86),
     borderColor: alpha(textPrimaryColor, 0.04),
     boxShadow: `0 24px 64px -32px ${alpha(textPrimaryColor, 0.32)}`,
-  };
-  const heroCardStyle: React.CSSProperties = {
-    backgroundColor: alpha(surface, 0.74),
-    boxShadow: `0 18px 44px -28px ${alpha(primaryDark, 0.45)}`,
-  };
-  const formCardStyle: React.CSSProperties = {
-    backgroundColor: surface,
-    boxShadow: `0 24px 64px -40px ${alpha(textPrimaryColor, 0.35)}`,
-  };
-  const statsCardStyle: React.CSSProperties = {
-    backgroundColor: alpha(surface, 0.7),
   };
   const iconShadow = `0 18px 36px -18px ${alpha(primaryDark, 0.4)}`;
   const accentShadow = `0 24px 50px -20px ${alpha(primaryDark, 0.55)}`;
@@ -66,10 +49,9 @@ export default function LoginPage() {
   const heroGlowStyle: React.CSSProperties = { backgroundColor: alpha(primary, 0.22) };
   const accentGlowStyle: React.CSSProperties = { backgroundColor: alpha(primaryDark, 0.16) };
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (user && !loading) {
-      // Redirect based on user email
+      log('auth redirect', user.email);
       if (user.email === 'lasheshandra@gmail.com') {
         navigate('/lashesandra/home');
       } else if (user.email === 'isabellenails@gmail.com') {
@@ -80,80 +62,76 @@ export default function LoginPage() {
     }
   }, [user, loading, navigate]);
 
-  const validateForm = (): boolean => {
-    const newErrors: FormErrors = {};
+  useEffect(() => {
+    let cancelled = false;
+    const FACE_ID_CHECK_DELAY_MS = 800;
+    const FACE_ID_CHECK_TIMEOUT_MS = 5000;
+    log('Face ID check scheduled', { delayMs: FACE_ID_CHECK_DELAY_MS, timeoutMs: FACE_ID_CHECK_TIMEOUT_MS });
 
-    // Email validation
-    if (!formData.email) {
-      newErrors.email = 'Email è richiesta';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Inserisci un indirizzo email valido';
-    }
+    const delay = new Promise<void>((resolve) => setTimeout(resolve, FACE_ID_CHECK_DELAY_MS));
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const timeout = new Promise<boolean>((resolve) => {
+      timeoutId = setTimeout(() => {
+        log('Face ID check timeout');
+        resolve(false);
+      }, FACE_ID_CHECK_TIMEOUT_MS);
+    });
 
-    // Password validation
-    if (!formData.password) {
-      newErrors.password = 'Password è richiesta';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password deve essere di almeno 6 caratteri';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-
-    setIsSubmitting(true);
-    setErrors({});
-
-    try {
-      const { error } = await signIn(formData.email, formData.password);
-      
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          setErrors({ general: 'Credenziali non valide. Controlla email e password.' });
-        } else if (error.message.includes('Email not confirmed')) {
-          setErrors({ general: 'Email non confermata. Controlla la tua casella di posta.' });
-        } else {
-          setErrors({ general: 'Errore durante il login. Riprova più tardi.' });
-        }
-      } else {
-        // Success - redirect based on user email
-        if (formData.email === 'lasheshandra@gmail.com') {
-          navigate('/lashesandra/home');
-        } else if (formData.email === 'isabellenails@gmail.com') {
-          navigate('/isabellenails/home');
-        } else {
-          navigate('/');
+    (async () => {
+      await delay;
+      if (cancelled) return;
+      log('Face ID check start (after delay)');
+      try {
+        const available = await Promise.race([isFaceIdAvailable(), timeout]);
+        log('Face ID race result', { available, cancelled });
+        if (!cancelled) setFaceIdAvailable(available);
+      } catch (_err) {
+        log('Face ID check error', _err);
+        if (!cancelled) setFaceIdAvailable(false);
+      } finally {
+        if (!cancelled) {
+          setFaceIdLoading(false);
+          log('Face ID check done, setFaceIdLoading(false)');
         }
       }
-    } catch (error) {
-      setErrors({ general: 'Errore imprevisto. Riprova più tardi.' });
+    })();
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId!);
+    };
+  }, []);
+
+  const handleFaceIdLogin = async () => {
+    log('handleFaceIdLogin called');
+    setFaceIdSubmitting(true);
+    setError(null);
+    try {
+      log('Face ID auth start');
+      await performFaceIdAuth('Accedi a LashesAndra Board');
+      log('Face ID auth success, signing in...');
+      const { error: signInError } = await signIn(FACE_ID_EMAIL, FACE_ID_PASSWORD);
+      if (signInError) {
+        log('signIn error', signInError);
+        setError('Accesso non riuscito. Riprova.');
+        return;
+      }
+      log('signIn ok, navigate /lashesandra/home');
+      navigate('/lashesandra/home');
+    } catch (err: unknown) {
+      const message = err && typeof err === 'object' && 'message' in err ? String((err as { message: string }).message) : '';
+      log('handleFaceIdLogin catch', { message, err });
+      if (message?.toLowerCase().includes('cancel') || message?.toLowerCase().includes('user')) {
+        setError('Accesso annullato.');
+      } else {
+        setError('Face ID non disponibile. Riprova.');
+      }
     } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Clear specific field error when user starts typing
-    if (errors[name as keyof FormErrors]) {
-      setErrors(prev => ({ ...prev, [name]: undefined }));
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSubmit(e as any);
+      setFaceIdSubmitting(false);
     }
   };
 
   if (loading) {
+    log('UI: loading (auth)');
     return (
       <div style={paletteStyles} className="min-h-screen bg-[color:var(--secondary)] flex items-center justify-center">
         <div
@@ -171,7 +149,7 @@ export default function LoginPage() {
         <div className="absolute -right-24 -bottom-20 h-[28rem] w-[28rem] rounded-full blur-3xl" style={accentGlowStyle} />
       </div>
 
-      <div className="relative flex min-h-screen flex-col px-6 py-10 xl:px-16 xl:py-12">
+      <div className="relative flex min-h-screen flex-col px-6 py-20 xl:px-16 xl:py-12">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <motion.div
@@ -185,7 +163,7 @@ export default function LoginPage() {
             </motion.div>
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--accent)]">Lashesandra Studio</p>
-              <h1 className="text-base font-semibold text-[color:var(--text-primary)]">Area Riservata</h1>
+              <h1 className="text-base font-semibold text-[color:var(--text-primary)]">Area riservata</h1>
             </div>
           </div>
         </header>
@@ -195,139 +173,89 @@ export default function LoginPage() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
-            className="grid w-full max-w-3xl grid-cols-1 gap-8 rounded-[2.5rem] border p-10 backdrop-blur"
+            className="w-full max-w-md rounded-[2.5rem] border p-10 backdrop-blur flex flex-col items-center"
             style={glassPanelStyle}
           >
+            <h2 className="text-2xl font-semibold text-[color:var(--text-primary)] mb-2">Bentornata</h2>
+            <p className="text-sm text-[color:var(--text-secondary)] mb-10 text-center">
+              Tocca per accedere con Face ID
+            </p>
 
- 
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 flex w-full items-start gap-3 rounded-2xl border border-red-200 bg-red-50/80 px-4 py-3"
+                role="alert"
+              >
+                <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500 mt-0.5" />
+                <p className="text-sm text-red-600">{error}</p>
+              </motion.div>
+            )}
 
-              <div >
-                <div className="mb-8 space-y-2">
-                  <h2 className="text-3xl font-semibold text-[color:var(--text-primary)]">Bentornata</h2>
-                  <p className="text-sm text-[color:var(--text-secondary)]">
-                    Accedi con le tue credenziali per proseguire nella tua dashboard professionale.
-                  </p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-7">
-                  {errors.general && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50/80 px-4 py-3"
-                      role="alert"
-                      aria-live="polite"
-                    >
-                      <AlertCircle className="h-5 w-5 text-red-500" />
-                      <p className="text-sm text-red-600">{errors.general}</p>
-                    </motion.div>
-                  )}
-
-                  <div className="space-y-2">
-                    <label htmlFor="email" className="text-sm font-medium text-[color:var(--text-primary)]">
-                      Email
-                    </label>
-                    <div className="relative">
-                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-                        <Mail className="h-5 w-5 text-[color:var(--text-secondary)]" />
-                      </div>
-                      <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        autoComplete="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        onKeyPress={handleKeyPress}
-                        className={`w-full rounded-2xl border bg-[color:var(--surface)] px-12 py-3 text-[color:var(--text-primary)] placeholder:text-[color:var(--text-secondary)] focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/40 transition-all duration-200 ${
-                          errors.email ? 'border-red-300 focus:border-red-400 focus:ring-red-200' : 'border-[color:var(--border-muted)]'
-                        }`}
-                        placeholder="nome@email.com"
-                        aria-invalid={!!errors.email}
-                        aria-describedby={errors.email ? 'email-error' : undefined}
-                      />
-                    </div>
-                    {errors.email && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        id="email-error"
-                        className="text-sm text-red-500"
-                      >
-                        {errors.email}
-                      </motion.p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="password" className="text-sm font-medium text-[color:var(--text-primary)]">
-                      Password
-                    </label>
-                    <div className="relative">
-                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-                        <Lock className="h-5 w-5 text-[color:var(--text-secondary)]" />
-                      </div>
-                      <input
-                        id="password"
-                        name="password"
-                        type={showPassword ? 'text' : 'password'}
-                        autoComplete="current-password"
-                        value={formData.password}
-                        onChange={handleInputChange}
-                        onKeyPress={handleKeyPress}
-                        className={`w-full rounded-2xl border bg-[color:var(--surface)] px-12 py-3 text-[color:var(--text-primary)] placeholder:text-[color:var(--text-secondary)] focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/40 transition-all duration-200 ${
-                          errors.password ? 'border-red-300 focus:border-red-400 focus:ring-red-200' : 'border-[color:var(--border-muted)]'
-                        }`}
-                        placeholder="••••••••"
-                        aria-invalid={!!errors.password}
-                        aria-describedby={errors.password ? 'password-error' : undefined}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 flex items-center pr-4 text-[color:var(--text-secondary)] transition-colors hover:text-[color:var(--accent)] focus:text-[color:var(--accent)]"
-                        aria-label={showPassword ? 'Nascondi password' : 'Mostra password'}
-                      >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                    {errors.password && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        id="password-error"
-                        className="text-sm text-red-500"
-                      >
-                        {errors.password}
-                      </motion.p>
-                    )}
-                  </div>
-
-                  <motion.button
-                    type="submit"
-                    disabled={isSubmitting || loading}
-                    whileHover={{ scale: 1.01, boxShadow: accentShadowHover }}
-                    whileTap={{ scale: 0.99 }}
-                    className="group relative flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[color:var(--primary)] to-[color:var(--accent)] px-4 py-3 text-base font-semibold text-white transition-all duration-300 ease-out disabled:cursor-not-allowed disabled:bg-gradient-to-r disabled:from-gray-300 disabled:to-gray-400"
-                    style={{ boxShadow: accentShadow }}
-                  >
-                    {isSubmitting ? (
-                      <div className="flex items-center gap-2">
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/80 border-t-transparent" />
-                        <span>Accesso in corso...</span>
-                      </div>
-                    ) : (
-                      'Accedi'
-                    )}
-                  </motion.button>
-                </form>
-
-                <div className="mt-10 text-center text-xs uppercase tracking-[0.25em] text-[color:var(--text-secondary)]">
-                  Solo per utenti autorizzati
-                </div>
+            {faceIdLoading ? (
+              (log('UI: Face ID loading spinner'), (
+              <div className="flex h-40 w-40 items-center justify-center rounded-full bg-[color:var(--surface)]/60">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-[color:var(--primary)]/30 border-t-[color:var(--primary)]" />
               </div>
-   
-   
+              ))
+            ) : faceIdAvailable ? (
+              (log('UI: Face ID button'), (
+              <motion.div
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex shrink-0"
+              >
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    if (faceIdTouchHandledRef.current) {
+                      faceIdTouchHandledRef.current = false;
+                      e.preventDefault();
+                      return;
+                    }
+                    handleFaceIdLogin();
+                  }}
+                  onPointerDown={(e) => {
+                    if (e.pointerType === 'touch') {
+                      faceIdTouchHandledRef.current = true;
+                      handleFaceIdLogin();
+                    }
+                  }}
+                  disabled={faceIdSubmitting}
+                  className="flex h-40 w-40 flex-col items-center justify-center gap-3 rounded-2xl bg-gradient-to-br from-[color:var(--primary)] to-[color:var(--accent)] text-white transition-all disabled:opacity-70 disabled:cursor-not-allowed touch-manipulation active:opacity-90"
+                  style={{ boxShadow: accentShadow }}
+                  aria-label="Accedi con Face ID"
+                >
+                  {faceIdSubmitting ? (
+                    <div className="h-14 w-14 animate-spin rounded-full border-[3px] border-white/80 border-t-transparent" />
+                  ) : (
+                    <ScanFace className="h-20 w-20" strokeWidth={1.5} />
+                  )}
+                  <span className="text-sm font-semibold">
+                    {faceIdSubmitting ? 'Verifica...' : 'Face ID'}
+                  </span>
+                </button>
+              </motion.div>
+              ))
+            ) : (
+              (log('UI: fallback (Face ID non disponibile)'), (
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className="flex h-40 w-40 items-center justify-center rounded-full border-2 border-dashed border-[color:var(--text-secondary)]/30 bg-[color:var(--surface)]/40">
+                  <ScanFace className="h-20 w-20 text-[color:var(--text-secondary)]/50" strokeWidth={1.5} />
+                </div>
+                <p className="text-sm text-[color:var(--text-secondary)] max-w-[260px]">
+                  Apri l&apos;app su iPhone o iPad per accedere con Face ID
+                </p>
+              </div>
+              ))
+            )}
+
+
+
+            <p className="mt-10 text-center text-xs uppercase tracking-[0.2em] text-[color:var(--text-secondary)]">
+              Solo per utenti autorizzati
+            </p>
           </motion.div>
         </main>
       </div>

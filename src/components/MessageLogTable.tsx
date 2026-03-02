@@ -254,7 +254,7 @@ export default function MessageLogTable({ onRefresh }: MessageLogTableProps) {
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-lg flex items-center justify-center`}>
+                      <div className={`w-8 h-8 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl flex items-center justify-center`}>
                         <User className={`w-4 h-4 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
                       </div>
                       <div>
@@ -309,7 +309,7 @@ export default function MessageLogTable({ onRefresh }: MessageLogTableProps) {
                           setSelectedLog(log);
                           setShowDetails(true);
                         }}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
                       >
                         <Eye className="w-3 h-3" />
                         Dettagli
@@ -319,7 +319,7 @@ export default function MessageLogTable({ onRefresh }: MessageLogTableProps) {
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/30 transition-colors duration-200"
+                          className="flex items-center gap-1 px-3 py-1.5 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-xl hover:bg-red-200 dark:hover:bg-red-900/30 transition-colors duration-200"
                         >
                           <Send className="w-3 h-3" />
                           Reinvio
@@ -441,7 +441,7 @@ export default function MessageLogTable({ onRefresh }: MessageLogTableProps) {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Errore
                     </label>
-                    <p className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                    <p className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-xl">
                       {selectedLog.error_message}
                     </p>
                   </div>
@@ -451,7 +451,7 @@ export default function MessageLogTable({ onRefresh }: MessageLogTableProps) {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Contenuto Messaggio
                   </label>
-                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
                     <p className="text-gray-900 dark:text-white whitespace-pre-wrap">
                       {selectedLog.message_content}
                     </p>

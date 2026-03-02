@@ -1,21 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
-  User, 
-  Mail, 
-  Calendar, 
-  Shield, 
-  LogOut, 
-  Eye, 
-  EyeOff, 
-  Save, 
+import {
+  User,
+  Mail,
+  Calendar,
+  Shield,
+  LogOut,
+  Eye,
+  EyeOff,
+  Save,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  ChevronLeft,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useApp } from '../contexts/AppContext';
 import { useAppColors } from '../hooks/useAppColors';
+
+const textPrimaryColor = '#2C2C2C';
+const textSecondaryColor = '#7A7A7A';
+const surfaceColor = '#FFFFFF';
 
 interface UserProfile {
   id: string;
@@ -41,7 +46,13 @@ interface PasswordErrors {
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { appType } = useApp();
   const colors = useAppColors();
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#ffffff';
+  const accentColor = colors.primary;
+  const accentGradient = colors.cssGradient;
+  const accentSofter = `${colors.primary}14`;
+  const accentSoft = `${colors.primary}29`;
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [passwordForm, setPasswordForm] = useState<PasswordForm>({
@@ -63,13 +74,13 @@ export default function ProfilePage() {
   useEffect(() => {
     const loadProfile = async () => {
       if (!user) return;
-      
+
       try {
         setLoading(true);
         const { data, error } = await supabase.auth.getUser();
-        
+
         if (error) throw error;
-        
+
         setProfile({
           id: data.user.id,
           email: data.user.email || '',
@@ -121,7 +132,7 @@ export default function ProfilePage() {
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validatePasswordForm()) return;
 
     setIsChangingPassword(true);
@@ -156,7 +167,7 @@ export default function ProfilePage() {
         confirmPassword: ''
       });
       setShowPasswordForm(false);
-      
+
       // Clear success message after 3 seconds
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
@@ -169,7 +180,7 @@ export default function ProfilePage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setPasswordForm(prev => ({ ...prev, [name]: value }));
-    
+
     // Clear specific field error when user starts typing
     if (passwordErrors[name as keyof PasswordErrors]) {
       setPasswordErrors(prev => ({ ...prev, [name]: undefined }));
@@ -193,120 +204,163 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
-        <div className="text-center">
-          <div className={`animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4`} style={{ borderColor: colors.primary }}></div>
-          <p className="text-gray-600 dark:text-gray-400">Caricamento profilo...</p>
+      <div className="min-h-screen" style={{ backgroundColor }}>
+        <header
+          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
+          style={{ borderColor: accentSofter }}
+        >
+          <button type="button" className="flex items-center gap-1.5 font-medium" style={{ color: accentColor }} aria-label="Indietro">
+            <ChevronLeft className="h-6 w-6" />
+            <span>Indietro</span>
+          </button>
+          <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white" style={{ color: textPrimaryColor }}>
+            Profilo
+          </h1>
+          <div className="h-9 w-9" />
+        </header>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 flex items-center justify-center min-h-[50vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: accentColor }} />
+            <p style={{ color: textSecondaryColor }}>Caricamento profilo...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="min-h-screen" style={{ backgroundColor }}>
+      {/* Header navigazione: Indietro | Profilo (stile ClientList) */}
+      <header
+        className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
+        style={{ borderColor: accentSofter }}
+      >
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 font-medium transition-opacity hover:opacity-90"
+          style={{ color: accentColor }}
+          aria-label="Indietro"
+        >
+          <ChevronLeft className="h-6 w-6" />
+          <span>Indietro</span>
+        </button>
+        <h1
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white"
+          style={{ color: textPrimaryColor }}
+        >
+          Profilo
+        </h1>
+        <div className="h-9 w-9" />
+      </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Success Message */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Success Message (stile ClientList: no motion) */}
         {successMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 flex items-center space-x-3"
-          >
+          <div className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 flex items-center space-x-3">
             <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
             <p className="text-sm text-green-700 dark:text-green-400">{successMessage}</p>
-          </motion.div>
+          </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Profile Info */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="lg:col-span-2 space-y-6"
-          >
+          <div className="lg:col-span-2 space-y-6">
             {/* User Info Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
+            <div className="rounded-2xl shadow-lg border p-6" style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}>
               <div className="flex items-center space-x-4 mb-6">
-                <div className={`w-16 h-16 ${colors.bgGradient} rounded-2xl flex items-center justify-center shadow-lg`}>
-                  <User className="w-8 h-8 text-white" />
-                </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  <h2 className="text-2xl font-bold" style={{ color: textPrimaryColor }}>
                     Informazioni Profilo
                   </h2>
-                  <p className="text-gray-600 dark:text-gray-400">
+                  <p style={{ color: textSecondaryColor }}>
                     Gestisci i tuoi dati personali e le impostazioni account
                   </p>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                  <Mail className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <div className="flex items-center space-x-3 p-4 rounded-xl" style={{ backgroundColor: accentSofter }}>
+                  <Mail className="w-5 h-5" style={{ color: textSecondaryColor }} />
                   <div>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</p>
-                    <p className="text-gray-900 dark:text-white">{profile?.email}</p>
+                    <p className="text-sm font-medium" style={{ color: textSecondaryColor }}>Email</p>
+                    <p style={{ color: textPrimaryColor }}>{profile?.email}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                  <Calendar className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <div className="flex items-center space-x-3 p-4 rounded-xl" style={{ backgroundColor: accentSofter }}>
+                  <Calendar className="w-5 h-5" style={{ color: textSecondaryColor }} />
                   <div>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Account creato</p>
-                    <p className="text-gray-900 dark:text-white">{formatDate(profile?.created_at || null)}</p>
+                    <p className="text-sm font-medium" style={{ color: textSecondaryColor }}>Account creato</p>
+                    <p style={{ color: textPrimaryColor }}>{formatDate(profile?.created_at || null)}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                  <Shield className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <div className="flex items-center space-x-3 p-4 rounded-xl" style={{ backgroundColor: accentSofter }}>
+                  <Shield className="w-5 h-5" style={{ color: textSecondaryColor }} />
                   <div>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email verificata</p>
-                    <p className="text-gray-900 dark:text-white">
+                    <p className="text-sm font-medium" style={{ color: textSecondaryColor }}>Email verificata</p>
+                    <p style={{ color: textPrimaryColor }}>
                       {profile?.email_confirmed_at ? 'Sì' : 'No'}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                  <Calendar className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <div className="flex items-center space-x-3 p-4 rounded-xl" style={{ backgroundColor: accentSofter }}>
+                  <Calendar className="w-5 h-5" style={{ color: textSecondaryColor }} />
                   <div>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Ultimo accesso</p>
-                    <p className="text-gray-900 dark:text-white">{formatDate(profile?.last_sign_in_at || null)}</p>
+                    <p className="text-sm font-medium" style={{ color: textSecondaryColor }}>Ultimo accesso</p>
+                    <p style={{ color: textPrimaryColor }}>{formatDate(profile?.last_sign_in_at || null)}</p>
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* Account Info */}
+            <div className="rounded-2xl shadow-lg border p-6" style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}>
+              <h3 className="text-lg font-semibold mb-4" style={{ color: textPrimaryColor }}>
+                Informazioni Account
+              </h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span style={{ color: textSecondaryColor }}>ID Utente:</span>
+                  <span className="font-mono text-xs" style={{ color: textPrimaryColor }}>
+                    {profile?.id.slice(0, 8)}...
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span style={{ color: textSecondaryColor }}>Stato:</span>
+                  <span className="font-medium text-green-600 dark:text-green-400">Attivo</span>
+                </div>
+                <div className="flex justify-between">
+                  <span style={{ color: textSecondaryColor }}>Provider:</span>
+                  <span style={{ color: textPrimaryColor }}>Email</span>
+                </div>
+              </div>
+            </div>
+
             {/* Password Change Form */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-6">
+            <div className="rounded-2xl shadow-lg border p-6" style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}>
+              <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  <h3 className="text-xl font-semibold" style={{ color: textPrimaryColor }}>
                     Modifica Password
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-400">
+                  <p style={{ color: textSecondaryColor }}>
                     Cambia la tua password per mantenere l'account sicuro
                   </p>
                 </div>
                 <button
                   onClick={() => setShowPasswordForm(!showPasswordForm)}
-                  className={`px-4 py-2 ${colors.bgGradient} hover:opacity-90 text-white font-medium rounded-xl transition-all duration-200`}
+                  className="px-4 py-2 hover:opacity-90 text-white font-medium rounded-xl transition-all duration-200"
+                  style={{ background: accentGradient }}
                 >
                   {showPasswordForm ? 'Annulla' : 'Modifica Password'}
                 </button>
               </div>
 
               {showPasswordForm && (
-                <motion.form
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  onSubmit={handlePasswordChange}
-                  className="space-y-4"
-                >
+                <form onSubmit={handlePasswordChange} className="space-y-4">
                   {/* General Error */}
                   {passwordErrors.general && (
                     <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-start space-x-3">
@@ -326,11 +380,10 @@ export default function ProfilePage() {
                         name="currentPassword"
                         value={passwordForm.currentPassword}
                         onChange={handleInputChange}
-                        className={`block w-full px-3 py-3 pr-10 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors ${
-                          passwordErrors.currentPassword
+                        className={`block w-full px-3 py-3 pr-10 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors ${passwordErrors.currentPassword
                             ? 'border-red-300 dark:border-red-600 focus:ring-red-500'
                             : 'border-gray-300 dark:border-gray-600'
-                        }`}
+                          }`}
                         placeholder="Inserisci la password attuale"
                       />
                       <button
@@ -359,11 +412,10 @@ export default function ProfilePage() {
                         name="newPassword"
                         value={passwordForm.newPassword}
                         onChange={handleInputChange}
-                        className={`block w-full px-3 py-3 pr-10 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors ${
-                          passwordErrors.newPassword
+                        className={`block w-full px-3 py-3 pr-10 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors ${passwordErrors.newPassword
                             ? 'border-red-300 dark:border-red-600 focus:ring-red-500'
                             : 'border-gray-300 dark:border-gray-600'
-                        }`}
+                          }`}
                         placeholder="Inserisci la nuova password"
                       />
                       <button
@@ -392,11 +444,10 @@ export default function ProfilePage() {
                         name="confirmPassword"
                         value={passwordForm.confirmPassword}
                         onChange={handleInputChange}
-                        className={`block w-full px-3 py-3 pr-10 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors ${
-                          passwordErrors.confirmPassword
+                        className={`block w-full px-3 py-3 pr-10 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors ${passwordErrors.confirmPassword
                             ? 'border-red-300 dark:border-red-600 focus:ring-red-500'
                             : 'border-gray-300 dark:border-gray-600'
-                        }`}
+                          }`}
                         placeholder="Conferma la nuova password"
                       />
                       <button
@@ -416,16 +467,15 @@ export default function ProfilePage() {
 
                   {/* Submit Button */}
                   <div className="flex space-x-3 pt-4">
-                    <motion.button
+                    <button
                       type="submit"
                       disabled={isChangingPassword}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className={`flex-1 ${colors.bgGradient} hover:opacity-90 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 ${colors.focusRing} focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center justify-center space-x-2`}
+                      className="flex-1 text-white font-semibold py-3 px-4 rounded-xl transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center space-x-2 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                      style={{ background: accentGradient }}
                     >
                       {isChangingPassword ? (
                         <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white" />
                           <span>Aggiornamento...</span>
                         </>
                       ) : (
@@ -434,65 +484,34 @@ export default function ProfilePage() {
                           <span>Aggiorna Password</span>
                         </>
                       )}
-                    </motion.button>
+                    </button>
                   </div>
-                </motion.form>
+                </form>
               )}
             </div>
-          </motion.div>
+          </div>
 
-          {/* Sidebar Actions */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-6"
-          >
+          {/* Sidebar Actions (stile ClientList: card con bordo accentSofter) */}
+          <div className="space-y-6">
             {/* Quick Actions */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <div className="rounded-2xl shadow-lg border p-6" style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}>
+              <h3 className="text-lg font-semibold mb-4" style={{ color: textPrimaryColor }}>
                 Azioni Rapide
               </h3>
-              <div className="space-y-3">                
-                <motion.button
+              <div className="space-y-3">
+                <button
+                  type="button"
                   onClick={handleLogout}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full bg-red-50 flex items-center space-x-3 px-4 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors duration-200"
+                  className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors duration-200 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30"
                 >
                   <LogOut className="w-5 h-5" />
                   <span>Logout</span>
-                </motion.button>
+                </button>
               </div>
             </div>
 
-            {/* Account Info */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Informazioni Account
-              </h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">ID Utente:</span>
-                  <span className="text-gray-900 dark:text-white font-mono text-xs">
-                    {profile?.id.slice(0, 8)}...
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Stato:</span>
-                  <span className="text-green-600 dark:text-green-400 font-medium">
-                    Attivo
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Provider:</span>
-                  <span className="text-gray-900 dark:text-white">
-                    Email
-                  </span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+
+          </div>
         </div>
       </main>
     </div>

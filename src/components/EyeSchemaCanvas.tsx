@@ -1,7 +1,8 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Eye, Minus, Plus, RotateCcw, Palette, Info } from 'lucide-react';
+import { Eye, Minus, Plus } from 'lucide-react';
 import type { EyeLengthMap } from '../types';
 import { useAppColors } from '../hooks/useAppColors';
+import { useApp } from '../contexts/AppContext';
 
 interface EyeSchemaCanvasProps {
   value: EyeLengthMap;
@@ -30,12 +31,19 @@ const EyeSchemaCanvas: React.FC<EyeSchemaCanvasProps> = ({
   const [points, setPoints] = useState<EyePoint[]>([]);
   const [hoveredPoint, setHoveredPoint] = useState<string | null>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 500, height: 500 });
-  const [showInfo, setShowInfo] = useState(false);
   const [backgroundImage, setBackgroundImage] = useState<HTMLImageElement | null>(null);
   const [isRepositionMode, setIsRepositionMode] = useState(false);
   const [isDragged, setIsDragged] = useState(false);
   const [draggedPoint, setDraggedPoint] = useState<string | null>(null);
   const colors = useAppColors();
+  const { appType } = useApp();
+  const textPrimaryColor = '#2C2C2C';
+  const textSecondaryColor = '#7A7A7A';
+  const surfaceColor = appType === 'isabellenails' ? '#F7F3FA' : '#FFFFFF';
+  const accentColor = colors.primary;
+  const accentGradient = colors.cssGradient;
+  const accentSofter = `${colors.primary}14`;
+  const accentSoft = `${colors.primary}29`;
 
   // Mappa delle etichette più user-friendly
   const pointLabels: Record<string, string> = {
@@ -446,34 +454,67 @@ const EyeSchemaCanvas: React.FC<EyeSchemaCanvasProps> = ({
 
   return (
     <div className={`space-y-6 ${className}`} ref={containerRef}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 ${colors.bgGradient} rounded-2xl flex items-center justify-center shadow-lg`}>
-            <Eye className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Schema Ciglia
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Personalizza le lunghezze per ogni zona
-            </p>
-          </div>
+      {/* Header (stile ClientList) */}
+      <div className="flex items-center gap-3">
+        <div>
+          <h3 className="text-lg font-semibold dark:text-white" style={{ color: textPrimaryColor }}>
+            Schema Ciglia
+          </h3>
+          <p className="text-sm" style={{ color: textSecondaryColor }}>
+            Personalizza le lunghezze per ogni zona
+          </p>
         </div>
-        
       </div>
 
-      {/* Canvas Container */}
-      <div className="relative">
-        
-        <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 p-6 shadow-lg flex items-center justify-center">
+      {/* Canvas Container — flex layout, tooltip nel flusso (no absolute) */}
+      <div className="flex flex-col gap-3">
+        {/* Tooltip in flow: occupa spazio sopra il canvas quando c'è hover */}
+        {hoveredPoint && !selectedPoint && (
+          <div className="flex justify-start">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                isRepositionMode ? setDraggedPoint(hoveredPoint) : setSelectedPoint(hoveredPoint);
+              }}
+              className="backdrop-blur-sm text-white text-xs px-4 py-2.5 rounded-xl shadow-lg border transition-opacity hover:opacity-90 cursor-pointer"
+              style={
+                isRepositionMode
+                  ? { backgroundColor: 'rgba(245, 158, 11, 0.95)', borderColor: 'rgba(251, 191, 36, 0.5)' }
+                  : { backgroundColor: 'rgba(17, 24, 39, 0.95)', borderColor: 'rgba(75, 85, 99, 0.5)' }
+              }
+            >
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full animate-pulse ${
+                  isRepositionMode ? 'bg-orange-300' : 'bg-pink-400'
+                }`} />
+                <span className="font-medium">
+                  {pointLabels[hoveredPoint]}
+                </span>
+                <span className="text-gray-300 dark:text-gray-400">•</span>
+                {isRepositionMode ? (
+                  <span className="font-bold text-orange-200">
+                    Trascina per riposizionare
+                  </span>
+                ) : (
+                  <span className="font-bold text-pink-300">
+                    {points.find(p => p.id === hoveredPoint)?.length}mm
+                  </span>
+                )}
+              </div>
+            </button>
+          </div>
+        )}
+
+        <div
+          className="flex items-center justify-center mt-10"
+        >
           {backgroundImage ? (
             <canvas
               ref={canvasRef}
-              width={500}
-              height={500}
-              style={{ width: 500, height: 500 }}
+              width={400}
+              height={400}
+              style={{ width: 400, height: 400 }}
               className="w-full cursor-pointer"
               onClick={handleCanvasClick}
               onMouseMove={handleCanvasMouseMove}
@@ -482,82 +523,52 @@ const EyeSchemaCanvas: React.FC<EyeSchemaCanvasProps> = ({
               }}
             />
           ) : (
-            <div className="flex items-center justify-center h-48 text-gray-500 dark:text-gray-400">
+            <div className="flex items-center justify-center h-48" style={{ color: textSecondaryColor }}>
               Caricamento immagine...
             </div>
           )}
         </div>
-        
-        {/* Floating tooltip for hovered point */}
-        {hoveredPoint && !selectedPoint && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              isRepositionMode ? setDraggedPoint(hoveredPoint) : setSelectedPoint(hoveredPoint);
-            }}
-            className={`absolute top-4 left-4 backdrop-blur-sm text-white text-xs px-4 py-2.5 rounded-2xl shadow-xl border transition-colors z-10 cursor-pointer ${
-              isRepositionMode 
-                ? 'bg-orange-500/95 border-orange-400/50 hover:bg-orange-600/95' 
-                : 'bg-gray-900/95 dark:bg-gray-800/95 border-gray-700/50 dark:border-gray-600/50 hover:bg-gray-800/95 dark:hover:bg-gray-700/95'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full animate-pulse ${
-                isRepositionMode ? 'bg-orange-300' : 'bg-pink-400'
-              }`}></div>
-              <span className="font-medium">
-                {pointLabels[hoveredPoint]}
-              </span>
-              <span className="text-gray-300 dark:text-gray-400">•</span>
-              {isRepositionMode ? (
-                <span className="font-bold text-orange-200">
-                  Trascina per riposizionare
-                </span>
-              ) : (
-                <span className="font-bold text-pink-300">
-                  {points.find(p => p.id === hoveredPoint)?.length}mm
-                </span>
-              )}
-            </div>
-          </button>
-        )}
       </div>
 
-      {/* Control Panel */}
+      {/* Control Panel (stile ClientList) */}
       {selectedPointData && (
-        <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 p-6 shadow-lg">
+        <div
+          className="rounded-2xl border p-4 sm:p-6 shadow-lg"
+          style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
+        >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h4 className="font-semibold text-gray-900 dark:text-white">
+              <h4 className="font-semibold dark:text-white" style={{ color: textPrimaryColor }}>
                 {selectedPointData.label}
               </h4>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm" style={{ color: textSecondaryColor }}>
                 Regola la lunghezza delle ciglia
               </p>
             </div>
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedPoint(null);
               }}
-              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="p-2 rounded-xl transition-opacity hover:opacity-80"
+              style={{ color: textSecondaryColor }}
+              aria-label="Chiudi"
             >
               ×
             </button>
           </div>
 
           <div className="space-y-4">
-            {/* Slider */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <span className="text-sm font-medium" style={{ color: textSecondaryColor }}>
                   Lunghezza
                 </span>
-                <span className={`text-sm font-bold ${colors.textPrimary} dark:${colors.textPrimaryDark}`}>
+                <span className="text-sm font-bold" style={{ color: accentColor }}>
                   {selectedPointData.length}mm
                 </span>
               </div>
-              
               <div className="relative">
                 <input
                   type="range"
@@ -566,40 +577,44 @@ const EyeSchemaCanvas: React.FC<EyeSchemaCanvasProps> = ({
                   step="0.5"
                   value={selectedPointData.length}
                   onChange={(e) => handleLengthChange(selectedPoint!, parseFloat(e.target.value))}
-                  className={`w-full h-2 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-lg appearance-none cursor-pointer slider`}
+                  className="w-full h-2 rounded-xl appearance-none cursor-pointer"
                   style={{
-                    background: `linear-gradient(to right, ${colors.primary} 0%, ${colors.primary} ${((selectedPointData.length - 5) / 15) * 100}%, #e5e7eb ${((selectedPointData.length - 5) / 15) * 100}%, #e5e7eb 100%)`
+                    background: `linear-gradient(to right, ${accentColor} 0%, ${accentColor} ${((selectedPointData.length - 5) / 15) * 100}%, #e5e7eb ${((selectedPointData.length - 5) / 15) * 100}%, #e5e7eb 100%)`,
                   }}
                 />
               </div>
             </div>
 
-            {/* Quick Controls */}
             <div className="flex items-center justify-center gap-3">
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleLengthChange(selectedPoint!, selectedPointData.length - 0.5);
                 }}
                 disabled={selectedPointData.length <= 5}
-                className={`p-2 rounded-xl border-2 ${colors.borderPrimary} dark:border-gray-600 ${colors.textPrimary} dark:${colors.textPrimaryDark} hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
+                className="p-2 rounded-xl border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                style={{ borderColor: accentSoft, color: accentColor }}
               >
                 <Minus className="w-4 h-4" />
               </button>
-              
-              <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-xl min-w-[80px] text-center">
-                <span className="text-sm font-mono text-gray-900 dark:text-white">
+              <div
+                className="px-4 py-2 rounded-xl min-w-[80px] text-center"
+                style={{ backgroundColor: accentSofter }}
+              >
+                <span className="text-sm font-mono font-semibold" style={{ color: textPrimaryColor }}>
                   {selectedPointData.length}mm
                 </span>
               </div>
-              
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleLengthChange(selectedPoint!, selectedPointData.length + 0.5);
                 }}
                 disabled={selectedPointData.length >= 20}
-                className={`p-2 rounded-xl border-2 ${colors.borderPrimary} dark:border-gray-600 ${colors.textPrimary} dark:${colors.textPrimaryDark} hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
+                className="p-2 rounded-xl border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                style={{ borderColor: accentSoft, color: accentColor }}
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -608,22 +623,27 @@ const EyeSchemaCanvas: React.FC<EyeSchemaCanvasProps> = ({
         </div>
       )}
 
-      {/* Quick Overview */}
+      {/* Quick Overview (stile ClientList: card con bordo accentSofter) */}
       {!selectedPoint && (
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
           {points.map((point) => (
             <button
               key={point.id}
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedPoint(point.id);
               }}
-              className="p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors text-left"
+              className="p-3 rounded-2xl border text-left transition-colors hover:shadow-md"
+              style={{
+                backgroundColor: `${surfaceColor}F8`,
+                borderColor: accentSofter,
+              }}
             >
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              <div className="text-xs font-medium mb-1" style={{ color: textSecondaryColor }}>
                 {point.label}
               </div>
-              <div className={`text-sm font-bold ${colors.textPrimary} dark:${colors.textPrimaryDark}`}>
+              <div className="text-sm font-bold" style={{ color: accentColor }}>
                 {point.length}mm
               </div>
             </button>

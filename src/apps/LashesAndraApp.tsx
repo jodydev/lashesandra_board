@@ -4,6 +4,7 @@ import DynamicThemeProvider from '../components/DynamicThemeProvider';
 import Layout from '../components/Layout';
 import HomePage from '../pages/HomePage';
 import ClientsPage from '../pages/ClientsPage';
+import ClientFormPage from '../pages/ClientFormPage';
 import ClientProfilesPage from '../pages/ClientProfilesPage';
 import CalendarPage from '../pages/CalendarPage';
 import OverviewPage from '../pages/OverviewPage';
@@ -21,6 +22,8 @@ export default function LashesAndraApp() {
             <Route path="/" element={<Navigate to="/lashesandra/home" replace />} />
             <Route path="home" element={<HomePage />} />
             <Route path="clients" element={<ClientsPage />} />
+            <Route path="clients/new" element={<ClientFormPage />} />
+            <Route path="clients/:id/edit" element={<ClientFormPage />} />
             <Route path="client-profiles" element={<ClientProfilesPage />} />
             <Route path="appointments" element={<AppointmentsPage />} />
             <Route path="confirmations" element={<AppointmentsConfirmationPage />} />

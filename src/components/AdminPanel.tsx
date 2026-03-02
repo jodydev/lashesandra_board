@@ -407,7 +407,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handleSendSingleMessage(appointment.id)}
-                  className="flex items-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/30 transition-colors duration-200"
+                  className="flex items-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-xl hover:bg-green-200 dark:hover:bg-green-900/30 transition-colors duration-200"
                 >
                   <Send className="w-4 h-4" />
                   Invia

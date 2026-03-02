@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import type { Client, ClientProfileData, ClientWithProfile } from '../types';
 import ClientProfileForm from '../components/ClientProfileForm';
 import { supabaseService } from '../lib/supabaseService';
 import { useAppColors } from '../hooks/useAppColors';
+import { useApp } from '../contexts/AppContext';
 import { useToast } from '../hooks/useToast';
-import { 
-  FiUser, 
-  FiEye, 
-  FiCalendar, 
-  FiEdit3, 
-  FiSearch,
-  FiFilter
-} from 'react-icons/fi';
+import { User, Eye, Calendar, Edit3, Search, Filter, ChevronLeft, Users, FileText, List } from 'lucide-react';
+
+const textPrimaryColor = '#2C2C2C';
+const textSecondaryColor = '#7A7A7A';
+const surfaceColor = '#FFFFFF';
 
 const ClientProfilesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [clients, setClients] = useState<ClientWithProfile[]>([]);
   const [filteredClients, setFilteredClients] = useState<ClientWithProfile[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -24,7 +23,13 @@ const ClientProfilesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [view, setView] = useState<'list' | 'form'>('list');
   const colors = useAppColors();
+  const { appType } = useApp();
   const { showSuccess, showError } = useToast();
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#ffffff';
+  const accentColor = colors.primary;
+  const accentGradient = colors.cssGradient;
+  const accentSofter = `${colors.primary}14`;
+  const accentSoft = `${colors.primary}29`;
 
   // Carica i clienti e i loro profili
   useEffect(() => {
@@ -152,170 +157,274 @@ const ClientProfilesPage: React.FC = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+  // Loading skeleton (stile ClientList)
+  if (isLoading) {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor }}>
+        <header
+          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
+          style={{ borderColor: accentSofter }}
+        >
+          <button type="button" className="flex items-center gap-1.5 font-medium" style={{ color: accentColor }} aria-label="Indietro">
+            <ChevronLeft className="h-6 w-6" />
+            <span>Indietro</span>
+          </button>
+          <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white" style={{ color: textPrimaryColor }}>
             Schede Cliente
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400 mt-2">
-            Gestisci i profili dettagliati dei tuoi clienti
-          </p>
-        </div>
-
-        {/* Search and Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 border-gray-200 dark:border-gray-700 p-6 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Cerca per nome, cognome, telefono o email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className={`w-full pl-10 pr-4 py-2 border-2 ${colors.borderPrimary} dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 ${colors.focusRing} focus:border-transparent transition-colors duration-200`}
-                />
+          <div className="h-9 w-9" />
+        </header>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+          {/* Skeleton carosello statistiche */}
+          <div className="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+            <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory" style={{ scrollbarWidth: 'thin' }}>
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex-shrink-0 w-[min(88vw,320px)] sm:w-72 snap-center rounded-2xl border p-6 sm:p-7 bg-white dark:bg-gray-900 animate-pulse" style={{ borderColor: accentSofter }}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="space-y-2 flex-1">
+                      <div className="h-4 sm:h-5 bg-gray-200 dark:bg-gray-800 rounded w-20 sm:w-24" />
+                      <div className="h-6 sm:h-8 bg-gray-200 dark:bg-gray-800 rounded w-16 sm:w-20" />
+                    </div>
+                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-gray-200 dark:bg-gray-800 flex-shrink-0" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="mb-6">
+            <div className="relative flex-1 max-w-xs">
+              <div className="h-10 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse w-full" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="rounded-2xl border p-6 shadow-lg" style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}>
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32" />
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24" />
+                  </div>
+                </div>
+                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full w-full mb-4" />
+                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-xl w-full" />
               </div>
-            </div>
-            <div className="flex gap-2">
-              <button className="flex items-center px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
-                <FiFilter className="w-4 h-4 mr-2" />
-                Filtri
-              </button>
-            </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen" style={{ backgroundColor }}>
+      {/* Header navigazione: Indietro | Schede Cliente (stile ClientList) */}
+      <header
+        className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
+        style={{ borderColor: accentSofter }}
+      >
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 font-medium transition-opacity hover:opacity-90"
+          style={{ color: accentColor }}
+          aria-label="Indietro"
+        >
+          <ChevronLeft className="h-6 w-6" />
+          <span>Indietro</span>
+        </button>
+        <h1
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white"
+          style={{ color: textPrimaryColor }}
+        >
+          Schede Cliente
+        </h1>
+        <div className="h-9 w-9" />
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Carosello statistiche scrollabile */}
+        <div className="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+          <div
+            className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory scrollbar-thin"
+            style={{ scrollbarWidth: 'thin' }}
+          >
+            {[
+              { title: 'Clienti totali', value: clients.length, icon: Users },
+              { title: 'In lista', value: filteredClients.length, icon: List },
+              { title: 'Con scheda', value: clients.filter((c) => c.profile).length, icon: FileText },
+            ].map((stat) => {
+              const Icon = stat.icon;
+              return (
+                <div
+                  key={stat.title}
+                  className="flex-shrink-0 w-[min(88vw,320px)] sm:w-72 snap-center group relative overflow-hidden rounded-2xl border p-6 sm:p-7"
+                  style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0 space-y-2 sm:space-y-2.5">
+                      <p className="text-xs sm:text-sm font-medium uppercase tracking-wide" style={{ color: textSecondaryColor }}>
+                        {stat.title}
+                      </p>
+                      <p className="text-2xl sm:text-3xl font-semibold dark:text-white truncate" style={{ color: textPrimaryColor }}>
+                        {stat.value}
+                      </p>
+                    </div>
+                    <span
+                      className="flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 items-center justify-center rounded-xl"
+                      style={{ background: accentGradient }}
+                      aria-hidden
+                    >
+                      <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" strokeWidth={2} aria-hidden />
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Clients List */}
-        {isLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        {/* Barra ricerca (stile ClientList: una riga, no box) */}
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="relative flex-1 min-w-0 sm:max-w-xs">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Cerca per nome, cognome, telefono o email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-xl border bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-white"
+              style={{ borderColor: accentSoft }}
+            />
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <AnimatePresence>
-              {filteredClients.map((client) => {
-                const completion = getProfileCompletion(client);
-                const hasProfile = !!client.profile;
-                
-                return (
-                  <motion.div
-                    key={client.id}
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 shrink-0 text-gray-400" />
+            <span className="text-sm text-gray-500 dark:text-gray-400">{filteredClients.length} clienti</span>
+          </div>
+        </div>
+
+        {/* Lista clienti in griglia (stile ClientList) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {filteredClients.map((client) => {
+            const completion = getProfileCompletion(client);
+            const hasProfile = !!client.profile;
+            return (
+              <div
+                key={client.id}
+                className="rounded-2xl border p-4 shadow-lg sm:p-6 transition-shadow hover:shadow-md"
+                style={{
+                  background: `linear-gradient(135deg, ${surfaceColor}F8, rgba(255,255,255,0.9))`,
+                  borderColor: accentSofter,
+                }}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center min-w-0 flex-1">
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-semibold text-lg shadow-lg flex-shrink-0"
+                      style={{ background: accentGradient }}
+                    >
+                      {client.nome.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="ml-3 min-w-0">
+                      <h3 className="text-base font-semibold truncate sm:text-lg" style={{ color: textPrimaryColor }}>
+                        {client.nome} {client.cognome}
+                      </h3>
+                      <p className="text-sm truncate" style={{ color: textSecondaryColor }}>
+                        {client.telefono || 'Nessun telefono'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleEditProfile(client)}
+                    className="rounded-xl border bg-white/70 p-2 flex-shrink-0 hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+                    style={{ borderColor: accentSofter }}
                   >
-                    {/* Client Info */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center">
-                        <div className={`w-12 h-12 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl flex items-center justify-center`}>
-                          <FiUser className={`w-6 h-6 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
-                        </div>
-                        <div className="ml-3">
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                            {client.nome} {client.cognome}
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {client.telefono || 'Nessun telefono'}
-                          </p>
-                        </div>
+                    <Edit3 className="w-4 h-4" style={{ color: colors.primaryDark }} />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium" style={{ color: textSecondaryColor }}>Profilo</span>
+                    <span
+                      className="text-sm font-medium"
+                      style={{ color: hasProfile ? '#047857' : textSecondaryColor }}
+                    >
+                      {hasProfile ? 'Completato' : 'Non creato'}
+                    </span>
+                  </div>
+
+                  {hasProfile && completion !== null && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span style={{ color: textSecondaryColor }}>Completamento</span>
+                        <span style={{ color: textPrimaryColor }}>{completion}%</span>
                       </div>
-                      
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className="h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${completion}%`, background: accentGradient }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {hasProfile && client.profile && (
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t" style={{ borderColor: accentSofter }}>
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleEditProfile(client)}
-                          className={`p-2 ${colors.textPrimary} hover:opacity-80 dark:${colors.textPrimaryDark} dark:hover:opacity-80 transition-colors duration-200`}
-                        >
-                          <FiEdit3 className="w-4 h-4" />
-                        </button>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 shadow-inner dark:bg-gray-800">
+                          <Eye className="h-4 w-4" style={{ color: accentColor }} />
+                        </div>
+                        <span className="text-xs" style={{ color: textSecondaryColor }}>Occhi</span>
                       </div>
-                    </div>
-
-                    {/* Profile Status */}
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Profilo
-                        </span>
-                        <span className={`text-sm font-medium ${
-                          hasProfile ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
-                        }`}>
-                          {hasProfile ? 'Completato' : 'Non creato'}
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 shadow-inner dark:bg-gray-800">
+                          <Calendar className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        </div>
+                        <span className="text-xs" style={{ color: textSecondaryColor }}>
+                          {client.profile.trattamenti?.length || 0} Trattamenti
                         </span>
                       </div>
-
-                      {hasProfile && completion !== null && (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600 dark:text-gray-400">Completamento</span>
-                            <span className="text-gray-900 dark:text-gray-100">{completion}%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                            <div
-                              className="bg-pink-600 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${completion}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Quick Stats */}
-                      {hasProfile && client.profile && (
-                        <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-                          <div className="text-center">
-                            <div className={`flex items-center justify-center ${colors.textPrimary} dark:${colors.textPrimaryDark} mb-1`}>
-                              <FiEye className="w-4 h-4" />
-                            </div>
-                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                              {client.profile.caratteristiche_occhi.colore_occhi ? 'Occhi' : 'Occhi'}
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <div className="flex items-center justify-center text-green-600 dark:text-green-400 mb-1">
-                              <FiCalendar className="w-4 h-4" />
-                            </div>
-                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                              {client.profile.trattamenti?.length || 0} Trattamenti
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </div>
+                  )}
+                </div>
 
-                    {/* Action Button */}
-                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <button
-                        onClick={() => handleEditProfile(client)}
-                        className={`w-full flex items-center justify-center px-4 py-2 ${colors.bgGradient} text-white rounded-xl hover:opacity-90 transition-all duration-200 shadow-lg ${colors.shadowPrimary}`}
-                      >
-                        <FiEdit3 className="w-4 h-4 mr-2" />
-                        {hasProfile ? 'Modifica Profilo' : 'Crea Profilo'}
-                      </button>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
-        )}
+                <div className="mt-4 pt-4 border-t" style={{ borderColor: accentSofter }}>
+                  <button
+                    type="button"
+                    onClick={() => handleEditProfile(client)}
+                    className="w-full flex items-center justify-center px-4 py-2.5 text-white rounded-xl font-medium transition-opacity hover:opacity-90 shadow-lg"
+                    style={{ background: accentGradient }}
+                  >
+                    <Edit3 className="w-4 h-4 mr-2" />
+                    {hasProfile ? 'Modifica Profilo' : 'Crea Profilo'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-        {/* Empty State */}
-        {!isLoading && filteredClients.length === 0 && (
-          <div className="text-center py-12">
-            <FiUser className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+        {/* Empty State (stile ClientList) */}
+        {filteredClients.length === 0 && (
+          <div
+            className="rounded-2xl border p-10 text-center shadow-lg sm:p-14"
+            style={{
+              background: `linear-gradient(135deg, ${surfaceColor}F7, rgba(255,255,255,0.9))`,
+              borderColor: accentSofter,
+            }}
+          >
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl" style={{ background: accentSofter }}>
+              <User className="h-10 w-10 text-gray-400" />
+            </div>
+            <h3 className="mb-2 text-lg font-semibold sm:text-xl" style={{ color: textPrimaryColor }}>
               {searchTerm ? 'Nessun cliente trovato' : 'Nessun cliente disponibile'}
             </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              {searchTerm 
+            <p className="mx-auto max-w-lg text-sm sm:text-base" style={{ color: textSecondaryColor }}>
+              {searchTerm
                 ? 'Prova a modificare i termini di ricerca'
-                : 'Aggiungi dei clienti per iniziare a creare i profili'
-              }
+                : 'Aggiungi dei clienti per iniziare a creare i profili'}
             </p>
           </div>
         )}

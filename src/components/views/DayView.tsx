@@ -1,228 +1,293 @@
-import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Clock, Euro, User, Calendar, Plus } from 'lucide-react';
+import React, { useMemo, useRef, useCallback } from 'react';
+import { Check, MoreHorizontal, Plus } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
-import type { CalendarViewProps } from '../../types';
+import 'dayjs/locale/it';
+import type { CalendarViewProps, Appointment } from '../../types';
+import { useApp } from '../../contexts/AppContext';
+
+dayjs.locale('it');
 
 interface DayViewProps extends CalendarViewProps {
   onPreviousDay: () => void;
   onNextDay: () => void;
 }
 
-export default function DayView({ 
-  currentDate, 
-  appointments, 
-  clients, 
-  onDateClick, 
-  onAppointmentClick, 
+const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 08:00 - 20:00
+const PIXELS_PER_HOUR = 64;
+const START_HOUR = 8;
+const SWIPE_THRESHOLD_PX = 56;
+
+const DAY_LABELS = ['LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM'];
+
+function formatTime(ora: string | undefined) {
+  if (!ora) return '00:00';
+  return ora.slice(0, 5);
+}
+
+function parseMinutes(ora: string | undefined) {
+  if (!ora) return 0;
+  const [h, m] = ora.split(':').map(Number);
+  return h * 60 + (m || 0);
+}
+
+function minutesToTop(minutes: number) {
+  return (minutes - START_HOUR * 60) * (PIXELS_PER_HOUR / 60);
+}
+
+export default function DayView({
+  currentDate,
+  appointments,
+  clients,
+  onAppointmentClick,
   onNewAppointment,
   onPreviousDay,
   onNextDay,
-  colors 
-}: DayViewProps) {
+  colors,
+}: Readonly<DayViewProps>) {
+  useApp();
+  const textPrimaryColor = '#2C2C2C';
+  const textSecondaryColor = '#7A7A7A';
+  const surfaceColor = '#FFFFFF';
+  const accentColor = colors.primary;
+  const accentGradient = colors.cssGradient;
+  const accentSofter = `${colors.primary}14`;
+
+  const touchStartX = useRef<number | null>(null);
+
   const getAppointmentsForDate = (date: Dayjs) => {
-    return appointments.filter(apt => dayjs(apt.data).isSame(date, 'day'));
+    return appointments.filter((apt) => dayjs(apt.data).isSame(date, 'day'));
   };
 
   const getClientById = (clientId: string) => {
-    return clients.find(client => client.id === clientId);
+    return clients.find((c) => c.id === clientId);
   };
 
-  const dayAppointments = getAppointmentsForDate(currentDate);
+  const dayAppointments = useMemo(
+    () =>
+      getAppointmentsForDate(currentDate).sort((a, b) =>
+        (a.ora || '00:00').localeCompare(b.ora || '00:00')
+      ),
+    [currentDate, appointments]
+  );
+
   const isToday = currentDate.isSame(dayjs(), 'day');
+  const now = dayjs();
+  const nowMinutes = now.hour() * 60 + now.minute();
+  const showNowLine = isToday && nowMinutes >= START_HOUR * 60 && nowMinutes <= (START_HOUR + 12) * 60;
+  const timelineHeight = 12 * PIXELS_PER_HOUR;
 
-  // Group appointments by hour for better organization
-  const groupAppointmentsByHour = () => {
-    const grouped: { [hour: string]: typeof dayAppointments } = {};
-    
-    dayAppointments.forEach(apt => {
-      const hour = apt.ora ? apt.ora.slice(0, 2) : '00';
-      if (!grouped[hour]) {
-        grouped[hour] = [];
-      }
-      grouped[hour].push(apt);
-    });
-    
-    return grouped;
-  };
+  const dayLabel = DAY_LABELS[(currentDate.day() + 6) % 7];
+  const dateNum = currentDate.date();
 
-  const groupedAppointments = groupAppointmentsByHour();
-  const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (touchStartX.current === null) return;
+      const endX = e.changedTouches[0].clientX;
+      const delta = endX - touchStartX.current;
+      touchStartX.current = null;
+      if (Math.abs(delta) < SWIPE_THRESHOLD_PX) return;
+      if (delta > 0) onPreviousDay();
+      else onNextDay();
+    },
+    [onPreviousDay, onNextDay]
+  );
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
-      <div className="p-6 sm:p-8">
-        {/* Day Header */}
-        <div className="flex items-center justify-between mb-8">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={onPreviousDay}
-            className={`
-              w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 ${colors.bgHover} dark:${colors.bgHoverDark}
-              text-gray-600 dark:text-gray-400 ${colors.textHover} dark:${colors.textHoverDark}
-              flex items-center justify-center transition-all duration-200
-            `}
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </motion.button>
-          
-          <div className="text-center">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-              {currentDate.format('dddd, D MMMM YYYY')}
-            </h2>
-            {isToday && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold mt-2 ${colors.bgGradient} text-white shadow-lg ${colors.shadowPrimary}`}
-              >
-                <Calendar className="w-4 h-4" />
-                Oggi
-              </motion.div>
-            )}
-          </div>
-          
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={onNextDay}
-            className={`
-              w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 ${colors.bgHover} dark:${colors.bgHoverDark}
-              text-gray-600 dark:text-gray-400 ${colors.textHover} dark:${colors.textHoverDark}
-              flex items-center justify-center transition-all duration-200
-            `}
-          >
-            <ChevronRight className="w-5 h-5" />
-          </motion.button>
+    <div
+      className="relative border overflow-hidden min-h-[420px]"
+      style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
+    >
+
+      {/* Area swipeabile: asse orario + timeline */}
+      <div
+        className="flex overflow-x-hidden touch-pan-y"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Asse orario (sinistra) */}
+        <div
+          className="flex-shrink-0 w-14 pt-2 pr-2 border-r"
+          style={{ borderColor: accentSofter }}
+        >
+          {HOURS.map((h) => (
+            <div
+              key={h}
+              className="flex items-start justify-end text-xs font-medium"
+              style={{ height: PIXELS_PER_HOUR, color: textSecondaryColor }}
+            >
+              {h.toString().padStart(2, '0')}:00
+            </div>
+          ))}
         </div>
 
-        {/* Appointments List */}
-        <div className="max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-pink-200 dark:scrollbar-thumb-pink-800 scrollbar-track-transparent">
-          {dayAppointments.length === 0 ? (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-16"
+        {/* Timeline + eventi */}
+        <div
+          className="flex-1 min-w-0 relative pl-3 pr-2 py-2"
+          style={{ minHeight: timelineHeight }}
+        >
+          {/* Griglia ore (stile Apple: linee orizzontali sempre visibili) */}
+          {HOURS.map((h) => (
+            <div
+              key={h}
+              className="absolute left-0 right-0 border-t pointer-events-none"
+              style={{
+                top: (h - START_HOUR) * PIXELS_PER_HOUR,
+                borderColor: 'rgba(0,0,0,0.06)',
+              }}
+            />
+          ))}
+
+          {/* Linea ora corrente (stile Google: linea sottile + pallino a sinistra) */}
+          {showNowLine && (
+            <div
+              className="absolute left-0 right-0 flex items-center z-10 pointer-events-none"
+              style={{ top: minutesToTop(nowMinutes) }}
             >
-              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <Calendar className="w-10 h-10 text-gray-400 dark:text-gray-500" />
-              </div>
-              <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                Giornata libera
-              </h4>
-              <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-xs mx-auto leading-relaxed">
-                Nessun appuntamento programmato per questa data
-              </p>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={onNewAppointment}
-                className={`inline-flex items-center gap-3 px-6 py-3 ${colors.bgGradient} hover:${colors.gradientFromLight} hover:${colors.gradientToLight} text-white font-semibold rounded-2xl transition-all duration-300 shadow-lg ${colors.shadowPrimary} hover:shadow-lg ${colors.shadowPrimary}`}
-              >
-                <Plus className="w-5 h-5" />
-                Aggiungi Appuntamento
-              </motion.button>
-            </motion.div>
-          ) : (
-            <div className="space-y-6">
-              {hours.map((hour) => {
-                const hourAppointments = groupedAppointments[hour] || [];
-                
-                return (
-                  <div key={hour} className="relative">
-                    {/* Hour Label */}
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="flex-shrink-0 w-16 text-right">
-                        <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
-                          {hour}:00
-                        </span>
-                      </div>
-                      <div className="flex-1 h-px bg-gray-200 dark:bg-gray-600"></div>
-                    </div>
-
-                    {/* Appointments for this hour */}
-                    <div className="ml-20 space-y-3">
-                      {hourAppointments.map((appointment, index) => {
-                        const client = getClientById(appointment.client_id);
-                        const isCompleted = appointment.status === 'completed';
-                        
-                        return (
-                          <motion.div
-                            key={appointment.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className={`
-                              group relative overflow-hidden rounded-2xl border transition-all duration-300 cursor-pointer
-                              ${isCompleted 
-                                ? 'bg-gray-50/80 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 opacity-75' 
-                                : `bg-white/80 dark:bg-gray-800/80 ${colors.borderPrimary} dark:${colors.borderPrimary} hover:${colors.borderPrimary} dark:hover:${colors.borderPrimary} hover:shadow-lg ${colors.shadowPrimaryLight}`
-                              }
-                            `}
-                            onClick={() => onAppointmentClick(appointment)}
-                          >
-                            {/* Subtle gradient overlay */}
-                            <div className={`absolute inset-0 bg-gradient-to-r from-${colors.primaryLight}/20 via-transparent to-transparent dark:from-${colors.primaryDark}/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                            
-                            <div className="relative p-6">
-                              <div className="flex items-start gap-4">
-                                {/* Avatar with status indicator */}
-                    
-                                
-                                {/* Content */}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between gap-3 mb-2">
-                                    <h4 className={`
-                                      text-sm font-bold truncate
-                                      ${isCompleted 
-                                        ? 'text-gray-500 dark:text-gray-400 line-through' 
-                                        : 'text-gray-900 dark:text-white'
-                                      }
-                                    `}>
-                                      {client 
-                                        ? `${client.nome} ${client.cognome}`
-                                        : 'Cliente sconosciuto'
-                                      }
-                                                      
-
-                                    </h4>
-                                      
-                                  
-
-   
-                                  <div className="
-                                      inline-flex items-center gap-2 px-4">
-                                      
-                                      <span className={`
-                                    text-sm ml-2 font-normal
-                                    ${isCompleted 
-                                      ? 'text-gray-400 dark:text-gray-500 line-through' 
-                                      : 'text-gray-600 dark:text-gray-400'
-                                    }
-                                  `}>
-                                                   {appointment.tipo_trattamento || 'Nessun trattamento specificato'}
-                                                    </span>    
-                                    </div>
-                                  </div>
-                                  
-                                
-                          
-                                </div>
-                              </div>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: accentColor }} />
+              <div className="flex-1 h-0.5 ml-1" style={{ backgroundColor: accentColor }} />
             </div>
+          )}
+
+          {dayAppointments.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center opacity-90 animate-fade-in">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="mb-4 w-12 h-12 text-gray-300"
+                fill="none"
+                viewBox="0 0 48 48"
+              >
+                <rect
+                  x="8"
+                  y="14"
+                  width="32"
+                  height="26"
+                  rx="4"
+                  fill="#F3F4F6"
+                />
+                <rect
+                  x="14"
+                  y="21"
+                  width="20"
+                  height="2"
+                  rx="1"
+                  fill="#E5E7EB"
+                />
+                <rect
+                  x="14"
+                  y="27"
+                  width="12"
+                  height="2"
+                  rx="1"
+                  fill="#E5E7EB"
+                />
+                <rect
+                  x="14"
+                  y="33"
+                  width="16"
+                  height="2"
+                  rx="1"
+                  fill="#E5E7EB"
+                />
+                <rect
+                  x="12"
+                  y="8"
+                  width="4"
+                  height="8"
+                  rx="2"
+                  fill="#F87171"
+                />
+                <rect
+                  x="32"
+                  y="8"
+                  width="4"
+                  height="8"
+                  rx="2"
+                  fill="#60A5FA"
+                />
+              </svg>
+              <p className="text-base font-medium mb-1">
+                Nessun appuntamento
+              </p>
+              <span className="text-xs" style={{ color: textSecondaryColor }}>
+                Nessun evento trovato per questa giornata.
+              </span>
+            </div>
+          ) : (
+            dayAppointments.map((appointment) => {
+              const startM = parseMinutes(appointment.ora);
+              const durationM = 60;
+              const top = minutesToTop(startM);
+              const height = Math.max(44, (durationM / 60) * PIXELS_PER_HOUR - 4);
+              return (
+                <div
+                  key={appointment.id}
+                  className="absolute left-0 right-0"
+                  style={{ top: top + 2, height: height - 1 }}
+                >
+                  <DayViewCard
+                    appointment={appointment}
+                    client={getClientById(appointment.client_id)}
+                    onClick={() => onAppointmentClick(appointment)}
+                    accentGradient={accentGradient}
+                  />
+                </div>
+              );
+            })
           )}
         </div>
       </div>
+
     </div>
+  );
+}
+
+interface DayViewCardProps {
+  readonly appointment: Appointment;
+  readonly client: { nome: string; cognome: string } | undefined;
+  readonly onClick: () => void;
+  readonly accentGradient: string;
+}
+
+function DayViewCard({
+  appointment,
+  client,
+  onClick,
+  accentGradient,
+}: Readonly<DayViewCardProps>) {
+  const isCompleted = appointment.status === 'completed';
+  const clientName = client ? `${client.nome} ${client.cognome}` : 'Cliente sconosciuto';
+  const service = (appointment.tipo_trattamento || 'Trattamento').toUpperCase();
+  const startTime = formatTime(appointment.ora);
+  const endTime = appointment.ora
+    ? formatTime(dayjs(`2000-01-01 ${appointment.ora}`).add(1, 'hour').format('HH:mm'))
+    : '';
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full h-full text-left p-3 shadow-sm transition-opacity hover:opacity-95 active:opacity-90 flex flex-col justify-between overflow-hidden border-0"
+      style={{ background: accentGradient }}
+    >
+      <div className="flex justify-between items-start gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-white/95 truncate">
+          {service}
+        </span>
+        {isCompleted ? (
+          <Check className="w-4 h-4 flex-shrink-0 text-white/90" />
+        ) : (
+          <MoreHorizontal className="w-4 h-4 flex-shrink-0 text-white/90" />
+        )}
+      </div>
+      <p className="font-semibold text-sm text-white truncate mt-0.5">{clientName}</p>
+      <p className="text-xs text-white/85 mt-0.5">
+        {startTime}
+        {endTime ? ` – ${endTime}` : ''}
+      </p>
+    </button>
   );
 }

@@ -289,7 +289,7 @@ export default function MessageTemplateEditor({ onSave, onCancel }: MessageTempl
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={copyToClipboard}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 text-sm"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 text-sm"
                 >
                   {copied ? (
                     <>
@@ -332,7 +332,7 @@ export default function MessageTemplateEditor({ onSave, onCancel }: MessageTempl
                     onClick={() => insertPlaceholder(placeholder.key)}
                     className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-pink-500 hover:shadow-lg transition-all duration-200 text-left"
                   >
-                    <div className={`w-8 h-8 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                    <div className={`w-8 h-8 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl flex items-center justify-center flex-shrink-0`}>
                       <placeholder.icon className={`w-4 h-4 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />
                     </div>
                     <div className="flex-1 min-w-0">

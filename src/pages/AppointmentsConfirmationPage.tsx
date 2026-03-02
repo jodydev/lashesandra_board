@@ -1,95 +1,81 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   CheckCircle2,
-  Clock,
   XCircle,
   Filter,
   Search,
-  Check,
   X,
   Activity,
   Timer,
   Banknote,
   Calendar,
-  CalendarDays,
-  CalendarRange
+  ChevronLeft,
 } from 'lucide-react';
 import type { Appointment, Client } from '../types';
 import { useSupabaseServices } from '../lib/supabaseService';
 import { useAppColors } from '../hooks/useAppColors';
+import { useApp } from '../contexts/AppContext';
 import { formatDateForDisplay, formatCurrency } from '../lib/utils';
 import dayjs from 'dayjs';
 
 type StatusFilter = 'all' | 'pending' | 'completed' | 'cancelled';
 type DateFilter = 'all' | 'today' | 'tomorrow' | 'nextWeek';
 
-// Modern metric card component with glass morphism effect (from MonthlyOverview)
-const MetricCard = ({ icon: Icon, title, value, trend, delay = 0, colors }: {
-  icon: any;
+const textPrimaryColor = '#2C2C2C';
+const textSecondaryColor = '#7A7A7A';
+const surfaceColor = '#FFFFFF';
+
+// Stat card (stile carosello: no shadow, icon con gradient, card più grande)
+function StatCard({
+  icon: Icon,
+  title,
+  value,
+  accentSofter,
+  accentGradient,
+}: Readonly<{
+  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
   title: string;
   value: string | number;
-  trend?: string;
-  delay?: number;
-  colors: any;
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay }}
-    className={`group relative overflow-hidden rounded-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:${colors.borderPrimary} dark:hover:${colors.borderPrimary} transition-all duration-300 hover:shadow-lg ${colors.shadowPrimaryLight}`}
-  >
-    <div className={`absolute inset-0 ${colors.bgGradientLight} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-    <div className="relative p-4 sm:p-6">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-            <div className={`p-2 sm:p-2.5 rounded-xl ${colors.bgGradient} text-white shadow-lg ${colors.shadowPrimary}`}>
-              <Icon size={16} className="sm:w-5 sm:h-5" />
-            </div>
-            <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">{title}</span>
-          </div>
-          <div className="space-y-1">
-            <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{value}</div>
-            {trend && (
-              <div className="text-xs text-green-600 dark:text-green-400 font-medium">
-                {trend}
-              </div>
-            )}
-          </div>
+  accentSofter: string;
+  accentGradient: string;
+}>) {
+  return (
+    <div
+      className="group relative overflow-hidden rounded-2xl border p-6 sm:p-7"
+      style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex-1 min-w-0 space-y-2 sm:space-y-2.5">
+          <p className="text-xs sm:text-sm font-medium uppercase tracking-wide" style={{ color: textSecondaryColor }}>
+            {title}
+          </p>
+          <p className="text-2xl sm:text-3xl font-semibold dark:text-white truncate" style={{ color: textPrimaryColor }}>
+            {value}
+          </p>
         </div>
+        <span
+          className="flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 items-center justify-center rounded-xl"
+          style={{ background: accentGradient }}
+          aria-hidden
+        >
+          <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" strokeWidth={2} aria-hidden />
+        </span>
       </div>
     </div>
-  </motion.div>
-);
-
-// Modern chart container with enhanced styling (from MonthlyOverview)
-const ChartContainer = ({ title, children, actions }: {
-  title: string;
-  children: React.ReactNode;
-  actions?: React.ReactNode;
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.6 }}
-    className="rounded-2xl bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg shadow-black/5 overflow-hidden"
-  >
-    <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-800">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
-        {actions}
-      </div>
-    </div>
-    <div className="p-4 sm:p-6">
-      {children}
-    </div>
-  </motion.div>
-);
+  );
+}
 
 export default function AppointmentsConfirmationPage() {
+  const navigate = useNavigate();
   const { appointmentService, clientService } = useSupabaseServices();
   const colors = useAppColors();
+  const { appType } = useApp();
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#ffffff';
+  const accentColor = colors.primary;
+  const accentGradient = colors.cssGradient;
+  const accentSoft = `${colors.primary}29`;
+  const accentSofter = `${colors.primary}14`;
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,35 +135,11 @@ export default function AppointmentsConfirmationPage() {
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'completed':
-        return {
-          icon: CheckCircle2,
-          color: 'emerald',
-          bg: 'bg-emerald-50 dark:bg-emerald-950/20',
-          text: 'text-emerald-700 dark:text-emerald-300',
-          border: 'border-emerald-200 dark:border-emerald-800',
-          label: 'Completato',
-          dot: 'bg-emerald-500'
-        };
+        return { label: 'Completato', badgeStyle: { backgroundColor: '#DCFCE7', color: '#047857' } as const };
       case 'cancelled':
-        return {
-          icon: XCircle,
-          color: 'red',
-          bg: 'bg-red-50 dark:bg-red-950/20',
-          text: 'text-red-700 dark:text-red-300',
-          border: 'border-red-200 dark:border-red-800',
-          label: 'Cancellato',
-          dot: 'bg-red-500'
-        };
+        return { label: 'Cancellato', badgeStyle: { backgroundColor: '#FEE2E2', color: '#B91C1C' } as const };
       default:
-        return {
-          icon: Clock,
-          color: 'amber',
-          bg: `${colors.bgPrimary} dark:${colors.bgPrimaryDark}`,
-          text: `${colors.textPrimary} dark:${colors.textPrimaryDark}`,
-          border: `${colors.borderPrimary}`,
-          label: 'In Attesa',
-          dot: colors.bgGradient
-        };
+        return { label: 'In Attesa', badgeStyle: { backgroundColor: accentSofter, color: colors.primaryDark } as const };
     }
   };
 
@@ -222,29 +184,58 @@ export default function AppointmentsConfirmationPage() {
     .filter(apt => apt.status === 'completed')
     .reduce((sum, apt) => sum + (apt.importo || 0), 0);
 
-  // Enhanced loading state with skeleton matching MonthlyOverview
+  const todayCount = appointments.filter(apt => dayjs(apt.data).isSame(dayjs(), 'day')).length;
+  const tomorrowCount = appointments.filter(apt => dayjs(apt.data).isSame(dayjs().add(1, 'day'), 'day')).length;
+  const nextWeekStart = dayjs().add(1, 'week').startOf('week');
+  const nextWeekCount = appointments.filter(apt =>
+    dayjs(apt.data).isAfter(nextWeekStart) && dayjs(apt.data).isBefore(nextWeekStart.add(1, 'week'))
+  ).length;
+
+  // Loading skeleton (stile ClientList)
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-3 sm:p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="space-y-4 sm:space-y-6">
-            {/* Header skeleton */}
-            <div className="space-y-3 sm:space-y-4">
-              <div className="h-8 sm:h-10 bg-gray-200 dark:bg-gray-800 rounded-2xl w-80 animate-pulse" />
-              <div className="h-5 sm:h-6 bg-gray-200 dark:bg-gray-800 rounded-xl w-96 animate-pulse" />
-            </div>
-            
-            {/* Stats skeleton */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+      <div className="min-h-screen" style={{ backgroundColor }}>
+        <header
+          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
+          style={{ borderColor: accentSofter }}
+        >
+          <button type="button" className="flex items-center gap-1.5 font-medium" style={{ color: accentColor }} aria-label="Indietro">
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+          <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white whitespace-nowrap" style={{ color: textPrimaryColor }}>
+            Conferma Appuntamenti
+          </h1>
+          <div className="h-9 w-9" />
+        </header>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+          {/* Skeleton carosello statistiche */}
+          <div className="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+            <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory" style={{ scrollbarWidth: 'thin' }}>
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-24 sm:h-32 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
+                <div key={i} className="flex-shrink-0 w-[min(88vw,320px)] sm:w-72 snap-center rounded-2xl border p-6 sm:p-7 bg-white dark:bg-gray-900" style={{ borderColor: accentSofter }}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="space-y-2 flex-1">
+                      <div className="h-4 sm:h-5 bg-gray-200 dark:bg-gray-800 rounded w-20 sm:w-24" />
+                      <div className="h-6 sm:h-8 bg-gray-200 dark:bg-gray-800 rounded w-16 sm:w-20" />
+                    </div>
+                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-gray-200 dark:bg-gray-800 flex-shrink-0" />
+                  </div>
+                </div>
               ))}
             </div>
-            
-            {/* Content skeleton */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-              <div className="lg:col-span-2 h-64 sm:h-96 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
-              <div className="h-64 sm:h-96 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
+          </div>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 sm:p-6" style={{ borderColor: accentSofter }}>
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-4 p-3 sm:p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 sm:h-5 bg-gray-200 dark:bg-gray-700 rounded w-32 sm:w-48" />
+                    <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 sm:w-32" />
+                  </div>
+                  <div className="w-16 sm:w-20 h-5 sm:h-6 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -253,328 +244,200 @@ export default function AppointmentsConfirmationPage() {
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-${colors.primaryLight}/30 to-gray-100 dark:from-gray-900 dark:via-${colors.primaryDark}/10 dark:to-gray-800`}>
-      <div className="max-w-7xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-8">
-        {/* Header with enhanced navigation matching MonthlyOverview */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row items-start justify-between gap-4"
+    <div className="min-h-screen" style={{ backgroundColor }}>
+      {/* Header navigazione: Indietro | Conferma Appuntamenti (stile ClientList) */}
+      <header
+        className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
+        style={{ borderColor: accentSofter }}
+      >
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 font-medium transition-opacity hover:opacity-90"
+          style={{ color: accentColor }}
+          aria-label="Indietro"
         >
-          <div className="space-y-1 w-full">
-            <h1 className={`text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 via-${colors.primary} to-gray-600 dark:from-white dark:via-${colors.primaryLight} dark:to-gray-300 bg-clip-text text-transparent`}>
-              Gestione Appuntamenti
-            </h1>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-              Conferma e gestisci lo stato dei tuoi appuntamenti
-            </p>
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+        <h1
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white whitespace-nowrap"
+          style={{ color: textPrimaryColor }}
+        >
+          Conferma Appuntamenti
+        </h1>
+        <div className="h-9 w-9" />
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-6 sm:space-y-8">
+        {/* Error (stile ClientList) */}
+        {error && (
+          <div className="p-4 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-xl">
+            <p className="text-red-800 dark:text-red-200 font-medium text-sm sm:text-base">{error}</p>
           </div>
-        </motion.div>
+        )}
 
-        {/* Error state with better styling matching MonthlyOverview */}
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="p-3 sm:p-4 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 text-sm sm:text-base"
-            >
-              {error}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Enhanced metrics grid matching MonthlyOverview */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-          <MetricCard
-            icon={Timer}
-            title="In Attesa"
-            value={pendingCount}
-            delay={0.1}
-            colors={colors}
-          />
-          <MetricCard
-            icon={CheckCircle2}
-            title="Completati"
-            value={completedCount}
-            delay={0.2}
-            colors={colors}
-          />
-          <MetricCard
-            icon={XCircle}
-            title="Cancellati"
-            value={cancelledCount}
-            delay={0.3}
-            colors={colors}
-          />
-          <MetricCard
-            icon={Banknote}
-            title="Ricavi Totali"
-            value={formatCurrency(totalRevenue)}
-            delay={0.4}
-            colors={colors}
-          />
+        {/* Carosello statistiche scrollabile */}
+        <div className="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+          <div
+            className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory scrollbar-thin"
+            style={{ scrollbarWidth: 'thin' }}
+          >
+            <div className="flex-shrink-0 w-[min(88vw,320px)] sm:w-72 snap-center">
+              <StatCard icon={Timer} title="In Attesa" value={pendingCount} accentSofter={accentSofter} accentGradient={accentGradient} />
+            </div>
+            <div className="flex-shrink-0 w-[min(88vw,320px)] sm:w-72 snap-center">
+              <StatCard icon={CheckCircle2} title="Completati" value={completedCount} accentSofter={accentSofter} accentGradient={accentGradient} />
+            </div>
+            <div className="flex-shrink-0 w-[min(88vw,320px)] sm:w-72 snap-center">
+              <StatCard icon={XCircle} title="Cancellati" value={cancelledCount} accentSofter={accentSofter} accentGradient={accentGradient} />
+            </div>
+            <div className="flex-shrink-0 w-[min(88vw,320px)] sm:w-72 snap-center">
+              <StatCard icon={Banknote} title="Ricavi Totali" value={formatCurrency(totalRevenue)} accentSofter={accentSofter} accentGradient={accentGradient} />
+            </div>
+          </div>
         </div>
 
-        {/* Search and Filters using ChartContainer */}
-        <ChartContainer title="Filtri e Ricerca">
-          <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
-            {/* Enhanced Search */}
-            <div className="flex-1">
-              <div className="relative group">
-                <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 ${colors.textHover} transition-colors duration-200`}>
-                  <Search className="w-5 h-5" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Cerca cliente, trattamento, email o telefono..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`w-full h-12 sm:h-14 px-4 pl-12 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl sm:rounded-2xl focus:ring-2 ${colors.focusRing} focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 font-medium`}
-                />
-              </div>
-            </div>
-
-            {/* Enhanced Filter */}
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
-                  <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400" />
-                </div>
-                <span className="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Stato</span>
-              </div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                className={`h-12 sm:h-14 px-4 sm:px-6 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl sm:rounded-2xl focus:ring-2 ${colors.focusRing} focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white font-semibold min-w-[160px] sm:min-w-[180px]`}
-              >
-                <option value="all">Tutti gli stati</option>
-                <option value="pending">In Attesa</option>
-                <option value="completed">Completati</option>
-                <option value="cancelled">Cancellati</option>
-              </select>
-            </div>
+        {/* Barra ricerca e filtri (stile ClientList) */}
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="relative flex-1 min-w-0 sm:max-w-xs">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Cerca cliente, trattamento..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-xl border bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-white"
+              style={{ borderColor: accentSoft }}
+            />
           </div>
-        </ChartContainer>
-
-        {/* Quick Date Filters */}
-        <ChartContainer title="Filtri Rapidi per Data">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter className="h-4 w-4 shrink-0 text-gray-400" />
             {[
-              { 
-                key: 'all', 
-                label: 'Tutti', 
-                icon: Calendar, 
-                description: 'Mostra tutti gli appuntamenti',
-                count: appointments.length
-              },
-              { 
-                key: 'today', 
-                label: 'Oggi', 
-                icon: Calendar, 
-                description: `Appuntamenti di oggi (${dayjs().format('DD/MM/YYYY')})`,
-                count: appointments.filter(apt => dayjs(apt.data).isSame(dayjs(), 'day')).length
-              },
-              { 
-                key: 'tomorrow', 
-                label: 'Domani', 
-                icon: CalendarDays, 
-                description: `Appuntamenti di domani (${dayjs().add(1, 'day').format('DD/MM/YYYY')})`,
-                count: appointments.filter(apt => dayjs(apt.data).isSame(dayjs().add(1, 'day'), 'day')).length
-              },
-              { 
-                key: 'nextWeek', 
-                label: 'Settimana Prossima', 
-                icon: CalendarRange, 
-                description: 'Appuntamenti della prossima settimana',
-                count: appointments.filter(apt => {
-                  const nextWeekStart = dayjs().add(1, 'week').startOf('week');
-                  const nextWeekEnd = nextWeekStart.add(1, 'week');
-                  return dayjs(apt.data).isAfter(nextWeekStart) && dayjs(apt.data).isBefore(nextWeekEnd);
-                }).length
-              }
-            ].map((filter, index) => (
-              <motion.button
-                key={filter.key}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setDateFilter(filter.key as DateFilter)}
-                className={`group relative flex items-center gap-2 sm:gap-3 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 rounded-2xl sm:rounded-2xl border-2 transition-all duration-300 ${
-                  dateFilter === filter.key
-                    ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimary}`
-                    : `border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:${colors.borderPrimary} hover:shadow-lg ${colors.shadowPrimaryLight}`
-                }`}
-                title={filter.description}
-              >
-                {/* Icon */}
-                <div className={`w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
-                  dateFilter === filter.key
-                    ? `${colors.bgGradient} text-white shadow-lg ${colors.shadowPrimary}`
-                    : `bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 ${colors.bgHover} dark:${colors.bgHoverDark} ${colors.textHover} dark:${colors.textHoverDark}`
-                }`}>
-                  <filter.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5" strokeWidth={2} />
-                </div>
-                
-                {/* Content */}
-                <div className="flex flex-col items-start min-w-0 flex-1">
-                  <span className={`text-xs sm:text-sm lg:text-base font-semibold transition-colors duration-300 truncate w-full ${
-                    dateFilter === filter.key
-                      ? `${colors.textPrimary} dark:${colors.textPrimaryDark}`
-                      : `text-gray-900 dark:text-white ${colors.textHover} dark:${colors.textHoverDark}`
-                  }`}>
-                    {filter.label}
-                  </span>
-                  <span className={`text-xs font-medium transition-colors duration-300 truncate w-full ${
-                    dateFilter === filter.key
-                      ? `${colors.textPrimary} dark:${colors.textPrimaryDark}`
-                      : `text-gray-500 dark:text-gray-400 ${colors.textHover} dark:${colors.textHoverDark}`
-                  }`}>
-                    {filter.count} appuntamenti
-                  </span>
-                </div>
-                
-                {/* Selection Indicator */}
-                {dateFilter === filter.key && (
-                  <motion.div
-                    initial={{ scale: 0, rotate: -180 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    className={`w-5 h-5 sm:w-6 sm:h-6 ${colors.bgGradient} rounded-full flex items-center justify-center shadow-lg flex-shrink-0`}
-                  >
-                    <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" strokeWidth={3} />
-                  </motion.div>
-                )}
-              </motion.button>
-            ))}
+              { key: 'all' as StatusFilter, label: 'Tutti', count: appointments.length },
+              { key: 'pending' as StatusFilter, label: 'In Attesa', count: pendingCount },
+              { key: 'completed' as StatusFilter, label: 'Completati', count: completedCount },
+              { key: 'cancelled' as StatusFilter, label: 'Cancellati', count: cancelledCount },
+            ].map((f) => {
+              const isActive = statusFilter === f.key;
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setStatusFilter(f.key)}
+                  className={`whitespace-nowrap rounded-2xl px-3 py-1.5 text-xs font-medium sm:text-sm ${isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400'}`}
+                  style={isActive ? { background: accentGradient } : { backgroundColor: surfaceColor, border: `1px solid ${accentSofter}` }}
+                >
+                  {f.label} ({f.count})
+                </button>
+              );
+            })}
           </div>
-        </ChartContainer>
+        </div>
 
-        {/* Appointments List using ChartContainer */}
-        <ChartContainer 
-          title="Appuntamenti"
-          actions={
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 ${colors.bgGradient} rounded-full animate-pulse`} />
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Live</span>
-              <div className="px-3 py-1.5 bg-gray-100 dark:bg-gray-900 rounded-xl">
-                <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
-                  {filteredAppointments.length} risultati
-                </span>
-              </div>
-            </div>
-          }
+
+        {/* Lista appuntamenti (stile ClientList: card semplici) */}
+        <div
+          className="rounded-2xl shadow-lg border overflow-hidden"
+          style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
         >
-          <div className="space-y-3 sm:space-y-4">
-            <AnimatePresence mode="popLayout">
-              {filteredAppointments.map((appointment, index) => {
-                const client = getClientById(appointment.client_id);
-                if (!client) return null;
-
-                const statusConfig = getStatusConfig(appointment.status);
-
-                return (
-                  <motion.div
-                    key={appointment.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20, scale: 0.95 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${colors.bgGradient} flex items-center justify-center text-white font-semibold text-xs sm:text-sm`}>
-                          {client.nome.charAt(0)}{client.cognome.charAt(0)}
-                        </div>
+          <div className="p-4 sm:p-6 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2" style={{ borderColor: accentSofter }}>
+            <h3 className="text-base sm:text-lg font-semibold" style={{ color: textPrimaryColor }}>
+              Appuntamenti
+            </h3>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {filteredAppointments.length} risultati
+            </span>
+          </div>
+          <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+            {filteredAppointments.map((appointment) => {
+              const client = getClientById(appointment.client_id);
+              if (!client) return null;
+              const statusConfig = getStatusConfig(appointment.status);
+              return (
+                <div
+                  key={appointment.id}
+                  className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+                    <div
+                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-white font-semibold text-xs sm:text-sm shadow-lg"
+                      style={{ background: accentGradient }}
+                    >
+                      {client.nome.charAt(0)}
+                      {client.cognome.charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
+                        {client.nome} {client.cognome}
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
-                          {client.nome} {client.cognome}
-                        </div>
-                        <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                          {formatDateForDisplay(dayjs(appointment.data))} {appointment.ora && `• ${appointment.ora.slice(0, 5)}`}
-                        </div>
+                      <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        {formatDateForDisplay(dayjs(appointment.data))} {appointment.ora && `• ${appointment.ora.slice(0, 5)}`}
                       </div>
                     </div>
-                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4 flex-shrink-0">
-                      <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${
-                        appointment.status === 'completed' 
-                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-                          : appointment.status === 'cancelled'
-                          ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                          : `${colors.bgPrimary} ${colors.textPrimary} dark:${colors.bgPrimaryDark} dark:${colors.textPrimaryDark}`
-                      }`}>
-                        {statusConfig.label}
-                      </span>
-                      <div className="text-right">
-                        <div className={`font-bold ${colors.textPrimary} dark:${colors.textPrimaryDark} text-sm sm:text-base`}>
-                          {formatCurrency(appointment.importo)}
-                        </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4 flex-shrink-0">
+                    <span className="inline-flex rounded-xl px-2 sm:px-3 py-1 text-xs font-medium" style={statusConfig.badgeStyle}>
+                      {statusConfig.label}
+                    </span>
+                    <div className="text-right">
+                      <div
+                        className="font-bold text-sm sm:text-base"
+                        style={{ background: accentGradient, WebkitBackgroundClip: 'text', color: 'transparent' }}
+                      >
+                        {formatCurrency(appointment.importo)}
                       </div>
-                      {appointment.status === 'pending' && (
-                        <div className="flex items-center gap-2">
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handleStatusUpdate(appointment.id, 'completed')}
-                            disabled={updating === appointment.id}
-                            className="p-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white transition-colors disabled:opacity-50"
-                          >
-                            {updating === appointment.id ? (
-                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : (
-                              <Check className="w-4 h-4" />
-                            )}
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handleStatusUpdate(appointment.id, 'cancelled')}
-                            disabled={updating === appointment.id}
-                            className="p-2 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-colors disabled:opacity-50"
-                          >
-                            <X className="w-4 h-4" />
-                          </motion.button>
-                        </div>
-                      )}
                     </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
+                    {appointment.status === 'pending' && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleStatusUpdate(appointment.id, 'completed')}
+                          disabled={updating === appointment.id}
+                          className="p-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white transition-colors disabled:opacity-50"
+                        >
+                          {updating === appointment.id ? (
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStatusUpdate(appointment.id, 'cancelled')}
+                          disabled={updating === appointment.id}
+                          className="p-2 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-colors disabled:opacity-50"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
 
-            {/* Empty State matching MonthlyOverview */}
             {filteredAppointments.length === 0 && (
               <div className="text-center py-8 sm:py-12 text-gray-500 dark:text-gray-400">
                 <Activity size={32} className="sm:w-12 sm:h-12 mx-auto mb-4 opacity-50" />
                 <p className="text-sm sm:text-base">
                   {(searchQuery || statusFilter !== 'all' || dateFilter !== 'all')
                     ? 'Nessun appuntamento trovato con i filtri selezionati'
-                    : 'Nessun appuntamento disponibile al momento'
-                  }
+                    : 'Nessun appuntamento disponibile al momento'}
                 </p>
                 {(searchQuery || statusFilter !== 'all' || dateFilter !== 'all') && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      setSearchQuery('');
-                      setStatusFilter('all');
-                      setDateFilter('all');
-                    }}
-                    className={`mt-4 px-4 py-2 ${colors.bgGradient} hover:${colors.gradientFromLight} hover:${colors.gradientToLight} text-white rounded-xl font-medium transition-colors`}
+                  <button
+                    type="button"
+                    onClick={() => { setSearchQuery(''); setStatusFilter('all'); setDateFilter('all'); }}
+                    className="mt-4 px-4 py-2 text-white rounded-xl font-medium transition-opacity hover:opacity-90"
+                    style={{ background: accentGradient }}
                   >
                     Cancella filtri
-                  </motion.button>
+                  </button>
                 )}
               </div>
             )}
           </div>
-        </ChartContainer>
+        </div>
       </div>
     </div>
   );

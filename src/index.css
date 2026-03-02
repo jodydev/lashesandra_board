@@ -18,11 +18,28 @@ html, body {
   color: #212121;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Disabilita zoom in app (pinch e double-tap) */
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
 }
 
 #root {
   height: 100%;
   min-height: 100vh;
+  /* Safe area iOS: rispetta notch e home indicator (ignorato su web) */
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Hide scrollbar utility (e.g. horizontal date strip) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 /* Custom scrollbar */
