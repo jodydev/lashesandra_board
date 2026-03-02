@@ -101,7 +101,7 @@ export default function Layout({ children }: LayoutProps) {
             aria-current={isActive('client-profiles') ? 'page' : undefined}
           >
             <IdCard className="h-5 w-5" />
-            <span className="text-[10px] font-semibold uppercase">Profili</span>
+            <span className="text-[10px] font-semibold uppercase">Schemi</span>
           </button>
           <button
             type="button"
@@ -111,7 +111,7 @@ export default function Layout({ children }: LayoutProps) {
             aria-current={isActive('profile') ? 'page' : undefined}
           >
             <UserCog className="h-5 w-5" />
-            <span className="text-[10px] font-semibold uppercase">Imposta</span>
+            <span className="text-[10px] font-semibold uppercase">Menú</span>
           </button>
         </div>
       </nav>

@@ -20,6 +20,11 @@ export interface Appointment {
   importo: number;
   tipo_trattamento?: string;
   status: 'pending' | 'completed' | 'cancelled';
+  /**
+   * Campo non persistito su DB: usato lato UI per distinguere
+   * eventi personali da appuntamenti di lavoro.
+   */
+  kind?: 'work' | 'personal';
   created_at: string;
 }
 

@@ -10,6 +10,7 @@ import IsabelleNailsApp from './apps/IsabelleNailsApp';
 import { AppProvider } from './contexts/AppContext';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import ScrollToTop from './components/ScrollToTop';
 
 
 // Modern Design System with Pink/Black/White palette inspired by Material Design 3
@@ -181,6 +182,7 @@ export default function App() {
       <AuthProvider>
         <AppProvider appType="lashesandra">
           <BrowserRouter>
+            <ScrollToTop />
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/profile" element={

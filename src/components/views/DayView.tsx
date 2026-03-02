@@ -1,9 +1,10 @@
 import React, { useMemo, useRef, useCallback } from 'react';
-import { Check, MoreHorizontal, Plus } from 'lucide-react';
+import { Check, MoreHorizontal } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/it';
 import type { CalendarViewProps, Appointment } from '../../types';
 import { useApp } from '../../contexts/AppContext';
+import { isPersonalAppointment } from '../../lib/personalEvents';
 
 dayjs.locale('it');
 
@@ -217,7 +218,7 @@ export default function DayView({
               </span>
             </div>
           ) : (
-            dayAppointments.map((appointment) => {
+            dayAppointments.map((appointment: Appointment) => {
               const startM = parseMinutes(appointment.ora);
               const durationM = 60;
               const top = minutesToTop(startM);
@@ -259,8 +260,10 @@ function DayViewCard({
   accentGradient,
 }: Readonly<DayViewCardProps>) {
   const isCompleted = appointment.status === 'completed';
+  const personal = isPersonalAppointment(appointment);
   const clientName = client ? `${client.nome} ${client.cognome}` : 'Cliente sconosciuto';
-  const service = (appointment.tipo_trattamento || 'Trattamento').toUpperCase();
+  const service = personal ? 'PERSONALE' : (appointment.tipo_trattamento || 'Trattamento').toUpperCase();
+  const personalTitle = appointment.tipo_trattamento || 'Impegno personale';
   const startTime = formatTime(appointment.ora);
   const endTime = appointment.ora
     ? formatTime(dayjs(`2000-01-01 ${appointment.ora}`).add(1, 'hour').format('HH:mm'))
@@ -270,21 +273,34 @@ function DayViewCard({
     <button
       type="button"
       onClick={onClick}
-      className="w-full h-full text-left p-3 shadow-sm transition-opacity hover:opacity-95 active:opacity-90 flex flex-col justify-between overflow-hidden border-0"
-      style={{ background: accentGradient }}
+      className="w-full h-full text-left p-3 shadow-sm transition-opacity hover:opacity-95 active:opacity-90 flex flex-col justify-between overflow-hidden"
+      style={
+        personal
+          ? {
+              backgroundColor: 'rgba(17,24,39,0.04)',
+              border: '1px dashed rgba(0,0,0,0.25)',
+            }
+          : { background: accentGradient, border: 0 }
+      }
     >
       <div className="flex justify-between items-start gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-white/95 truncate">
+        <span
+          className={`text-[11px] font-semibold uppercase tracking-wide truncate ${
+            personal ? 'text-gray-700' : 'text-white/95'
+          }`}
+        >
           {service}
         </span>
         {isCompleted ? (
-          <Check className="w-4 h-4 flex-shrink-0 text-white/90" />
+          <Check className={`w-4 h-4 flex-shrink-0 ${personal ? 'text-gray-700' : 'text-white/90'}`} />
         ) : (
-          <MoreHorizontal className="w-4 h-4 flex-shrink-0 text-white/90" />
+          <MoreHorizontal className={`w-4 h-4 flex-shrink-0 ${personal ? 'text-gray-700' : 'text-white/90'}`} />
         )}
       </div>
-      <p className="font-semibold text-sm text-white truncate mt-0.5">{clientName}</p>
-      <p className="text-xs text-white/85 mt-0.5">
+      <p className={`font-semibold text-sm truncate mt-0.5 ${personal ? 'text-gray-900' : 'text-white'}`}>
+        {personal ? personalTitle : clientName}
+      </p>
+      <p className={`text-xs mt-0.5 ${personal ? 'text-gray-600' : 'text-white/85'}`}>
         {startTime}
         {endTime ? ` – ${endTime}` : ''}
       </p>

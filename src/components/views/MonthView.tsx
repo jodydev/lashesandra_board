@@ -3,6 +3,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/it';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import type { CalendarViewProps, Appointment } from '../../types';
+import { isPersonalAppointment } from '../../lib/personalEvents';
 
 dayjs.extend(isoWeek);
 dayjs.locale('it');
@@ -48,7 +49,7 @@ export default function MonthView({
   const startOfGrid = startOfMonth.startOf('isoWeek');
   const endOfGrid = endOfMonth.endOf('isoWeek');
 
-  const weeks: Dayjs[][] = [];
+  const weeks: Dayjs[] = [];
   let weekStart = startOfGrid;
   while (weekStart.isBefore(endOfGrid) || weekStart.isSame(endOfGrid, 'day')) {
     weeks.push(weekStart);
@@ -147,7 +148,7 @@ export default function MonthView({
                         client={getClientById(apt.client_id)}
                         isCurrentMonth={isCurrentMonth}
                         colors={colors}
-                        onClick={(e) => {
+                        onClick={(e: any) => {
                           e.stopPropagation();
                           onAppointmentClick(apt);
                         }}
@@ -156,7 +157,7 @@ export default function MonthView({
                     {extra > 0 && (
                       <button
                         type="button"
-                        onClick={(e) => {
+                        onClick={(e: any) => {
                           e.stopPropagation();
                           onDateClick(day);
                         }}
@@ -179,11 +180,12 @@ export default function MonthView({
 }
 
 interface MonthViewMiniCardProps {
+  readonly key?: string;
   readonly appointment: Appointment;
   readonly client: { nome: string; cognome: string } | undefined;
   readonly isCurrentMonth: boolean;
   readonly colors: ReturnType<typeof import('../../hooks/useAppColors').useAppColors>;
-  readonly onClick: (e: React.MouseEvent) => void;
+  readonly onClick: (e: any) => void;
 }
 
 function MonthViewMiniCard({
@@ -196,8 +198,10 @@ function MonthViewMiniCard({
   const isCompleted = appointment.status === 'completed';
   const accentSoft = `${colors.primary}29`;
   const accentSofter = `${colors.primary}14`;
+  const personal = isPersonalAppointment(appointment);
   const clientName = client ? `${client.nome} ${client.cognome}` : '—';
   const time = formatTime(appointment.ora);
+  const personalTitle = appointment.tipo_trattamento || 'Impegno personale';
 
   return (
     <button
@@ -205,15 +209,15 @@ function MonthViewMiniCard({
       onClick={onClick}
       className={`w-full text-left rounded-md border-l-2 pl-1.5 pr-1 py-0.5 transition-colors ${!isCurrentMonth && 'opacity-60'} ${isCompleted && 'opacity-70'}`}
       style={{
-        borderColor: accentSoft,
-        backgroundColor: accentSofter,
+        borderColor: personal ? textSecondaryColor : accentSoft,
+        backgroundColor: personal ? 'rgba(17,24,39,0.04)' : accentSofter,
       }}
     >
       <span
         className="text-[10px] font-semibold block truncate"
         style={{ color: textSecondaryColor }}
       >
-        {time} · {clientName}
+        {personal ? `${time} · PERSONALE · ${personalTitle}` : `${time} · ${clientName}`}
       </span>
     </button>
   );

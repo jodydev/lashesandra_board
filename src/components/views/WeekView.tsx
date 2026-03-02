@@ -1,9 +1,10 @@
 import React, { useMemo, useRef, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import 'dayjs/locale/it';
 import type { CalendarViewProps, Appointment } from '../../types';
+import { isPersonalAppointment } from '../../lib/personalEvents';
 
 dayjs.extend(isoWeek);
 dayjs.locale('it');
@@ -74,7 +75,7 @@ export default function WeekView({
   const isToday = (date: Dayjs) => date.isSame(dayjs(), 'day');
   const now = dayjs();
   const nowMinutes = now.hour() * 60 + now.minute();
-  const todayInWeek = weekDays.some((d) => d.isSame(dayjs(), 'day'));
+  const todayInWeek = weekDays.some((d: Dayjs) => d.isSame(dayjs(), 'day'));
   const showNowLine =
     todayInWeek &&
     nowMinutes >= START_HOUR * 60 &&
@@ -156,7 +157,7 @@ export default function WeekView({
 
           {/* 7 colonne giorno */}
           <div className="flex-1 flex min-w-0">
-            {weekDays.map((day, dayIndex) => {
+            {weekDays.map((day: Dayjs, dayIndex: number) => {
               const current = isToday(day);
               const dayAppointments = getAppointmentsForDate(day).sort((a, b) =>
                 (a.ora || '00:00').localeCompare(b.ora || '00:00')
@@ -280,22 +281,37 @@ function WeekViewEventCard({
   onClick,
   accentGradient,
 }: Readonly<WeekViewEventCardProps>) {
+  const personal = isPersonalAppointment(appointment);
   const clientName = client ? `${client.nome} ${client.cognome}` : 'Cliente';
-  const service = (appointment.tipo_trattamento || 'Trattamento').toUpperCase();
+  const service = personal ? 'PERSONALE' : (appointment.tipo_trattamento || 'Trattamento').toUpperCase();
+  const personalTitle = appointment.tipo_trattamento || 'Impegno personale';
   const time = formatTime(appointment.ora);
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="w-full h-full text-left p-1 shadow-sm transition-opacity hover:opacity-95 active:opacity-90 flex flex-col justify-between overflow-hidden border-0"
-      style={{ background: accentGradient }}
+      className="w-full h-full text-left p-1 shadow-sm transition-opacity hover:opacity-95 active:opacity-90 flex flex-col justify-between overflow-hidden"
+      style={
+        personal
+          ? {
+              backgroundColor: 'rgba(17,24,39,0.04)',
+              border: '1px dashed rgba(0,0,0,0.25)',
+            }
+          : { background: accentGradient, border: 0 }
+      }
     >
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-white/95 truncate leading-tight">
+      <span
+        className={`text-[10px] font-semibold uppercase tracking-wide truncate leading-tight ${
+          personal ? 'text-gray-700' : 'text-white/95'
+        }`}
+      >
         {service}
       </span>
-      <p className="font-semibold text-[11px] text-white truncate leading-tight mt-0.5">{clientName}</p>
-      <p className="text-[10px] text-white/85 leading-tight">{time}</p>
+      <p className={`font-semibold text-[11px] truncate leading-tight mt-0.5 ${personal ? 'text-gray-900' : 'text-white'}`}>
+        {personal ? personalTitle : clientName}
+      </p>
+      <p className={`text-[10px] leading-tight ${personal ? 'text-gray-600' : 'text-white/85'}`}>{time}</p>
     </button>
   );
 }

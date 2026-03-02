@@ -17,9 +17,11 @@ import { useApp } from '../contexts/AppContext';
 import { useAppColors } from '../hooks/useAppColors';
 import type { Client, Appointment, CalendarView } from '../types';
 import AppointmentForm from './AppointmentForm';
+import PersonalCommitmentForm from './PersonalCommitmentForm';
 import MonthView from './views/MonthView';
 import WeekView from './views/WeekView';
 import DayView from './views/DayView';
+import { isPersonalAppointment, loadPersonalAppointments, savePersonalAppointments } from '../lib/personalEvents';
 
 dayjs.locale('it');
 
@@ -45,11 +47,15 @@ export default function CalendarViewWithZoom() {
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
   const [currentView, setCurrentView] = useState<CalendarView>('day');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [personalAppointments, setPersonalAppointments] = useState<Appointment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
   const [showAppointmentDetails, setShowAppointmentDetails] = useState(false);
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
+  const [showPersonalForm, setShowPersonalForm] = useState(false);
+  const [showNewEntryChooser, setShowNewEntryChooser] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [editingPersonal, setEditingPersonal] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,6 +67,9 @@ export default function CalendarViewWithZoom() {
         setLoading(true);
         setError(null);
         
+        const personal = loadPersonalAppointments(appType);
+        setPersonalAppointments(personal);
+
         const [clientsData, appointmentsData] = await Promise.all([
           clientService.getAll(),
           appointmentService.getAll()
@@ -77,7 +86,7 @@ export default function CalendarViewWithZoom() {
     };
 
     loadData();
-  }, []);
+  }, [appType]);
 
   // Navigation handlers
   const handlePreviousMonth = () => setCurrentDate(currentDate.subtract(1, 'month'));
@@ -94,7 +103,20 @@ export default function CalendarViewWithZoom() {
 
   const handleNewAppointment = () => {
     setEditingAppointment(null);
+    setEditingPersonal(null);
+    setShowNewEntryChooser(true);
+  };
+
+  const openWorkAppointmentForm = () => {
+    setShowNewEntryChooser(false);
+    setEditingAppointment(null);
     setShowAppointmentForm(true);
+  };
+
+  const openPersonalCommitmentForm = () => {
+    setShowNewEntryChooser(false);
+    setEditingPersonal(null);
+    setShowPersonalForm(true);
   };
 
   // View handlers
@@ -103,6 +125,11 @@ export default function CalendarViewWithZoom() {
   };
 
   const handleEditAppointment = (appointment: Appointment) => {
+    if (isPersonalAppointment(appointment)) {
+      setEditingPersonal(appointment);
+      setShowPersonalForm(true);
+      return;
+    }
     setEditingAppointment(appointment);
     setShowAppointmentForm(true);
   };
@@ -128,12 +155,14 @@ export default function CalendarViewWithZoom() {
     setEditingAppointment(null);
   };
 
+  const allAppointments = [...appointments, ...personalAppointments];
+
   const getAppointmentsForDate = (date: Dayjs) => {
-    return appointments.filter(apt => dayjs(apt.data).isSame(date, 'day'));
+    return allAppointments.filter(apt => dayjs(apt.data).isSame(date, 'day'));
   };
 
   const getClientById = (clientId: string) => {
-    return clients.find(client => client.id === clientId);
+    return clients.find((client: Client) => client.id === clientId);
   };
 
   // View indicator data
@@ -227,7 +256,7 @@ export default function CalendarViewWithZoom() {
   const dateStripDays = Array.from({ length: 14 }, (_, i) => dateStripStart.add(i, 'day'));
 
   return (
-    <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor }}>
+    <div className="min-h-screen transition-colors duration-300 pt-14" style={{ backgroundColor }}>
       {/* Header navigazione: Indietro | Agenda | + */}
       <header
         className="sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
@@ -254,7 +283,7 @@ export default function CalendarViewWithZoom() {
           onClick={handleNewAppointment}
           className="flex h-9 w-9 items-center justify-center rounded-xl transition-opacity hover:opacity-90"
           style={{ color: accentColor }}
-          aria-label="Nuovo appuntamento"
+          aria-label="Nuovo evento"
         >
           <Plus className="h-6 w-6" />
         </button>
@@ -295,7 +324,7 @@ export default function CalendarViewWithZoom() {
                     key={day.format('YYYY-MM-DD')}
                     type="button"
                     onClick={() => setCurrentDate(day)}
-                    className="flex flex-col items-center min-w-[52px] py-2.5 px-2 rounded-xl font-bold text-sm transition-colors"
+                    className="flex flex-col items-center min-w-[52px] py-2.5 px-2 font-bold text-sm transition-colors"
                     style={
                       isSelected
                         ? { background: accentColor, color: surfaceColor }
@@ -337,7 +366,7 @@ export default function CalendarViewWithZoom() {
               {currentView === 'month' && (
                 <MonthView
                   currentDate={currentDate}
-                  appointments={appointments}
+                  appointments={allAppointments}
                   clients={clients}
                   onDateClick={handleDateClick}
                   onAppointmentClick={handleEditAppointment}
@@ -351,7 +380,7 @@ export default function CalendarViewWithZoom() {
               {currentView === 'week' && (
                 <WeekView
                   currentDate={currentDate}
-                  appointments={appointments}
+                  appointments={allAppointments}
                   clients={clients}
                   onDateClick={handleDateClick}
                   onAppointmentClick={handleEditAppointment}
@@ -365,7 +394,7 @@ export default function CalendarViewWithZoom() {
               {currentView === 'day' && (
                 <DayView
                   currentDate={currentDate}
-                  appointments={appointments}
+                  appointments={allAppointments}
                   clients={clients}
                   onDateClick={handleDateClick}
                   onAppointmentClick={handleEditAppointment}
@@ -428,8 +457,8 @@ export default function CalendarViewWithZoom() {
                         style={{ color: textSecondaryColor }}
                       >
                         {getAppointmentsForDate(selectedDate).length === 0
-                          ? 'Appuntamenti'
-                          : `${getAppointmentsForDate(selectedDate).length} ${getAppointmentsForDate(selectedDate).length === 1 ? 'appuntamento' : 'appuntamenti'}`
+                          ? 'Eventi'
+                          : `${getAppointmentsForDate(selectedDate).length} ${getAppointmentsForDate(selectedDate).length === 1 ? 'evento' : 'eventi'}`
                         }
                       </h2>
 
@@ -441,9 +470,9 @@ export default function CalendarViewWithZoom() {
                           >
                             <Calendar className="w-8 h-8" style={{ color: textSecondaryColor }} />
                           </div>
-                          <h3 className="text-lg font-bold mb-2" style={{ color: textPrimaryColor }}>Giornata libera</h3>
+                          <h3 className="text-lg font-bold mb-2" style={{ color: textPrimaryColor }}>Nessun evento</h3>
                           <p className="text-sm mb-6 max-w-xs mx-auto" style={{ color: textSecondaryColor }}>
-                            Nessun appuntamento programmato per questa data
+                            Nessun evento programmato per questa data
                           </p>
                           <button
                             type="button"
@@ -452,7 +481,7 @@ export default function CalendarViewWithZoom() {
                             style={{ background: accentGradient }}
                           >
                             <Plus className="w-5 h-5" />
-                            Aggiungi appuntamento
+                            Aggiungi evento
                           </button>
                         </div>
                       ) : (
@@ -460,6 +489,7 @@ export default function CalendarViewWithZoom() {
                           {getAppointmentsForDate(selectedDate)
                             .sort((a, b) => (a.ora || '00:00').localeCompare(b.ora || '00:00'))
                             .map((appointment) => {
+                              const isPersonal = isPersonalAppointment(appointment);
                               const client = getClientById(appointment.client_id);
                               const isCompleted = appointment.status === 'completed';
                               return (
@@ -470,15 +500,21 @@ export default function CalendarViewWithZoom() {
                                   className="w-full text-left px-4 py-3 rounded-xl border transition-colors outline-none"
                                   style={{
                                     backgroundColor: surfaceColor,
-                                    borderColor: isCompleted ? accentSofter : accentSoft,
+                                    borderColor: isPersonal ? accentSofter : (isCompleted ? accentSofter : accentSoft),
                                   }}
                                 >
                                   <div className="flex items-center gap-3">
                                     <div
                                       className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-sm shrink-0"
-                                      style={isCompleted ? { backgroundColor: textSecondaryColor } : { background: accentGradient }}
+                                      style={
+                                        isPersonal
+                                          ? { backgroundColor: textSecondaryColor }
+                                          : isCompleted
+                                            ? { backgroundColor: textSecondaryColor }
+                                            : { background: accentGradient }
+                                      }
                                     >
-                                      {client ? client.nome.charAt(0).toUpperCase() : '?'}
+                                      {isPersonal ? 'P' : (client ? client.nome.charAt(0).toUpperCase() : '?')}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2 flex-wrap">
@@ -486,8 +522,19 @@ export default function CalendarViewWithZoom() {
                                           className={`font-bold truncate block ${isCompleted ? 'line-through' : ''}`}
                                           style={{ color: isCompleted ? textSecondaryColor : textPrimaryColor }}
                                         >
-                                          {client ? `${client.nome} ${client.cognome}` : 'Cliente sconosciuto'}
+                                          {isPersonal
+                                            ? (appointment.tipo_trattamento || 'Impegno personale')
+                                            : (client ? `${client.nome} ${client.cognome}` : 'Cliente sconosciuto')
+                                          }
                                         </span>
+                                        {isPersonal && (
+                                          <span
+                                            className="inline-flex items-center px-2 py-0.5 rounded-xl text-xs font-semibold"
+                                            style={{ backgroundColor: accentSofter, color: textSecondaryColor }}
+                                          >
+                                            Personale
+                                          </span>
+                                        )}
                                         {appointment.ora && (
                                           <span
                                             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-xs font-medium"
@@ -502,20 +549,24 @@ export default function CalendarViewWithZoom() {
                                           </span>
                                         )}
                                       </div>
-                                      <p
-                                        className={`text-sm truncate mt-0.5 ${isCompleted ? 'line-through' : ''}`}
-                                        style={{ color: textSecondaryColor }}
-                                      >
-                                        {appointment.tipo_trattamento || 'Nessun trattamento specificato'}
-                                      </p>
-                                      <div className="mt-2">
-                                        <span
-                                          className={`text-sm font-bold ${isCompleted ? 'line-through' : ''}`}
-                                          style={{ color: isCompleted ? textSecondaryColor : accentDark }}
-                                        >
-                                          {formatCurrency(appointment.importo)}
-                                        </span>
-                                      </div>
+                                      {!isPersonal && (
+                                        <>
+                                          <p
+                                            className={`text-sm truncate mt-0.5 ${isCompleted ? 'line-through' : ''}`}
+                                            style={{ color: textSecondaryColor }}
+                                          >
+                                            {appointment.tipo_trattamento || 'Nessun trattamento specificato'}
+                                          </p>
+                                          <div className="mt-2">
+                                            <span
+                                              className={`text-sm font-bold ${isCompleted ? 'line-through' : ''}`}
+                                              style={{ color: isCompleted ? textSecondaryColor : accentDark }}
+                                            >
+                                              {formatCurrency(appointment.importo)}
+                                            </span>
+                                          </div>
+                                        </>
+                                      )}
                                     </div>
                                     {isCompleted && (
                                       <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shrink-0">
@@ -547,6 +598,84 @@ export default function CalendarViewWithZoom() {
             />
           </div>
         )}
+
+        {/* Personal Commitment Form — full screen */}
+        {showPersonalForm && (
+          <div className="fixed inset-0 z-50 flex flex-col h-screen min-h-full" style={{ backgroundColor: surfaceColor }}>
+            <PersonalCommitmentForm
+              commitment={editingPersonal}
+              selectedDate={selectedDate}
+              onCancel={() => {
+                setShowPersonalForm(false);
+                setEditingPersonal(null);
+              }}
+              onSave={(apt) => {
+                setPersonalAppointments((prev: Appointment[]) => {
+                  const next = prev.some((p: Appointment) => p.id === apt.id)
+                    ? prev.map((p: Appointment) => (p.id === apt.id ? apt : p))
+                    : [apt, ...prev];
+                  savePersonalAppointments(appType, next);
+                  return next;
+                });
+                setShowPersonalForm(false);
+                setEditingPersonal(null);
+              }}
+            />
+          </div>
+        )}
+
+        {/* New entry chooser */}
+        <Dialog
+          open={showNewEntryChooser}
+          onClose={() => setShowNewEntryChooser(false)}
+          maxWidth="xs"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: { xs: 2, sm: 3 },
+              overflow: 'hidden',
+              bgcolor: 'background.paper',
+            },
+            className: 'bg-white',
+          }}
+        >
+          <DialogContent sx={{ p: 0 }}>
+            <div className="px-5 pt-5 pb-4">
+              <h2 className="text-lg font-bold" style={{ color: textPrimaryColor }}>
+                Cosa vuoi inserire?
+              </h2>
+              <p className="text-sm mt-1" style={{ color: textSecondaryColor }}>
+                Scegli se registrare un appuntamento di lavoro o un impegno personale.
+              </p>
+            </div>
+            <div className="px-5 pb-5 space-y-3">
+              <button
+                type="button"
+                onClick={openWorkAppointmentForm}
+                className="w-full px-4 py-3 rounded-2xl font-semibold text-white shadow-lg"
+                style={{ background: accentGradient }}
+              >
+                Appuntamento di lavoro
+              </button>
+              <button
+                type="button"
+                onClick={openPersonalCommitmentForm}
+                className="w-full px-4 py-3 rounded-2xl font-semibold border"
+                style={{ borderColor: accentSofter, color: textPrimaryColor, backgroundColor: surfaceColor }}
+              >
+                Impegno personale
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowNewEntryChooser(false)}
+                className="w-full px-4 py-2 rounded-2xl font-semibold"
+                style={{ color: textSecondaryColor }}
+              >
+                Annulla
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
