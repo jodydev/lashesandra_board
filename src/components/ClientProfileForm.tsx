@@ -423,7 +423,7 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                         type="date"
                         value={formData.data_nascita || ''}
                         onChange={(e) => handlePersonalInfoChange('data_nascita', e.target.value)}
-                            className={`w-full px-4 py-3 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all duration-200 ${
+                            className={`w-2/3 px-4 py-3 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all duration-200 ${
                               validationErrors.data_nascita 
                                 ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500' 
                                 : `border-gray-200 dark:border-gray-600 focus:ring-2 ${colors.focusRing} focus:border-transparent`
@@ -827,7 +827,6 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                   </>
                 ) : (
                   <>
-                    <Save className="w-5 h-5 mr-3" />
                     Salva Scheda
                   </>
                 )}

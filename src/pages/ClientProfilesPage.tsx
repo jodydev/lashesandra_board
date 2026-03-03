@@ -263,9 +263,6 @@ const ClientProfilesPage: React.FC = () => {
               style={{ borderColor: accentSoft }}
             />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500 dark:text-gray-400">{filteredClients.length} clienti</span>
-          </div>
         </div>
 
         {/* Lista clienti in griglia (stile ClientList) */}
