@@ -5,6 +5,7 @@ import { useAppColors } from '../hooks/useAppColors';
 import { useAppointmentNotifications } from '../hooks/useAppointmentNotifications';
 import { useApp } from '../contexts/AppContext';
 import type { Client, Appointment } from '../types';
+import { formatCurrency } from '../lib/utils';
 import dayjs from 'dayjs';
 import {
   Users,
@@ -282,7 +283,7 @@ export default function HomePage() {
                   Entrate
                 </span>
               </div>
-              <p className="text-xl font-bold" style={{ color: textPrimaryColor }}>€{(stats.currentMonthRevenue / 1000).toFixed(1)}k</p>
+              <p className="text-xl font-bold" style={{ color: textPrimaryColor }}>{formatCurrency(stats.currentMonthRevenue)}</p>
               <p className="mt-1 text-xs font-semibold text-green-500">{stats.revenueTrend}</p>
               <div
                 className="absolute right-3 bottom-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white"

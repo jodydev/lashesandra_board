@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useCallback } from 'react';
+import React, { useMemo, useRef, useCallback, useState, useEffect } from 'react';
 import { Check, MoreHorizontal } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/it';
@@ -33,6 +33,19 @@ function parseMinutes(ora: string | undefined) {
 
 function minutesToTop(minutes: number) {
   return (minutes - START_HOUR * 60) * (PIXELS_PER_HOUR / 60);
+}
+
+function getInitials(fullName: string) {
+  const trimmed = fullName.trim();
+  if (!trimmed) return 'C';
+  const parts = trimmed.split(' ').filter(Boolean);
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  const first = parts[0]?.charAt(0) ?? '';
+  const last = parts[parts.length - 1]?.charAt(0) ?? '';
+  const initials = `${first}${last}`.toUpperCase();
+  return initials || 'C';
 }
 
 export default function DayView({
@@ -72,9 +85,23 @@ export default function DayView({
   );
 
   const isToday = currentDate.isSame(dayjs(), 'day');
-  const now = dayjs();
+
+  // Stato per linea oraria live
+  const [now, setNow] = useState(dayjs());
+
+  useEffect(() => {
+    if (!isToday) return;
+    const id = setInterval(() => {
+      setNow(dayjs());
+    }, 60 * 1000); // aggiorna ogni minuto
+    return () => clearInterval(id);
+  }, [isToday]);
+
   const nowMinutes = now.hour() * 60 + now.minute();
-  const showNowLine = isToday && nowMinutes >= START_HOUR * 60 && nowMinutes <= (START_HOUR + 12) * 60;
+  const showNowLine =
+    isToday &&
+    nowMinutes >= START_HOUR * 60 &&
+    nowMinutes <= (START_HOUR + 12) * 60;
   const timelineHeight = 12 * PIXELS_PER_HOUR;
 
   const dayLabel = DAY_LABELS[(currentDate.day() + 6) % 7];
@@ -142,14 +169,28 @@ export default function DayView({
             />
           ))}
 
-          {/* Linea ora corrente (stile Google: linea sottile + pallino a sinistra) */}
+          {/* Linea ora corrente: pillola rossa con orario + barra sfumata */}
           {showNowLine && (
             <div
-              className="absolute left-0 right-0 flex items-center z-10 pointer-events-none"
+              className="absolute left-0 right-0 z-10 pointer-events-none"
               style={{ top: minutesToTop(nowMinutes) }}
             >
-              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: accentColor }} />
-              <div className="flex-1 h-0.5 ml-1" style={{ backgroundColor: accentColor }} />
+              <div className="flex items-center gap-2">
+                <div
+                  className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-white"
+                  style={{ backgroundColor: '#EF4444' }}
+                >
+                  {now.format('HH:mm')}
+                </div>
+                <div className="relative flex-1">
+                  <div
+                    className="h-[2px] rounded-full"
+                    style={{
+                      backgroundColor: "#EF4444",
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           )}
 
@@ -268,12 +309,13 @@ function DayViewCard({
   const endTime = appointment.ora
     ? formatTime(dayjs(`2000-01-01 ${appointment.ora}`).add(1, 'hour').format('HH:mm'))
     : '';
+  const initials = getInitials(clientName);
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="w-full h-full text-left p-3 shadow-sm transition-opacity hover:opacity-95 active:opacity-90 flex flex-col justify-between overflow-hidden"
+      className="w-full h-92 text-left px-3.5 py-3.5 shadow-md transition-opacity hover:opacity-95 active:opacity-90 flex flex-col justify-between overflow-hidden rounded-2xl"
       style={
         personal
           ? {
@@ -297,13 +339,22 @@ function DayViewCard({
           <MoreHorizontal className={`w-4 h-4 flex-shrink-0 ${personal ? 'text-gray-700' : 'text-white/90'}`} />
         )}
       </div>
-      <p className={`font-semibold text-sm truncate mt-0.5 ${personal ? 'text-gray-900' : 'text-white'}`}>
+      <p className={`font-semibold text-sm truncate mt-1 ${personal ? 'text-gray-900' : 'text-white'}`}>
         {personal ? personalTitle : clientName}
       </p>
-      <p className={`text-xs mt-0.5 ${personal ? 'text-gray-600' : 'text-white/85'}`}>
-        {startTime}
-        {endTime ? ` – ${endTime}` : ''}
-      </p>
+
+      {!personal && (
+        <p className="text-[11px] mt-0.5 text-white/85 truncate">
+          Appuntamento
+        </p>
+      )}
+
+      <div className="mt-2 flex items-end justify-end gap-2">
+        <p className={`text-xs font-bold ${personal ? 'text-gray-700' : 'text-white/90'}`}>
+          {startTime}
+          {endTime ? ` – ${endTime}` : ''}
+        </p>
+      </div>
     </button>
   );
 }

@@ -183,6 +183,7 @@ export const statsService = {
 
     const totalRevenue = appointments?.reduce((sum, apt) => sum + (apt.importo || 0), 0) || 0;
     const totalClients = clients?.length || 0;
+    const totalAppointments = appointments?.length || 0;
     const averageRevenuePerClient = totalClients > 0 ? totalRevenue / totalClients : 0;
 
     // Calculate top clients by revenue
@@ -204,12 +205,13 @@ export const statsService = {
     return {
       totalClients,
       totalRevenue,
+      totalAppointments,
       averageRevenuePerClient,
       topClients
     };
   },
 
-  async getDailyStats(year: number, month: number): Promise<Array<{ day: number; revenue: number; clients: number }>> {
+  async getDailyStats(year: number, month: number): Promise<Array<{ day: number; revenue: number; clients: number; appointments: number }>> {
     const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
     const endDate = new Date(year, month, 0).toISOString().split('T')[0];
 
@@ -235,7 +237,8 @@ export const statsService = {
     const dailyStats = Array.from({ length: daysInMonth }, (_, i) => ({
       day: i + 1,
       revenue: 0,
-      clients: 0
+      clients: 0,
+      appointments: 0
     }));
 
     // Process appointments
@@ -243,6 +246,7 @@ export const statsService = {
       const day = new Date(apt.data).getDate();
       if (day >= 1 && day <= daysInMonth) {
         dailyStats[day - 1].revenue += apt.importo || 0;
+        dailyStats[day - 1].appointments += 1;
       }
     });
 
@@ -257,7 +261,7 @@ export const statsService = {
     return dailyStats;
   },
 
-  async getTreatmentDistribution(year: number, month: number): Promise<Array<{ name: string; value: number; color: string }>> {
+  async getTreatmentDistribution(year: number, month: number): Promise<Array<{ name: string; value: number; count: number; color: string }>> {
     const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
     const endDate = new Date(year, month, 0).toISOString().split('T')[0];
 
@@ -297,6 +301,7 @@ export const statsService = {
     return treatments.map((treatment, index) => ({
       name: treatment.name,
       value: treatment.value,
+      count: treatment.count,
       color: colors[index % colors.length]
     }));
   }

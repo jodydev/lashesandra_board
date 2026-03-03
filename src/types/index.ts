@@ -35,11 +35,19 @@ export interface ClientWithAppointments extends Client {
 export interface MonthlyStats {
   totalClients: number;
   totalRevenue: number;
+  totalAppointments: number;
   averageRevenuePerClient: number;
   topClients: Array<{
     client: Client;
     revenue: number;
   }>;
+}
+
+export interface TreatmentWithCount {
+  name: string;
+  value: number;
+  count: number;
+  color: string;
 }
 
 export interface CalendarEvent {
