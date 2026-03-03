@@ -325,62 +325,68 @@ export default function AppointmentsConfirmationPage() {
               return (
                 <div
                   key={appointment.id}
-                  className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors overflow-hidden"
                 >
-                  <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
-                    <div
-                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-white font-semibold text-xs sm:text-sm shadow-lg"
-                      style={{ background: accentGradient }}
-                    >
-                      {client.nome.charAt(0)}
-                      {client.cognome.charAt(0)}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
-                        {client.nome} {client.cognome}
-                      </div>
-                      <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                        {formatDateForDisplay(dayjs(appointment.data))} {appointment.ora && `• ${appointment.ora.slice(0, 5)}`}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4 flex-shrink-0">
-                    <span className="inline-flex rounded-xl px-2 sm:px-3 py-1 text-xs font-medium" style={statusConfig.badgeStyle}>
-                      {statusConfig.label}
-                    </span>
-                    <div className="text-right">
+                  <div className="flex items-center justify-between p-3 sm:p-4">
+                    <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
                       <div
-                        className="font-bold text-sm sm:text-base"
-                        style={{ background: accentGradient, WebkitBackgroundClip: 'text', color: 'transparent' }}
+                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-white font-semibold text-xs sm:text-sm shadow-lg"
+                        style={{ background: accentGradient }}
                       >
-                        {formatCurrency(appointment.importo)}
+                        {client.nome.charAt(0)}
+                        {client.cognome.charAt(0)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
+                          {client.nome} {client.cognome}
+                        </div>
+                        <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                          {formatDateForDisplay(dayjs(appointment.data))} {appointment.ora && `• ${appointment.ora.slice(0, 5)}`}
+                        </div>
                       </div>
                     </div>
-                    {appointment.status === 'pending' && (
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleStatusUpdate(appointment.id, 'completed')}
-                          disabled={updating === appointment.id}
-                          className="p-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white transition-colors disabled:opacity-50"
+                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-4 flex-shrink-0">
+                      <span className="inline-flex rounded-xl px-2 sm:px-3 py-1 text-xs font-medium" style={statusConfig.badgeStyle}>
+                        {statusConfig.label}
+                      </span>
+                      <div className="text-right">
+                        <div
+                          className="font-bold text-sm sm:text-base"
+                          style={{ background: accentGradient, WebkitBackgroundClip: 'text', color: 'transparent' }}
                         >
-                          {updating === appointment.id ? (
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          ) : (
-                            <CheckCircle2 className="w-4 h-4" />
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleStatusUpdate(appointment.id, 'cancelled')}
-                          disabled={updating === appointment.id}
-                          className="p-2 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-colors disabled:opacity-50"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                          {formatCurrency(appointment.importo)}
+                        </div>
                       </div>
-                    )}
+                    </div>
                   </div>
+                  {appointment.status === 'pending' && (
+                    <div className="flex w-full gap-2 sm:gap-3 p-2 pt-0 sm:pt-0">
+                      <button
+                        type="button"
+                        onClick={() => handleStatusUpdate(appointment.id, 'completed')}
+                        disabled={updating === appointment.id}
+                        className="flex-1 min-h-[48px] sm:min-h-[52px] flex items-center justify-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-base sm:text-lg transition-colors disabled:opacity-50"
+                      >
+                        {updating === appointment.id ? (
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" />
+                            <span>Completa</span>
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleStatusUpdate(appointment.id, 'cancelled')}
+                        disabled={updating === appointment.id}
+                        className="flex-1 min-h-[48px] sm:min-h-[52px] flex items-center justify-center gap-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-base sm:text-lg transition-colors disabled:opacity-50"
+                      >
+                        <X className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <span>Annulla</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
