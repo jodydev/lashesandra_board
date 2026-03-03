@@ -256,7 +256,6 @@ src/
 ├── contexts/           # Context providers
 │   └── AppContext.tsx  # Context per gestione app attiva
 ├── pages/              # Pagine dell'applicazione
-│   └── AppSelector.tsx # Pagina di selezione app
 ├── lib/                # Servizi e utilities
 │   ├── supabase.ts     # Client Supabase originale
 │   └── supabaseService.ts # Servizio dinamico per tabelle

@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useCallback, useState, useEffect } from 'react';
-import { Check, MoreHorizontal } from 'lucide-react';
+import { Check, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/it';
 import type { CalendarViewProps, Appointment } from '../../types';
@@ -84,6 +84,49 @@ export default function DayView({
     [currentDate, appointments]
   );
 
+  /** Per ogni appuntamento: columnIndex (0-based) e totalColumns nella sua fascia sovrapposta */
+  const appointmentLayout = useMemo(() => {
+    const APT_DURATION_M = 60;
+    const items = dayAppointments.map((apt) => ({
+      appointment: apt,
+      startM: parseMinutes(apt.ora),
+      endM: parseMinutes(apt.ora) + APT_DURATION_M,
+    }));
+    const columnIndex: number[] = [];
+    const totalColumns: number[] = [];
+
+    for (let i = 0; i < items.length; i++) {
+      const used = new Set<number>();
+      for (let j = 0; j < i; j++) {
+        const a = items[i];
+        const b = items[j];
+        const overlap = a.startM < b.endM && b.startM < a.endM;
+        if (overlap) used.add(columnIndex[j]);
+      }
+      let col = 0;
+      while (used.has(col)) col++;
+      columnIndex[i] = col;
+    }
+
+    for (let i = 0; i < items.length; i++) {
+      let maxCol = columnIndex[i];
+      for (let j = 0; j < items.length; j++) {
+        if (i === j) continue;
+        const a = items[i];
+        const b = items[j];
+        const overlap = a.startM < b.endM && b.startM < a.endM;
+        if (overlap && columnIndex[j] > maxCol) maxCol = columnIndex[j];
+      }
+      totalColumns[i] = maxCol + 1;
+    }
+
+    return dayAppointments.map((apt, i) => ({
+      appointment: apt,
+      columnIndex: columnIndex[i],
+      totalColumns: totalColumns[i],
+    }));
+  }, [dayAppointments]);
+
   const isToday = currentDate.isSame(dayjs(), 'day');
 
   // Stato per linea oraria live
@@ -124,11 +167,37 @@ export default function DayView({
     [onPreviousDay, onNextDay]
   );
 
+  const monthLabel = currentDate.format('MMMM');
+
   return (
     <div
       className="relative border overflow-hidden min-h-[420px] mb-40"
       style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
     >
+      {/* Header: mese + frecce */}
+      <header className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: accentSofter }}>
+        <button
+          type="button"
+          onClick={onPreviousDay}
+          className="p-2 rounded-xl hover:opacity-80"
+          style={{ color: textSecondaryColor }}
+          aria-label="Giorno precedente"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <h2 className="text-base font-bold capitalize" style={{ color: textPrimaryColor }}>
+          {monthLabel}
+        </h2>
+        <button
+          type="button"
+          onClick={onNextDay}
+          className="p-2 rounded-xl hover:opacity-80"
+          style={{ color: textSecondaryColor }}
+          aria-label="Giorno successivo"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </header>
 
       {/* Area swipeabile: asse orario + timeline */}
       <div
@@ -195,7 +264,7 @@ export default function DayView({
           )}
 
           {dayAppointments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center opacity-90 animate-fade-in">
+            <div className="flex flex-col items-center justify-center py-16 text-center opacity-90">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="mb-4 w-12 h-12 text-gray-300"
@@ -259,22 +328,41 @@ export default function DayView({
               </span>
             </div>
           ) : (
-            dayAppointments.map((appointment: Appointment) => {
+            appointmentLayout.map(({ appointment, columnIndex, totalColumns }) => {
               const startM = parseMinutes(appointment.ora);
               const durationM = 60;
               const top = minutesToTop(startM);
               const height = Math.max(44, (durationM / 60) * PIXELS_PER_HOUR - 4);
+              const aptDateTime = dayjs(appointment.data)
+                .hour(Math.floor(startM / 60))
+                .minute(startM % 60)
+                .second(0)
+                .millisecond(0);
+              const isPast = aptDateTime.isBefore(now);
+              const gapPercent = 2;
+              const widthPercent = totalColumns > 1
+                ? (100 - gapPercent * (totalColumns - 1)) / totalColumns
+                : 100;
+              const leftPercent = totalColumns > 1
+                ? columnIndex * (widthPercent + gapPercent)
+                : 0;
               return (
                 <div
                   key={appointment.id}
-                  className="absolute left-0 right-0"
-                  style={{ top: top + 2, height: height - 1 }}
+                  className="absolute min-w-0"
+                  style={{
+                    top: top + 2,
+                    height: height - 1,
+                    left: `${leftPercent}%`,
+                    width: `${widthPercent}%`,
+                  }}
                 >
                   <DayViewCard
                     appointment={appointment}
                     client={getClientById(appointment.client_id)}
                     onClick={() => onAppointmentClick(appointment)}
                     accentGradient={accentGradient}
+                    isPast={isPast}
                   />
                 </div>
               );
@@ -292,6 +380,7 @@ interface DayViewCardProps {
   readonly client: { nome: string; cognome: string } | undefined;
   readonly onClick: () => void;
   readonly accentGradient: string;
+  readonly isPast: boolean;
 }
 
 function DayViewCard({
@@ -299,6 +388,7 @@ function DayViewCard({
   client,
   onClick,
   accentGradient,
+  isPast,
 }: Readonly<DayViewCardProps>) {
   const isCompleted = appointment.status === 'completed';
   const personal = isPersonalAppointment(appointment);
@@ -309,48 +399,58 @@ function DayViewCard({
   const endTime = appointment.ora
     ? formatTime(dayjs(`2000-01-01 ${appointment.ora}`).add(1, 'hour').format('HH:mm'))
     : '';
-  const initials = getInitials(clientName);
+
+  const isPastStyle = isPast && !personal;
+  const pastCardStyle = {
+    backgroundColor: '#e5e7eb',
+    border: '1px solid rgba(107, 114, 128, 0.25)',
+  };
+
+  const labelText = isPast ? 'Appuntamento Completato' : 'Appuntamento da svolgere';
+  const mutedPalette = isPastStyle; // solo appuntamenti lavoro passati usano grigio
+  const serviceClass = personal ? 'text-white/95' : (mutedPalette ? 'text-gray-600' : 'text-white/95');
+  const titleClass = personal ? 'text-white' : (isPastStyle ? 'text-gray-700' : 'text-white');
+  const labelClass = personal ? 'text-white/85' : (isPastStyle ? 'text-gray-500' : 'text-white/85');
+  const timeClass = personal ? 'text-white/90' : (mutedPalette ? 'text-gray-600' : 'text-white/90');
+  const iconClass = personal ? 'text-white/90' : (mutedPalette ? 'text-gray-600' : 'text-white/90');
+
+  const cardStyle = personal
+    ? { backgroundColor: '#000000', border: 0 }
+    : (isPastStyle ? pastCardStyle : { background: accentGradient, border: 0 });
+
+  const buttonClass = isPast
+    ? 'shadow-sm hover:shadow-md opacity-90 hover:opacity-100 active:opacity-95'
+    : 'shadow-md hover:opacity-95 active:opacity-90';
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="w-full h-92 text-left px-3.5 py-3.5 shadow-md transition-opacity hover:opacity-95 active:opacity-90 flex flex-col justify-between overflow-hidden rounded-2xl"
-      style={
-        personal
-          ? {
-              backgroundColor: 'rgba(17,24,39,0.04)',
-              border: '1px dashed rgba(0,0,0,0.25)',
-            }
-          : { background: accentGradient, border: 0 }
-      }
+      className={`w-full h-92 text-left px-3.5 py-3.5 flex flex-col justify-between overflow-hidden rounded-2xl ${buttonClass}`}
+      style={cardStyle}
     >
       <div className="flex justify-between items-start gap-2">
-        <span
-          className={`text-[11px] font-semibold uppercase tracking-wide truncate ${
-            personal ? 'text-gray-700' : 'text-white/95'
-          }`}
-        >
+        <span className={`text-[11px] font-semibold uppercase tracking-wide truncate ${serviceClass}`}>
           {service}
         </span>
         {isCompleted ? (
-          <Check className={`w-4 h-4 flex-shrink-0 ${personal ? 'text-gray-700' : 'text-white/90'}`} />
+          <Check className={`w-4 h-4 flex-shrink-0 ${iconClass}`} />
         ) : (
-          <MoreHorizontal className={`w-4 h-4 flex-shrink-0 ${personal ? 'text-gray-700' : 'text-white/90'}`} />
+          <MoreHorizontal className={`w-4 h-4 flex-shrink-0 ${iconClass}`} />
         )}
       </div>
-      <p className={`font-semibold text-sm truncate mt-1 ${personal ? 'text-gray-900' : 'text-white'}`}>
+      <p className={`font-semibold text-sm truncate mt-1 ${titleClass}`}>
         {personal ? personalTitle : clientName}
       </p>
 
       {!personal && (
-        <p className="text-[11px] mt-0.5 text-white/85 truncate">
-          Appuntamento
+        <p className={`text-[11px] mt-0.5 truncate ${labelClass}`}>
+          {labelText}
         </p>
       )}
 
       <div className="mt-2 flex items-end justify-end gap-2">
-        <p className={`text-xs font-bold ${personal ? 'text-gray-700' : 'text-white/90'}`}>
+        <p className={`text-xs font-bold ${timeClass}`}>
           {startTime}
           {endTime ? ` – ${endTime}` : ''}
         </p>

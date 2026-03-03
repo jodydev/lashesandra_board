@@ -60,15 +60,12 @@ export default function MonthView({
     <div
       className="overflow-hidden h-screen"
     >
-      {/* Header: mese + navigazione */}
-      <div
-        className="flex items-center justify-between border-b bg-white"
-        style={{ borderColor: accentSofter }}
-      >
+      {/* Header: mese + frecce */}
+      <header className="flex items-center justify-between px-4 py-3 border-b bg-white" style={{ borderColor: accentSofter }}>
         <button
           type="button"
           onClick={onPreviousMonth}
-          className="p-2 rounded-xl transition-colors"
+          className="p-2 rounded-xl hover:opacity-80"
           style={{ color: textSecondaryColor }}
           aria-label="Mese precedente"
         >
@@ -80,13 +77,13 @@ export default function MonthView({
         <button
           type="button"
           onClick={onNextMonth}
-          className="p-2 rounded-xl transition-colors"
+          className="p-2 rounded-xl hover:opacity-80"
           style={{ color: textSecondaryColor }}
           aria-label="Mese successivo"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
-      </div>
+      </header>
 
       {/* Intestazione giorni settimana */}
       <div className="grid grid-cols-7 border-b bg-white" style={{ borderColor: accentSofter }}>
@@ -122,13 +119,13 @@ export default function MonthView({
                   className="min-h-[118px] sm:min-h-[140px] border-r last:border-r-0 flex flex-col"
                   style={{
                     borderColor: accentSofter,
-                    backgroundColor: !isCurrentMonth ? accentSofter : surfaceColor,
+                    backgroundColor: !isCurrentMonth ? "#e5e7eb" : surfaceColor,
                   }}
                 >
                   <button
                     type="button"
                     onClick={() => onDateClick(day)}
-                    className="flex-shrink-0 w-9 h-9 sm:w-11 sm:h-11 mt-2 mx-2 sm:mx-2.5 rounded-full text-base sm:text-lg font-bold transition-colors"
+                    className="flex-shrink-0 w-9 h-9 sm:w-11 sm:h-11 mt-2 mx-2 sm:mx-2.5 rounded-full text-base sm:text-lg font-bold"
                     style={
                       !isCurrentMonth
                         ? { color: textSecondaryColor }
@@ -207,17 +204,17 @@ function MonthViewMiniCard({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left rounded-md border-l-2 pl-1.5 pr-1 py-0.5 transition-colors ${!isCurrentMonth && 'opacity-60'} ${isCompleted && 'opacity-70'}`}
+      className={`w-full text-left rounded-md border-l-2 pl-1.5 pr-1 py-0.5 ${!isCurrentMonth && 'opacity-60'} ${isCompleted && 'opacity-70'}`}
       style={{
         borderColor: personal ? textSecondaryColor : accentSoft,
         backgroundColor: personal ? 'rgba(17,24,39,0.04)' : accentSofter,
       }}
     >
       <span
-        className="text-[10px] font-semibold block truncate"
+        className="text-[10px] font-semibold block truncate text-left"
         style={{ color: textSecondaryColor }}
       >
-        {personal ? `${time} · PERSONALE · ${personalTitle}` : `${time} · ${clientName}`}
+        {personal ? `${personalTitle} · ${time}` : `${clientName} · ${time}`}
       </span>
     </button>
   );

@@ -115,6 +115,11 @@ export default function AppointmentsPage() {
     setSelectedAppointment(null);
   };
 
+  const todayRef = new Date();
+  const startOfWeekRef = new Date(todayRef);
+  startOfWeekRef.setDate(todayRef.getDate() - todayRef.getDay());
+  const startOfMonthRef = new Date(todayRef.getFullYear(), todayRef.getMonth(), 1);
+
   // Filter and search appointments
   const filteredAppointments = appointments.filter(appointment => {
     const client = getClientById(appointment.client_id);
@@ -126,32 +131,67 @@ export default function AppointmentsPage() {
       formatDate(appointment.data).toLowerCase().includes(searchTerm.toLowerCase());
     
     const appointmentDate = new Date(appointment.data);
-    const today = new Date();
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    
     let matchesFilter = true;
     if (filterType === 'oggi') {
-      matchesFilter = appointmentDate.toDateString() === today.toDateString();
+      matchesFilter = appointmentDate.toDateString() === todayRef.toDateString();
     } else if (filterType === 'questa_settimana') {
-      matchesFilter = appointmentDate >= startOfWeek;
+      matchesFilter = appointmentDate >= startOfWeekRef;
     } else if (filterType === 'questo_mese') {
-      matchesFilter = appointmentDate >= startOfMonth;
+      matchesFilter = appointmentDate >= startOfMonthRef;
     }
     
     return matchesSearch && matchesFilter;
   });
 
+  // Ordina e raggruppa: timestamp per ordinamento (data + ora)
+  const getAppointmentSortKey = (a: Appointment) => {
+    const d = new Date(a.data);
+    if (a.ora) {
+      const [h, m] = a.ora.split(':').map(Number);
+      d.setHours(h, m ?? 0, 0, 0);
+    } else {
+      d.setHours(23, 59, 59, 999);
+    }
+    return d.getTime();
+  };
+
+  const todayList = filteredAppointments
+    .filter(a => new Date(a.data).toDateString() === todayRef.toDateString() && a.status !== 'completed')
+    .sort((a, b) => getAppointmentSortKey(a) - getAppointmentSortKey(b));
+
+  const scheduledList = filteredAppointments
+    .filter(a => {
+      const d = new Date(a.data);
+      const isToday = d.toDateString() === todayRef.toDateString();
+      return a.status !== 'completed' && !isToday && d >= todayRef;
+    })
+    .sort((a, b) => getAppointmentSortKey(a) - getAppointmentSortKey(b));
+
+  const completedList = filteredAppointments
+    .filter(a => a.status === 'completed')
+    .sort((a, b) => getAppointmentSortKey(b) - getAppointmentSortKey(a));
+
+  // Appuntamenti “passati” non completati (programmati in passato): mostrati dopo i programmati
+  const pastUnscheduledList = filteredAppointments
+    .filter(a => {
+      const d = new Date(a.data);
+      const isToday = d.toDateString() === todayRef.toDateString();
+      return a.status !== 'completed' && !isToday && d < todayRef;
+    })
+    .sort((a, b) => getAppointmentSortKey(b) - getAppointmentSortKey(a));
+
+  const sections: { id: string; title: string; subtitle?: string; list: Appointment[]; icon: typeof Clock }[] = [
+    { id: 'oggi', title: 'Oggi', subtitle: 'Prossimi in programma', list: todayList, icon: Clock },
+    { id: 'programmati', title: 'Prossimi appuntamenti', subtitle: 'Programmati', list: scheduledList, icon: Calendar },
+    { id: 'passati', title: 'Passati non completati', subtitle: undefined, list: pastUnscheduledList, icon: Calendar },
+    { id: 'completati', title: 'Completati', subtitle: 'Ultimi completati', list: completedList, icon: Check },
+  ];
+
   // Calculate statistics
-  const today = new Date();
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay());
-  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const totalAppointments = appointments.length;
-  const todayAppointments = appointments.filter(a => new Date(a.data).toDateString() === today.toDateString()).length;
-  const weekAppointments = appointments.filter(a => new Date(a.data) >= startOfWeek).length;
-  const monthAppointments = appointments.filter(a => new Date(a.data) >= startOfMonth).length;
+  const todayAppointments = appointments.filter(a => new Date(a.data).toDateString() === todayRef.toDateString()).length;
+  const weekAppointments = appointments.filter(a => new Date(a.data) >= startOfWeekRef).length;
+  const monthAppointments = appointments.filter(a => new Date(a.data) >= startOfMonthRef).length;
   const totalRevenue = appointments.reduce((sum, a) => sum + a.importo, 0);
   const averageRevenue = totalAppointments > 0 ? totalRevenue / totalAppointments : 0;
 
@@ -324,127 +364,171 @@ export default function AppointmentsPage() {
           </div>
         )}
 
-        {/* Lista appuntamenti in griglia (stile ClientList) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-          {filteredAppointments.map((appointment) => {
-            const client = getClientById(appointment.client_id);
-            const statusInfo = getStatusInfo(appointment);
+        {/* Lista appuntamenti per sezione: Oggi → Programmati → Passati → Completati */}
+        <div className="space-y-8 sm:space-y-10">
+          {sections.map((section) => {
+            if (section.list.length === 0) return null;
+            const isOggi = section.id === 'oggi';
+            const isCompletati = section.id === 'completati';
+            const isPassati = section.id === 'passati';
+            const SectionIcon = section.icon;
             return (
-              <div
-                key={appointment.id}
-                className="group relative rounded-2xl border p-4 shadow-lg sm:p-6"
-                style={{
-                  background: statusInfo.isCompleted
-                    ? 'linear-gradient(135deg, rgba(243,244,246,0.95) 0%, rgba(229,231,235,0.9) 100%)'
-                    : `linear-gradient(135deg, ${surfaceColor}F8, rgba(255,255,255,0.9))`,
-                  borderColor: accentSofter,
-                }}
-              >
-                <div className="mb-4 flex items-start justify-between">
-                  <div className="flex flex-1 min-w-0 items-center space-x-3 sm:space-x-4">
-                    <div className="relative flex-shrink-0">
+              <section key={section.id} className="space-y-4">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span
+                    className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold"
+                    style={
+                      isOggi
+                        ? { backgroundColor: '#FEF3C7', color: '#B45309' }
+                        : isCompletati
+                          ? { backgroundColor: '#DCFCE7', color: '#047857' }
+                          : isPassati
+                            ? { backgroundColor: '#FEE2E2', color: '#B91C1C' }
+                            : { background: accentGradient, color: '#fff' }
+                    }
+                  >
+                    <SectionIcon className="h-4 w-4" />
+                    {section.title}
+                    <span className="font-normal opacity-90">({section.list.length})</span>
+                  </span>
+                  {section.subtitle && (
+                    <span className="text-sm" style={{ color: textSecondaryColor }}>
+                      {section.subtitle}
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                  {section.list.map((appointment) => {
+                    const client = getClientById(appointment.client_id);
+                    const statusInfo = getStatusInfo(appointment);
+                    let cardBackground: string;
+                    let cardBorder: string;
+                    if (isCompletati) {
+                      cardBackground = 'linear-gradient(135deg, #BBF7D0 0%, #22C55E 100%)';
+                      cardBorder = '#A7F3D0';
+                    } else if (isOggi) {
+                      cardBackground = `linear-gradient(135deg, ${surfaceColor} 0%, #FEFCE8 100%)`;
+                      cardBorder = '#FCD34D';
+                    } else if (isPassati) {
+                      cardBackground = 'linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 50%)';
+                      cardBorder = '#FECACA';
+                    } else {
+                      cardBackground = `linear-gradient(135deg, ${surfaceColor} 0%, ${accentSofter} 100%)`;
+                      cardBorder = accentSoft;
+                    }
+                    return (
                       <div
-                        className={`flex h-12 w-12 items-center justify-center rounded-xl text-base font-semibold text-white shadow-lg sm:h-14 sm:w-14 sm:text-lg ${colors.shadowPrimary}`}
-                        style={{ background: statusInfo.isCompleted ? 'linear-gradient(135deg, #9CA3AF, #6B7280)' : accentGradient }}
+                        key={appointment.id}
+                        className="group relative rounded-2xl border-2 p-4 shadow-lg sm:p-6 transition-shadow hover:shadow-xl"
+                        style={{ background: cardBackground, borderColor: cardBorder }}
                       >
-                        {client ? client.nome.charAt(0).toUpperCase() : '?'}
-                      </div>
-                      {statusInfo.isCompleted && (
-                        <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-5 sm:w-5">
-                          <Check className="h-2 w-2 sm:h-3 sm:w-3" />
+                        <div className="mb-4 flex items-start justify-between">
+                          <div className="flex flex-1 min-w-0 items-center space-x-3 sm:space-x-4">
+                            <div className="relative flex-shrink-0">
+                              <div
+                                className={`flex h-12 w-12 items-center justify-center rounded-xl text-base font-semibold text-white shadow-lg sm:h-14 sm:w-14 sm:text-lg ${colors.shadowPrimary}`}
+                                style={{ background: statusInfo.isCompleted ? 'linear-gradient(135deg, #22C55E, #047857)' : accentGradient }}
+                              >
+                                {client ? client.nome.charAt(0).toUpperCase() : '?'}
+                              </div>
+                              {statusInfo.isCompleted && (
+                                <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-5 sm:w-5">
+                                  <Check className="h-2 w-2 sm:h-3 sm:w-3" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <h3
+                                className="truncate text-sm font-semibold dark:text-white sm:text-lg"
+                                style={{
+                                  color: statusInfo.isCompleted ? '#6B7280' : textPrimaryColor,
+                                  textDecoration: statusInfo.isCompleted ? 'line-through' : 'none',
+                                }}
+                              >
+                                {client ? `${client.nome} ${client.cognome}` : 'Cliente non trovato'}
+                              </h3>
+                              <span
+                                className="inline-flex items-center gap-1 rounded-xl px-2 py-1 text-xs font-medium sm:px-2.5"
+                                style={statusInfo.badgeStyle}
+                              >
+                                {statusInfo.isCompleted && <Check className="h-3 w-3" />}
+                                {statusInfo.status}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex flex-shrink-0 items-center space-x-1 sm:space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => handleEditAppointment(appointment)}
+                              className="rounded-xl border bg-white/70 p-2 hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
+                              style={{ borderColor: accentSofter }}
+                            >
+                              <Edit3 className="h-3 w-3 text-gray-600 sm:h-4 sm:w-4 dark:text-gray-400" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAppointment(appointment)}
+                              className="rounded-xl border bg-white/70 p-2 hover:bg-red-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-red-900/30"
+                              style={{ borderColor: '#FECACA' }}
+                            >
+                              <Trash2 className="h-3 w-3 text-gray-600 sm:h-4 sm:w-4 dark:text-gray-400" />
+                            </button>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <h3
-                        className="truncate text-sm font-semibold dark:text-white sm:text-lg"
-                        style={{
-                          color: statusInfo.isCompleted ? '#6B7280' : textPrimaryColor,
-                          textDecoration: statusInfo.isCompleted ? 'line-through' : 'none',
-                        }}
-                      >
-                        {client ? `${client.nome} ${client.cognome}` : 'Cliente non trovato'}
-                      </h3>
-                      <span
-                        className="inline-flex items-center gap-1 rounded-xl px-2 py-1 text-xs font-medium sm:px-2.5"
-                        style={statusInfo.badgeStyle}
-                      >
-                        {statusInfo.isCompleted && <Check className="h-3 w-3" />}
-                        {statusInfo.status}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-shrink-0 items-center space-x-1 sm:space-x-2">
-                    <button
-                      type="button"
-                      onClick={() => handleEditAppointment(appointment)}
-                      className="rounded-xl border bg-white/70 p-2 hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
-                      style={{ borderColor: accentSofter }}
-                    >
-                      <Edit3 className="h-3 w-3 text-gray-600 sm:h-4 sm:w-4 dark:text-gray-400" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteAppointment(appointment)}
-                      className="rounded-xl border bg-white/70 p-2 hover:bg-red-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-red-900/30"
-                      style={{ borderColor: '#FECACA' }}
-                    >
-                      <Trash2 className="h-3 w-3 text-gray-600 sm:h-4 sm:w-4 dark:text-gray-400" />
-                    </button>
-                  </div>
-                </div>
 
-                {/* Dettagli appuntamento (stile righe con icona come ClientList) */}
-                <div className="mb-4 space-y-2 sm:space-y-3">
-                  <div className="flex items-center space-x-3 text-xs sm:text-sm">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 text-gray-600 shadow-inner dark:bg-gray-800 dark:text-gray-400">
-                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </div>
-                    <span className="font-medium text-gray-700 dark:text-gray-300" style={{ textDecoration: statusInfo.isCompleted ? 'line-through' : 'none' }}>
-                      {formatDate(appointment.data)}
-                    </span>
-                  </div>
-                  {appointment.ora && (
-                    <div className="flex items-center space-x-3 text-xs sm:text-sm">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 text-gray-600 shadow-inner dark:bg-gray-800 dark:text-gray-400">
-                        <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                      </div>
-                      <span className="font-medium text-gray-700 dark:text-gray-300" style={{ textDecoration: statusInfo.isCompleted ? 'line-through' : 'none' }}>
-                        {appointment.ora.slice(0, 5)}
-                      </span>
-                    </div>
-                  )}
-                  {appointment.tipo_trattamento && (
-                    <div className="flex items-center space-x-3 text-xs sm:text-sm">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 text-gray-600 shadow-inner dark:bg-gray-800 dark:text-gray-400">
-                        <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
-                      </div>
-                      <span className="font-medium text-gray-700 dark:text-gray-300 truncate" style={{ textDecoration: statusInfo.isCompleted ? 'line-through' : 'none' }}>
-                        {appointment.tipo_trattamento}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                        <div className="mb-4 space-y-2 sm:space-y-3">
+                          <div className="flex items-center space-x-3 text-xs sm:text-sm">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 text-gray-600 shadow-inner dark:bg-gray-800 dark:text-gray-400">
+                              <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                            </div>
+                            <span className="font-medium text-gray-700 dark:text-gray-300" style={{ textDecoration: statusInfo.isCompleted ? 'line-through' : 'none' }}>
+                              {formatDate(appointment.data)}
+                            </span>
+                          </div>
+                          {appointment.ora && (
+                            <div className="flex items-center space-x-3 text-xs sm:text-sm">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 text-gray-600 shadow-inner dark:bg-gray-800 dark:text-gray-400">
+                                <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                              </div>
+                              <span className="font-medium text-gray-700 dark:text-gray-300" style={{ textDecoration: statusInfo.isCompleted ? 'line-through' : 'none' }}>
+                                {appointment.ora.slice(0, 5)}
+                              </span>
+                            </div>
+                          )}
+                          {appointment.tipo_trattamento && (
+                            <div className="flex items-center space-x-3 text-xs sm:text-sm">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 text-gray-600 shadow-inner dark:bg-gray-800 dark:text-gray-400">
+                                <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
+                              </div>
+                              <span className="font-medium text-gray-700 dark:text-gray-300 truncate" style={{ textDecoration: statusInfo.isCompleted ? 'line-through' : 'none' }}>
+                                {appointment.tipo_trattamento}
+                              </span>
+                            </div>
+                          )}
+                        </div>
 
-                {/* Importo in fondo card (stile Spesa Totale in ClientList) */}
-                <div className="border-t pt-3 sm:pt-4" style={{ borderColor: accentSofter }}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs sm:text-sm" style={{ color: textSecondaryColor }}>
-                      Importo
-                    </span>
-                    <span
-                      className="text-sm font-semibold sm:text-lg"
-                      style={{
-                        background: statusInfo.isCompleted ? undefined : accentGradient,
-                        WebkitBackgroundClip: statusInfo.isCompleted ? undefined : 'text',
-                        color: statusInfo.isCompleted ? '#6B7280' : 'transparent',
-                      }}
-                    >
-                      {formatCurrency(appointment.importo)}
-                    </span>
-                  </div>
+                        <div className="border-t pt-3 sm:pt-4" style={{ borderColor: statusInfo.isCompleted ? '#D1D5DB' : accentSofter }}>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm " style={{ color: statusInfo.isCompleted ? 'black' : textSecondaryColor }}>
+                              Importo
+                            </span>
+                            <span
+                              className="text-sm font-bold sm:text-lg"
+                              style={{
+                                background: statusInfo.isCompleted ? "" : accentGradient,
+                                WebkitBackgroundClip: statusInfo.isCompleted ? undefined : 'text',
+                                color: statusInfo.isCompleted ? 'black' : 'transparent',
+                              }}
+                            >
+                              {formatCurrency(appointment.importo)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
+              </section>
             );
           })}
         </div>

@@ -33,12 +33,17 @@ html, body {
 #root {
   height: 100%;
   min-height: 100vh;
-  /* Safe area iOS: rispetta notch e home indicator; colore bande #faede0 */
+  /* Safe area iOS: rispetta notch e home indicator; colore bande #faede0 (bianco quando c’è PageHeader) */
   padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
   background-color: #faede0;
+}
+
+/* Safe area bianca quando la pagina mostra PageHeader */
+html.page-header-visible #root {
+  background-color: #ffffff;
 }
 
 /* Utility per header sotto notch/Dynamic Island */

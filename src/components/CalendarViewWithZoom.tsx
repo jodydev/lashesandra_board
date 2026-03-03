@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent } from '@mui/material';
 import { 
   Plus, 
@@ -183,13 +182,9 @@ export default function CalendarViewWithZoom() {
       <div className="min-h-screen" style={{ backgroundColor }}>
         <PageHeader title="Agenda" showBack backLabel="Indietro" />
         <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-red-50 border border-red-200 rounded-2xl p-6 max-w-md"
-          >
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-6 max-w-md">
             <p className="text-red-800 font-medium">{error}</p>
-          </motion.div>
+          </div>
         </div>
       </div>
     );
@@ -200,7 +195,7 @@ export default function CalendarViewWithZoom() {
   const dateStripDays = Array.from({ length: 14 }, (_, i) => dateStripStart.add(i, 'day'));
 
   return (
-    <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor }}>
+    <div className="min-h-screen" style={{ backgroundColor }}>
       <PageHeader
         title="Agenda"
         showBack
@@ -219,7 +214,7 @@ export default function CalendarViewWithZoom() {
               key={view}
               type="button"
               onClick={() => handleViewChange(view)}
-              className="flex-1 py-2.5 text-sm font-semibold rounded-full transition-all"
+              className="flex-1 py-2.5 text-sm font-semibold rounded-full"
               style={
                 currentView === view
                   ? { background: accentGradient, color: surfaceColor }
@@ -243,7 +238,7 @@ export default function CalendarViewWithZoom() {
                     key={day.format('YYYY-MM-DD')}
                     type="button"
                     onClick={() => setCurrentDate(day)}
-                    className="flex flex-col items-center min-w-[52px] py-2.5 px-2 font-bold text-sm transition-colors"
+                    className="flex flex-col items-center min-w-[52px] py-2.5 px-2 font-bold text-sm"
                     style={
                       isSelected
                         ? { background: accentColor, color: surfaceColor }
@@ -262,26 +257,7 @@ export default function CalendarViewWithZoom() {
         )}
 
         {/* Calendar Container */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.05 }}
-          className="relative h-screen"
-        >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentView}
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -20 }}
-              transition={{ 
-                duration: 0.4, 
-                ease: "easeInOut",
-                type: "spring",
-                stiffness: 300,
-                damping: 30
-              }}
-            >
+        <div className="relative h-screen">
               {currentView === 'month' && (
                 <MonthView
                   currentDate={currentDate}
@@ -323,9 +299,7 @@ export default function CalendarViewWithZoom() {
                   colors={colors}
                 />
               )}
-            </motion.div>
-          </AnimatePresence>
-        </motion.div>
+        </div>
 
 
         {/* Appointment Details Modal — stile ClientForm */}
@@ -403,25 +377,14 @@ export default function CalendarViewWithZoom() {
                                   key={appointment.id}
                                   type="button"
                                   onClick={() => handleEditAppointment(appointment)}
-                                  className="w-full text-left px-4 py-3 rounded-xl border transition-colors outline-none"
+                                  className="w-full text-left px-4 py-3 rounded-xl border outline-none"
                                   style={{
                                     backgroundColor: surfaceColor,
                                     borderColor: isPersonal ? accentSofter : (isCompleted ? accentSofter : accentSoft),
                                   }}
                                 >
                                   <div className="flex items-center gap-3">
-                                    <div
-                                      className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-sm shrink-0"
-                                      style={
-                                        isPersonal
-                                          ? { backgroundColor: textSecondaryColor }
-                                          : isCompleted
-                                            ? { backgroundColor: textSecondaryColor }
-                                            : { background: accentGradient }
-                                      }
-                                    >
-                                      {isPersonal ? 'P' : (client ? client.nome.charAt(0).toUpperCase() : '?')}
-                                    </div>
+                        
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2 flex-wrap">
                                         <span
@@ -438,7 +401,7 @@ export default function CalendarViewWithZoom() {
                                             className="inline-flex items-center px-2 py-0.5 rounded-xl text-xs font-semibold"
                                             style={{ backgroundColor: accentSofter, color: textSecondaryColor }}
                                           >
-                                            Personale
+                                            Impegno Personale
                                           </span>
                                         )}
                                         {appointment.ora && (
@@ -466,7 +429,6 @@ export default function CalendarViewWithZoom() {
                                           <div className="mt-2">
                                             <span
                                               className={`text-sm font-bold ${isCompleted ? 'line-through' : ''}`}
-                                              style={{ color: isCompleted ? textSecondaryColor : accentDark }}
                                             >
                                               {formatCurrency(appointment.importo)}
                                             </span>

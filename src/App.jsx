@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import AppSelector from './pages/AppSelector';
 import LoginPage from './pages/LoginPage';
 import ProfilePage from './pages/ProfilePage';
 import LashesAndraApp from './apps/LashesAndraApp';
@@ -185,14 +184,10 @@ export default function App() {
             <ScrollToTop />
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/" element={<LoginPage />} />
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <ProfilePage />
-                </ProtectedRoute>
-              } />
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <AppSelector />
                 </ProtectedRoute>
               } />
               <Route path="/lashesandra/*" element={
@@ -205,7 +200,7 @@ export default function App() {
                   <IsabelleNailsApp />
                 </ProtectedRoute>
               } />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           </BrowserRouter>
         </AppProvider>

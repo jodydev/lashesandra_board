@@ -42,7 +42,7 @@ export default function LoginPage() {
       } else if (user.email === 'isabellenails@gmail.com') {
         navigate('/isabellenails/home');
       } else {
-        navigate('/');
+        navigate('/lashesandra/home');
       }
     }
   }, [user, loading, navigate]);

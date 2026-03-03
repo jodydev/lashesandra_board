@@ -16,9 +16,9 @@ interface WeekViewProps extends CalendarViewProps {
 
 const DAY_INITIALS = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
 
-const START_HOUR = 9;
-const END_HOUR = 21;
-const HOURS = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
+const START_HOUR = 8;
+const END_HOUR = 20;
+const HOURS = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i); // 08:00 - 20:00 come DayView
 const PIXELS_PER_HOUR = 52;
 const SWIPE_THRESHOLD_PX = 56;
 
@@ -39,6 +39,50 @@ function parseMinutes(ora: string | undefined) {
 
 function minutesToTop(minutes: number) {
   return (minutes - START_HOUR * 60) * (PIXELS_PER_HOUR / 60);
+}
+
+const APT_DURATION_M = 60;
+
+/** Calcola columnIndex e totalColumns per appuntamenti sovrapposti (stessa logica di DayView). */
+function getAppointmentLayout(appointments: Appointment[]) {
+  const items = appointments.map((apt) => ({
+    appointment: apt,
+    startM: parseMinutes(apt.ora),
+    endM: parseMinutes(apt.ora) + APT_DURATION_M,
+  }));
+  const columnIndex: number[] = [];
+  const totalColumns: number[] = [];
+
+  for (let i = 0; i < items.length; i++) {
+    const used = new Set<number>();
+    for (let j = 0; j < i; j++) {
+      const a = items[i];
+      const b = items[j];
+      const overlap = a.startM < b.endM && b.startM < a.endM;
+      if (overlap) used.add(columnIndex[j]);
+    }
+    let col = 0;
+    while (used.has(col)) col++;
+    columnIndex[i] = col;
+  }
+
+  for (let i = 0; i < items.length; i++) {
+    let maxCol = columnIndex[i];
+    for (let j = 0; j < items.length; j++) {
+      if (i === j) continue;
+      const a = items[i];
+      const b = items[j];
+      const overlap = a.startM < b.endM && b.startM < a.endM;
+      if (overlap && columnIndex[j] > maxCol) maxCol = columnIndex[j];
+    }
+    totalColumns[i] = maxCol + 1;
+  }
+
+  return appointments.map((apt, i) => ({
+    appointment: apt,
+    columnIndex: columnIndex[i],
+    totalColumns: totalColumns[i],
+  }));
 }
 
 export default function WeekView({
@@ -112,7 +156,7 @@ export default function WeekView({
         <button
           type="button"
           onClick={onPreviousWeek}
-          className="p-2 rounded-xl transition-opacity hover:opacity-80"
+          className="p-2 rounded-xl hover:opacity-80"
           style={{ color: textSecondaryColor }}
           aria-label="Settimana precedente"
         >
@@ -124,7 +168,7 @@ export default function WeekView({
         <button
           type="button"
           onClick={onNextWeek}
-          className="p-2 rounded-xl transition-opacity hover:opacity-80"
+          className="p-2 rounded-xl hover:opacity-80"
           style={{ color: textSecondaryColor }}
           aria-label="Settimana successiva"
         >
@@ -173,7 +217,7 @@ export default function WeekView({
                   <button
                     type="button"
                     onClick={() => onDateClick(day)}
-                    className="relative flex flex-col items-center py-2 px-0.5 border-b flex-shrink-0 transition-colors min-h-[72px] justify-end"
+                    className="relative flex flex-col items-center py-2 px-0.5 border-b flex-shrink-0 min-h-[72px] justify-end"
                     style={{
                       borderColor: accentSofter,
                       backgroundColor: current ? accentSofter : 'transparent',
@@ -222,22 +266,42 @@ export default function WeekView({
                     ))}
 
                     {/* Eventi per questo giorno */}
-                    {dayAppointments.map((appointment) => {
+                    {getAppointmentLayout(dayAppointments).map(({ appointment, columnIndex, totalColumns }) => {
                       const startM = parseMinutes(appointment.ora);
-                      const durationM = 60;
+                      const durationM = APT_DURATION_M;
                       const top = minutesToTop(startM) + 2;
                       const height = Math.max(28, (durationM / 60) * PIXELS_PER_HOUR - 4);
+                      const aptDateTime = dayjs(appointment.data)
+                        .hour(Math.floor(startM / 60))
+                        .minute(startM % 60)
+                        .second(0)
+                        .millisecond(0);
+                      const isPast = aptDateTime.isBefore(now);
+                      const gapPercent = 2;
+                      const widthPercent = totalColumns > 1
+                        ? (100 - gapPercent * (totalColumns - 1)) / totalColumns
+                        : 100;
+                      const leftPercent = totalColumns > 1
+                        ? columnIndex * (widthPercent + gapPercent)
+                        : 0;
                       return (
                         <div
                           key={appointment.id}
-                          className="absolute left-0.5 right-0.5 z-10"
-                          style={{ top, height }}
+                          className={`absolute z-10 min-w-0 ${totalColumns > 1 ? '' : 'left-0.5 right-0.5'}`}
+                          style={{
+                            top,
+                            height,
+                            ...(totalColumns > 1
+                              ? { left: `${leftPercent}%`, width: `${widthPercent}%` }
+                              : {}),
+                          }}
                         >
                           <WeekViewEventCard
                             appointment={appointment}
                             client={getClientById(appointment.client_id)}
                             onClick={() => onAppointmentClick(appointment)}
                             accentGradient={accentGradient}
+                            isPast={isPast}
                           />
                         </div>
                       );
@@ -249,7 +313,7 @@ export default function WeekView({
           </div>
         </div>
 
-        {/* Linea ora corrente (sopra tutta la griglia, in un layer unico) */}
+        {/* Linea ora corrente: pillola rossa con orario + barra (stile DayView) */}
         {showNowLine && (
           <div
             className="absolute left-0 right-0 flex items-center z-20 pointer-events-none"
@@ -258,8 +322,20 @@ export default function WeekView({
               marginLeft: 56,
             }}
           >
-            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: accentColor }} />
-            <div className="flex-1 h-0.5" style={{ backgroundColor: accentColor }} />
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div
+                className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-white flex-shrink-0"
+                style={{ backgroundColor: '#EF4444' }}
+              >
+                {now.format('HH:mm')}
+              </div>
+              <div className="relative flex-1 min-w-0">
+                <div
+                  className="h-[2px] rounded-full"
+                  style={{ backgroundColor: '#EF4444' }}
+                />
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -273,6 +349,7 @@ interface WeekViewEventCardProps {
   readonly client: { nome: string; cognome: string } | undefined;
   readonly onClick: () => void;
   readonly accentGradient: string;
+  readonly isPast: boolean;
 }
 
 function WeekViewEventCard({
@@ -280,6 +357,7 @@ function WeekViewEventCard({
   client,
   onClick,
   accentGradient,
+  isPast,
 }: Readonly<WeekViewEventCardProps>) {
   const personal = isPersonalAppointment(appointment);
   const clientName = client ? `${client.nome} ${client.cognome}` : 'Cliente';
@@ -287,31 +365,37 @@ function WeekViewEventCard({
   const personalTitle = appointment.tipo_trattamento || 'Impegno personale';
   const time = formatTime(appointment.ora);
 
+  const isPastStyle = isPast && !personal;
+  const pastCardStyle = {
+    backgroundColor: 'rgba(107, 114, 128, 0.12)',
+    border: '1px solid rgba(107, 114, 128, 0.25)',
+  };
+  const cardStyle = personal
+    ? { backgroundColor: '#000000', border: 0 }
+    : (isPastStyle ? pastCardStyle : { background: accentGradient, border: 0 });
+
+  const serviceClass = personal ? 'text-white/95' : (isPastStyle ? 'text-gray-600' : 'text-white/95');
+  const titleClass = personal ? 'text-white' : (isPastStyle ? 'text-gray-700' : 'text-white');
+  const timeClass = personal ? 'text-white/85' : (isPastStyle ? 'text-gray-500' : 'text-white/85');
+
+  const buttonClass = isPast
+    ? 'shadow-sm hover:shadow-md opacity-90 hover:opacity-100 active:opacity-95'
+    : 'shadow-sm hover:opacity-95 active:opacity-90';
+
   return (
     <button
       type="button"
       onClick={onClick}
-      className="w-full h-full text-left p-1 shadow-sm transition-opacity hover:opacity-95 active:opacity-90 flex flex-col justify-between overflow-hidden"
-      style={
-        personal
-          ? {
-              backgroundColor: 'rgba(17,24,39,0.04)',
-              border: '1px dashed rgba(0,0,0,0.25)',
-            }
-          : { background: accentGradient, border: 0 }
-      }
+      className={`w-full h-full text-left p-1 flex flex-col justify-between overflow-hidden rounded-lg ${buttonClass}`}
+      style={cardStyle}
     >
-      <span
-        className={`text-[10px] font-semibold uppercase tracking-wide truncate leading-tight ${
-          personal ? 'text-gray-700' : 'text-white/95'
-        }`}
-      >
+      <span className={`text-[10px] font-semibold uppercase tracking-wide truncate leading-tight ${serviceClass}`}>
         {service}
       </span>
-      <p className={`font-semibold text-[11px] truncate leading-tight mt-0.5 ${personal ? 'text-gray-900' : 'text-white'}`}>
+      <p className={`font-semibold text-[11px] truncate leading-tight mt-0.5 ${titleClass}`}>
         {personal ? personalTitle : clientName}
       </p>
-      <p className={`text-[10px] leading-tight ${personal ? 'text-gray-600' : 'text-white/85'}`}>{time}</p>
+      <p className={`text-[10px] leading-tight ${timeClass}`}>{time}</p>
     </button>
   );
 }

@@ -1,6 +1,9 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, type LucideIcon } from 'lucide-react';
 import { useAppColors } from '../hooks/useAppColors';
+
+const ROOT_CLASS_PAGE_HEADER = 'page-header-visible';
 
 const textPrimaryColor = '#2C2C2C';
 const surfaceColor = '#FFFFFF';
@@ -48,6 +51,11 @@ export default function PageHeader({
     else navigate(-1);
   };
 
+  useEffect(() => {
+    document.documentElement.classList.add(ROOT_CLASS_PAGE_HEADER);
+    return () => document.documentElement.classList.remove(ROOT_CLASS_PAGE_HEADER);
+  }, []);
+
   const baseClasses =
     'relative flex h-14 min-h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header';
   const variantClasses =
@@ -65,7 +73,7 @@ export default function PageHeader({
       style={{ backgroundColor: surfaceColor, ...borderStyle }}
     >
       {/* Sinistra: indietro o spacer */}
-      <div className="flex min-w-[2.25rem] items-center justify-start">
+      <div className="flex h-full min-w-[2.25rem] flex-shrink-0 items-center justify-start">
         {showBack ? (
           <button
             type="button"
@@ -74,7 +82,7 @@ export default function PageHeader({
             style={{ color: accentColor }}
             aria-label={backLabel ?? 'Indietro'}
           >
-            <ChevronLeft className="h-6 w-6" />
+            <ChevronLeft className="h-6 w-6 shrink-0" />
             {backLabel != null && <span>{backLabel}</span>}
           </button>
         ) : (
@@ -91,13 +99,13 @@ export default function PageHeader({
       </h1>
 
       {/* Destra: azione o spacer */}
-      <div className="flex min-w-[2.25rem] items-center justify-end">
+      <div className="flex h-full min-w-[2.25rem] flex-shrink-0 items-center justify-end">
         {rightAction ? (
           rightAction.type === 'icon' ? (
             <button
               type="button"
               onClick={rightAction.onClick}
-              className="flex h-9 w-9 items-center justify-center rounded-xl transition-opacity hover:opacity-90"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-opacity hover:opacity-90"
               style={{ color: accentColor }}
               aria-label={rightAction.ariaLabel}
             >
@@ -109,7 +117,7 @@ export default function PageHeader({
               form={rightAction.formId}
               onClick={rightAction.onClick}
               disabled={rightAction.disabled}
-              className="font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="flex items-center font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
               style={{ color: accentColor }}
               aria-label={rightAction.label}
             >
