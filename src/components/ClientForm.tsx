@@ -142,7 +142,7 @@ export default function ClientForm({ clientId, onSuccess, onCancel, onRequestDel
   return (
     <div className="w-full h-full flex flex-col relative min-h-[480px]" style={{ backgroundColor: surfaceColor }}>
       {/* Top bar: Annulla | Nuovo Cliente | Salva */}
-      <header className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0" style={{ borderColor: accentSofter }}>
+      <header className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0 safe-area-header" style={{ borderColor: accentSofter }}>
         <button
           type="button"
           onClick={onCancel}

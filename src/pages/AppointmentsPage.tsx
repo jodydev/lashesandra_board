@@ -188,7 +188,7 @@ export default function AppointmentsPage() {
     return (
       <div className="min-h-screen" style={{ backgroundColor }}>
         <header
-          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
+          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
           style={{ borderColor: accentSofter }}
         >
           <button type="button" className="flex items-center gap-1.5 font-medium" style={{ color: accentColor }} aria-label="Indietro">
@@ -234,10 +234,10 @@ export default function AppointmentsPage() {
   }
 
   return (
-    <div className="min-h-screen pt-14" style={{ backgroundColor }}>
+    <div className="min-h-screen" style={{ backgroundColor }}>
       {/* Header navigazione: Indietro | Gestione Appuntamenti | + (stile ClientList) */}
       <header
-        className="z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
+        className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
         style={{ borderColor: accentSofter }}
       >
         <button

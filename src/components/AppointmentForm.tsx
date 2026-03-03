@@ -1202,12 +1202,13 @@ export default function AppointmentForm({
   return (
     <div className="w-full h-full min-h-screen flex flex-col bg-white relative">
       {/* Top bar: Annulla | Titolo | (vuoto) — come ClientForm */}
-      <header className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3 pt-14 border-b border-gray-100 flex-shrink-0 bg-white">
+      <header className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0 bg-white safe-area-header min-h-14">
         <button
           type="button"
           onClick={onCancel}
           disabled={loading}
-          className="flex items-center gap-1 text-pink-600 font-medium disabled:opacity-50"
+          className="flex items-center gap-1 font-medium disabled:opacity-50"
+          style={{ color: colors.primary }}
         >
           <span className="text-lg leading-none" aria-hidden>‹</span> Annulla
         </button>
@@ -1219,7 +1220,8 @@ export default function AppointmentForm({
             type="submit"
             form="appointment-form"
             disabled={loading}
-            className="shrink-0 text-sm font-semibold text-pink-600 disabled:opacity-50"
+            className="shrink-0 text-sm font-semibold disabled:opacity-50"
+            style={{ color: colors.primary }}
           >
             {loading ? '...' : isEditing ? 'Aggiorna' : 'Salva'}
           </button>
@@ -1228,7 +1230,8 @@ export default function AppointmentForm({
             type="button"
             onClick={(e) => { e.preventDefault(); handleNext(); }}
             disabled={!canProceed()}
-            className="shrink-0 text-sm font-semibold text-pink-600 disabled:opacity-50"
+            className="shrink-0 text-sm font-semibold disabled:opacity-50"
+            style={{ color: colors.primary }}
           >
             Continua
           </button>
@@ -1236,7 +1239,7 @@ export default function AppointmentForm({
       </header>
 
       {/* Step indicator compatto — pt per non restare sotto l'header fixed */}
-      <div className="pt-14 px-4 py-2 border-b border-gray-100 flex-shrink-0">
+      <div className="safe-area-content-below-header px-4 py-2 border-b border-gray-100 flex-shrink-0">
         <div className="flex items-center justify-center gap-2">
           {steps.map((_, index) => (
             <div

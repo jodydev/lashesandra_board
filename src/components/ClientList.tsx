@@ -165,7 +165,7 @@ export default function ClientList() {
         style={{ backgroundColor }}
       >
         <header
-          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
+          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
           style={{ borderColor: accentSofter }}
         >
           <button
@@ -224,12 +224,12 @@ export default function ClientList() {
 
   return (
     <div
-      className="min-h-screen pt-14"
+      className="min-h-screen"
       style={{ backgroundColor }}
     >
       {/* Header navigazione: Indietro | Lista Clienti | + */}
       <header
-        className="z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
+        className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
         style={{ borderColor: accentSofter }}
       >
         <button

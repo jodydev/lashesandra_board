@@ -177,7 +177,7 @@ export default function CalendarViewWithZoom() {
     return (
       <div className="min-h-screen" style={{ backgroundColor }}>
         <header
-          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
+          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
           style={{ borderColor: accentSofter, backgroundColor: surfaceColor }}
         >
           <button
@@ -217,7 +217,7 @@ export default function CalendarViewWithZoom() {
     return (
       <div className="min-h-screen" style={{ backgroundColor }}>
         <header
-          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
+          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
           style={{ borderColor: accentSofter, backgroundColor: surfaceColor }}
         >
           <button
@@ -256,10 +256,10 @@ export default function CalendarViewWithZoom() {
   const dateStripDays = Array.from({ length: 14 }, (_, i) => dateStripStart.add(i, 'day'));
 
   return (
-    <div className="min-h-screen transition-colors duration-300 pt-14" style={{ backgroundColor }}>
+    <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor }}>
       {/* Header navigazione: Indietro | Agenda | + */}
       <header
-        className="sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
+        className="sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
         style={{ borderColor: accentSofter, backgroundColor: surfaceColor }}
       >
         <button
@@ -289,10 +289,10 @@ export default function CalendarViewWithZoom() {
         </button>
       </header>
 
-      <div className="max-w-4xl mx-auto  pb-6 pt-4">
+      <div className="max-w-4xl mx-auto h-screen pt-4">
         {/* View selector: Giorno | Settimana | Mese */}
         <div
-          className="flex rounded-full p-1 border mb-4"
+          className="flex rounded-full p-1 border mb-4 mx-2"
           style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
         >
           {(['day', 'week', 'month'] as CalendarView[]).map((view) => (
@@ -314,8 +314,8 @@ export default function CalendarViewWithZoom() {
 
         {/* Date strip (horizontal scroll) - visible for day view */}
         {currentView === 'day' && (
-          <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 mb-4">
-            <div className="flex gap-2 min-w-max pb-1">
+          <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 bg-white">
+            <div className="flex gap-2 min-w-max">
               {dateStripDays.map((day) => {
                 const isSelected = day.isSame(currentDate, 'day');
                 const label = DAY_LABELS[(day.day() + 6) % 7];
@@ -347,7 +347,7 @@ export default function CalendarViewWithZoom() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.05 }}
-          className="relative"
+          className="relative h-screen"
         >
           <AnimatePresence mode="wait">
             <motion.div
@@ -430,7 +430,7 @@ export default function CalendarViewWithZoom() {
               <>
                 {/* Header: Chiudi | Data | (vuoto) — come ClientForm */}
                 <header
-                  className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0"
+                  className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0 safe-area-header"
                   style={{ borderColor: accentSofter, backgroundColor: surfaceColor }}
                 >
                   <button

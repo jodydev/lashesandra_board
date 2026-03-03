@@ -58,11 +58,11 @@ export default function MonthView({
 
   return (
     <div
-      className="overflow-hidden"
+      className="overflow-hidden h-screen"
     >
       {/* Header: mese + navigazione */}
       <div
-        className="flex items-center justify-between border-b"
+        className="flex items-center justify-between border-b bg-white"
         style={{ borderColor: accentSofter }}
       >
         <button
@@ -89,7 +89,7 @@ export default function MonthView({
       </div>
 
       {/* Intestazione giorni settimana */}
-      <div className="grid grid-cols-7 border-b" style={{ borderColor: accentSofter }}>
+      <div className="grid grid-cols-7 border-b bg-white" style={{ borderColor: accentSofter }}>
         {WEEKDAY_LABELS.map((label) => (
           <div
             key={label}

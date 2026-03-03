@@ -228,7 +228,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor }}>
-      <div className="mx-auto max-w-lg px-4 pt-14">
+      <div className="mx-auto max-w-lg px-4 safe-area-content-below-header">
         {/* Header: profilo + benvenuta, campanella */}
         <header className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -248,8 +248,8 @@ export default function HomePage() {
           <button
             type="button"
             onClick={() => navigate(`${appPrefix}/confirmations`)}
-            className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:opacity-90"
-            style={{ backgroundColor: accentSofter, color: textSecondaryColor }}
+            className="relative bg-white flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:opacity-90"
+            style={{ color: textPrimaryColor }}
             aria-label={`Notifiche${notifications.pendingCount > 0 ? `, ${notifications.pendingCount} da confermare` : ''}`}
           >
             <Bell className="h-5 w-5" />

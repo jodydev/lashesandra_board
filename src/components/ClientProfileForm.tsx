@@ -281,7 +281,7 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
     <div className="min-h-screen" style={{ backgroundColor }}>
       {/* Header navigazione: Indietro | Scheda Cliente (stile ClientList) */}
       <header
-        className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800"
+        className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
         style={{ borderColor: accentSofter }}
       >
         <button

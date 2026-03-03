@@ -165,7 +165,7 @@ export default function MessageTemplateEditor({ onSave, onCancel }: MessageTempl
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-900 z-10"
+        className="p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-900 z-10 safe-area-header"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">

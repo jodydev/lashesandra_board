@@ -121,7 +121,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col text-[#1a1a1a] relative overflow-hidden">
+    <div className="min-h-[100dvh] flex flex-col text-[#1a1a1a] relative overflow-hidden pt-32">
       {/* Background image: peach/beige beauty theme */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -139,7 +139,7 @@ export default function LoginPage() {
         }}
         aria-hidden
       />
-      <div className="relative flex flex-col flex-1 min-h-0 pt-20">
+      <div className="relative flex flex-col flex-1 min-h-0 safe-area-header">
       <main className="flex-1 overflow-y-auto px-6 pt-8 pb-6 flex flex-col items-center">
         {/* Logo + branding */}
         <div className="flex flex-col items-center mb-10">
@@ -220,7 +220,7 @@ export default function LoginPage() {
               type="submit"
               disabled={manualSubmitting}
               className="w-full min-h-[52px] rounded-xl py-3.5 font-semibold text-white flex items-center justify-center gap-2 transition-opacity disabled:opacity-70 active:opacity-90 touch-manipulation"
-              style={{ background: accentGradient, boxShadow: '0 4px 14px rgba(233,30,99,0.4)' }}
+              style={{ background: accentGradient }}
             >
               {manualSubmitting ? 'Accesso in corso...' : 'Accedi'}
             </button>

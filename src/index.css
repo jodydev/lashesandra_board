@@ -33,6 +33,19 @@ html, body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Utility per header sotto notch/Dynamic Island */
+.safe-area-header {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+/* Spaziatura contenuto sotto header fixed (altezza barra 3.5rem + safe area) */
+.safe-area-content-below-header {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 3.5rem);
+}
+/* Bottom nav: spazio sopra home indicator */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* Hide scrollbar utility (e.g. horizontal date strip) */
 .scrollbar-hide {
   -ms-overflow-style: none;

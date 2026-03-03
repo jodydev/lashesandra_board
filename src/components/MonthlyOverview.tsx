@@ -343,7 +343,7 @@ export default function MonthlyOverview() {
     return (
       <div className="min-h-screen" style={{ backgroundColor }}>
         <header
-          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm"
+          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm safe-area-header"
           style={{ borderColor: `${accentColor}14` }}
         >
           <button
@@ -385,7 +385,7 @@ export default function MonthlyOverview() {
     <div className="min-h-screen pb-8" style={{ backgroundColor }}>
       {/* Header: freccia, titolo Statistiche, icona calendario */}
       <header
-        className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm"
+        className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm safe-area-header"
         style={{ borderColor: `${accentColor}14` }}
       >
         <button

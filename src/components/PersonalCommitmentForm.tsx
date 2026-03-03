@@ -80,7 +80,7 @@ export default function PersonalCommitmentForm({
       className="w-full h-full min-h-screen flex flex-col bg-white relative"
       style={{ backgroundColor: appType === 'isabellenails' ? '#F7F3FA' : '#faede0' }}
     >
-      <header className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3 pt-14 border-b border-gray-100 flex-shrink-0 bg-white">
+      <header className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0 bg-white safe-area-header min-h-14">
         <button
           type="button"
           onClick={onCancel}
@@ -104,7 +104,7 @@ export default function PersonalCommitmentForm({
         </button>
       </header>
 
-      <div className="pt-32 px-4 pb-6 flex-1 min-h-0 overflow-y-auto">
+      <div className="safe-area-content-below-header px-4 pb-6 flex-1 min-h-0 overflow-y-auto">
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
             {error}

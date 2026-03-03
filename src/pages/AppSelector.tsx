@@ -33,7 +33,7 @@ export default function AppSelector() {
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor }}>
+    <div className="min-h-screen flex items-center justify-center p-4 safe-area-header safe-area-bottom" style={{ backgroundColor }}>
       <div className="max-w-4xl w-full">
         {/* Header */}
         <motion.div

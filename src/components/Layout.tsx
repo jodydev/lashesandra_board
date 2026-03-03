@@ -36,7 +36,7 @@ export default function Layout({ children }: LayoutProps) {
           flexGrow: 1,
           width: '100%',
           minHeight: '100vh',
-          paddingBottom: '80px',
+          paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
         }}
       >
         <AnimatePresence mode="wait">
@@ -54,7 +54,7 @@ export default function Layout({ children }: LayoutProps) {
 
       {/* Bottom navigation - visibile su tutte le pagine */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+        className="fixed bottom-0 left-0 right-0 z-40 border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] safe-area-bottom"
         style={{ borderColor: accentSofter, backgroundColor: surfaceColor }}
         role="navigation"
         aria-label="Menu principale"
