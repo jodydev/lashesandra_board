@@ -6,11 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   bundledWebRuntime: false,
   server: {
-    // Live reload: imposta CAPACITOR_SERVER_URL prima di "npx cap sync"
-    // es. export CAPACITOR_SERVER_URL=http://192.168.1.5:5173
-    ...(process.env.CAPACITOR_SERVER_URL
-      ? { url: process.env.CAPACITOR_SERVER_URL, cleartext: true }
-      : {}),
+    url: 'https://lashesandra-board.vercel.app/',
   },
   plugins: {
     SplashScreen: {
