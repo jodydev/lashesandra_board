@@ -5,6 +5,7 @@ import 'dayjs/locale/it';
 import type { CalendarViewProps, Appointment } from '../../types';
 import { useApp } from '../../contexts/AppContext';
 import { isPersonalAppointment } from '../../lib/personalEvents';
+import { DEFAULT_APPOINTMENT_DURATION_MINUTES } from '../../lib/treatmentDurations';
 
 dayjs.locale('it');
 
@@ -33,6 +34,10 @@ function parseMinutes(ora: string | undefined) {
 
 function minutesToTop(minutes: number) {
   return (minutes - START_HOUR * 60) * (PIXELS_PER_HOUR / 60);
+}
+
+function getDurationMinutes(apt: Appointment): number {
+  return apt.duration_minutes ?? DEFAULT_APPOINTMENT_DURATION_MINUTES;
 }
 
 function getInitials(fullName: string) {
@@ -86,12 +91,14 @@ export default function DayView({
 
   /** Per ogni appuntamento: columnIndex (0-based) e totalColumns nella sua fascia sovrapposta */
   const appointmentLayout = useMemo(() => {
-    const APT_DURATION_M = 60;
-    const items = dayAppointments.map((apt) => ({
-      appointment: apt,
-      startM: parseMinutes(apt.ora),
-      endM: parseMinutes(apt.ora) + APT_DURATION_M,
-    }));
+    const items = dayAppointments.map((apt) => {
+      const durationM = getDurationMinutes(apt);
+      return {
+        appointment: apt,
+        startM: parseMinutes(apt.ora),
+        endM: parseMinutes(apt.ora) + durationM,
+      };
+    });
     const columnIndex: number[] = [];
     const totalColumns: number[] = [];
 
@@ -330,7 +337,7 @@ export default function DayView({
           ) : (
             appointmentLayout.map(({ appointment, columnIndex, totalColumns }) => {
               const startM = parseMinutes(appointment.ora);
-              const durationM = 60;
+              const durationM = getDurationMinutes(appointment);
               const top = minutesToTop(startM);
               const height = Math.max(44, (durationM / 60) * PIXELS_PER_HOUR - 4);
               const aptDateTime = dayjs(appointment.data)
@@ -359,6 +366,7 @@ export default function DayView({
                 >
                   <DayViewCard
                     appointment={appointment}
+                    durationMinutes={getDurationMinutes(appointment)}
                     client={getClientById(appointment.client_id)}
                     onClick={() => onAppointmentClick(appointment)}
                     accentGradient={accentGradient}
@@ -377,6 +385,7 @@ export default function DayView({
 
 interface DayViewCardProps {
   readonly appointment: Appointment;
+  readonly durationMinutes: number;
   readonly client: { nome: string; cognome: string } | undefined;
   readonly onClick: () => void;
   readonly accentGradient: string;
@@ -385,6 +394,7 @@ interface DayViewCardProps {
 
 function DayViewCard({
   appointment,
+  durationMinutes,
   client,
   onClick,
   accentGradient,
@@ -397,7 +407,7 @@ function DayViewCard({
   const personalTitle = appointment.tipo_trattamento || 'Impegno personale';
   const startTime = formatTime(appointment.ora);
   const endTime = appointment.ora
-    ? formatTime(dayjs(`2000-01-01 ${appointment.ora}`).add(1, 'hour').format('HH:mm'))
+    ? formatTime(dayjs(`2000-01-01 ${appointment.ora}`).add(durationMinutes, 'minute').format('HH:mm'))
     : '';
 
   const isPastStyle = isPast && !personal;

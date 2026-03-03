@@ -19,8 +19,15 @@ import {
   Heart,
   Smile,
   Sparkles,
+  Package,
+  AlertTriangle,
 } from 'lucide-react';
 import FullPageLoader from '../components/FullPageLoader';
+import {
+  scheduleMaterialsLowStockNotification,
+  getMaterialsLowStockLastNotifiedDate,
+  setMaterialsLowStockNotifiedToday,
+} from '../lib/localNotifications';
 
 const textPrimaryColor = '#2C2C2C';
 const textSecondaryColor = '#7A7A7A';
@@ -28,7 +35,7 @@ const surfaceColor = '#FFFFFF';
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const { clientService, appointmentService } = useSupabaseServices();
+  const { clientService, appointmentService, materialService } = useSupabaseServices();
   const { appType, appName } = useApp();
   const colors = useAppColors();
   const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
@@ -45,6 +52,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showLoveDialog, setShowLoveDialog] = useState(false);
+  const [materialsBelowThresholdCount, setMaterialsBelowThresholdCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,6 +80,33 @@ export default function HomePage() {
     loadData();
     return () => { cancelled = true; };
     // Esegui solo al mount e al cambio app (tablePrefix). I servizi sono instabili (nuovo ref ogni render).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appType]);
+
+  // Optional: materiali sotto soglia per alert in Home + notifica push locale (max 1/giorno)
+  useEffect(() => {
+    let cancelled = false;
+    materialService
+      .getBelowThreshold()
+      .then((list) => {
+        if (cancelled) return;
+        const count = list.length;
+        setMaterialsBelowThresholdCount(count);
+        if (count > 0) {
+          const today = new Date().toISOString().slice(0, 10);
+          if (getMaterialsLowStockLastNotifiedDate() !== today) {
+            scheduleMaterialsLowStockNotification(count).then(() => {
+              if (!cancelled) setMaterialsLowStockNotifiedToday();
+            });
+          }
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMaterialsBelowThresholdCount(0);
+      });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appType]);
 
@@ -218,8 +253,11 @@ export default function HomePage() {
   const nextClient = nextAppointment ? getClientById(nextAppointment.client_id) : null;
 
   return (
-    <div className="h-screen" style={{ backgroundColor }}>
-      <div className="mx-auto max-w-lg px-4 safe-area-content-below-header">
+    <div
+      className="min-h-screen w-full pb-4"
+      style={{ backgroundColor }}
+    >
+      <div className="mx-auto max-w-lg px-4">
         {/* Header: profilo + benvenuta, campanella */}
         <header className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -254,6 +292,27 @@ export default function HomePage() {
             )}
           </button>
         </header>
+
+        {/* Optional: alert materiali sotto soglia */}
+        {materialsBelowThresholdCount > 0 && (
+          <button
+            type="button"
+            onClick={() => navigate(`${appPrefix}/inventario`)}
+            className="mb-4 flex w-full items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-left transition hover:opacity-95"
+            style={{ borderColor: '#f59e0b', backgroundColor: '#fffbeb' }}
+          >
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-200/80">
+              <Package className="h-5 w-5 text-amber-800" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-amber-900">
+                {materialsBelowThresholdCount} materiale/materiali sotto soglia
+              </p>
+              <p className="text-xs text-amber-800/90">Vai all&apos;inventario →</p>
+            </div>
+            <AlertTriangle className="h-5 w-5 flex-shrink-0 text-amber-600" />
+          </button>
+        )}
 
         {/* Panoramica */}
         <section className="mb-6">

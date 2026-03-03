@@ -5,6 +5,7 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 import 'dayjs/locale/it';
 import type { CalendarViewProps, Appointment } from '../../types';
 import { isPersonalAppointment } from '../../lib/personalEvents';
+import { DEFAULT_APPOINTMENT_DURATION_MINUTES } from '../../lib/treatmentDurations';
 
 dayjs.extend(isoWeek);
 dayjs.locale('it');
@@ -41,15 +42,20 @@ function minutesToTop(minutes: number) {
   return (minutes - START_HOUR * 60) * (PIXELS_PER_HOUR / 60);
 }
 
-const APT_DURATION_M = 60;
+function getDurationMinutes(apt: Appointment): number {
+  return apt.duration_minutes ?? DEFAULT_APPOINTMENT_DURATION_MINUTES;
+}
 
 /** Calcola columnIndex e totalColumns per appuntamenti sovrapposti (stessa logica di DayView). */
 function getAppointmentLayout(appointments: Appointment[]) {
-  const items = appointments.map((apt) => ({
-    appointment: apt,
-    startM: parseMinutes(apt.ora),
-    endM: parseMinutes(apt.ora) + APT_DURATION_M,
-  }));
+  const items = appointments.map((apt) => {
+    const durationM = getDurationMinutes(apt);
+    return {
+      appointment: apt,
+      startM: parseMinutes(apt.ora),
+      endM: parseMinutes(apt.ora) + durationM,
+    };
+  });
   const columnIndex: number[] = [];
   const totalColumns: number[] = [];
 
@@ -268,7 +274,7 @@ export default function WeekView({
                     {/* Eventi per questo giorno */}
                     {getAppointmentLayout(dayAppointments).map(({ appointment, columnIndex, totalColumns }) => {
                       const startM = parseMinutes(appointment.ora);
-                      const durationM = APT_DURATION_M;
+                      const durationM = getDurationMinutes(appointment);
                       const top = minutesToTop(startM) + 2;
                       const height = Math.max(28, (durationM / 60) * PIXELS_PER_HOUR - 4);
                       const aptDateTime = dayjs(appointment.data)

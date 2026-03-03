@@ -11,6 +11,7 @@ import {
   Save,
   AlertCircle,
   CheckCircle,
+  Package,
 } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import FullPageLoader from '../components/FullPageLoader';
@@ -456,6 +457,15 @@ export default function ProfilePage() {
                 Azioni Rapide
               </h3>
               <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => navigate(appType === 'isabellenails' ? '/isabellenails/inventario' : '/lashesandra/inventario')}
+                  className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors duration-200 hover:opacity-90"
+                  style={{ backgroundColor: accentSofter, color: textPrimaryColor }}
+                >
+                  <Package className="w-5 h-5" style={{ color: accentColor }} />
+                  <span>Inventario materiali</span>
+                </button>
                 <button
                   type="button"
                   onClick={handleLogout}

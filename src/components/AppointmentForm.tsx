@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar,
@@ -13,11 +13,16 @@ import {
   Search,
   List,
   Grid3X3,
-  EyeIcon
+  EyeIcon,
+  FileWarning,
+  AlertTriangle,
+  X,
+  Pencil
 } from 'lucide-react';
 import type { Appointment, Client } from '../types';
 import { useSupabaseServices } from '../lib/supabaseService';
 import { formatDateForDatabase, formatDateForDisplay } from '../lib/utils';
+import { getTreatmentDurationMinutes, DEFAULT_APPOINTMENT_DURATION_MINUTES } from '../lib/treatmentDurations';
 import { useAppColors } from '../hooks/useAppColors';
 import dayjs, { Dayjs } from 'dayjs';
 import { useApp } from '../contexts/AppContext';
@@ -26,11 +31,14 @@ import {
   scheduleAppointmentReminder,
   cancelAppointmentReminder,
 } from '../lib/localNotifications';
+import { isPersonalAppointment } from '../lib/personalEvents';
 import PageHeader from './PageHeader';
 
 interface AppointmentFormProps {
   appointment?: Appointment | null;
   selectedDate?: Dayjs | null;
+  /** Lista di appuntamenti (lavoro + personali) per controllare sovrapposizioni; se non passata il controllo non viene mostrato. */
+  appointmentsForOverlap?: Appointment[];
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -135,9 +143,40 @@ const datePresets = [
 
 const quickTimeSlots = ['09:00', '10:30', '12:00', '13:30', '15:00', '17:00', '19:00'];
 
+/** Converte ora "HH:mm" o "HH:mm:ss" in minuti dalla mezzanotte. */
+function parseOraToMinutes(ora: string | undefined): number {
+  if (!ora) return 0;
+  const [h, m] = ora.trim().split(/[:\s]/).map(Number);
+  return (h ?? 0) * 60 + (m ?? 0);
+}
+
+function getAppointmentEndMinutes(apt: Appointment): number {
+  const start = parseOraToMinutes(apt.ora);
+  const duration = apt.duration_minutes ?? DEFAULT_APPOINTMENT_DURATION_MINUTES;
+  return start + duration;
+}
+
+/** Restituisce gli appuntamenti che si sovrappongono al slot [startMinutes, endMinutes] nella stessa data, escludendo excludeId. */
+function getOverlappingAppointments(
+  date: Dayjs,
+  startMinutes: number,
+  endMinutes: number,
+  list: Appointment[],
+  excludeId?: string
+): Appointment[] {
+  return list.filter((apt) => {
+    if (apt.id === excludeId) return false;
+    if (!dayjs(apt.data).isSame(date, 'day')) return false;
+    const aptStart = parseOraToMinutes(apt.ora);
+    const aptEnd = getAppointmentEndMinutes(apt);
+    return startMinutes < aptEnd && aptStart < endMinutes;
+  });
+}
+
 export default function AppointmentForm({
   appointment,
   selectedDate,
+  appointmentsForOverlap = [],
   onSuccess,
   onCancel
 }: AppointmentFormProps) {
@@ -159,6 +198,7 @@ export default function AppointmentForm({
     ora: '',
     importo: 0,
     tipo_trattamento: '',
+    duration_minutes: DEFAULT_APPOINTMENT_DURATION_MINUTES,
     status: 'pending' as 'pending' | 'completed' | 'cancelled',
   });
   const [clients, setClients] = useState<Client[]>([]);
@@ -173,6 +213,8 @@ export default function AppointmentForm({
   const [showAdvancedTreatments, setShowAdvancedTreatments] = useState(false);
   const [alphabetFilter, setAlphabetFilter] = useState('ALL');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [overlapWarningDismissed, setOverlapWarningDismissed] = useState(false);
+
   useEffect(() => {
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -193,12 +235,36 @@ export default function AppointmentForm({
         ora: appointment.ora || '',
         importo: appointment.importo,
         tipo_trattamento: appointment.tipo_trattamento || '',
+        duration_minutes: appointment.duration_minutes ?? DEFAULT_APPOINTMENT_DURATION_MINUTES,
         status: appointment.status || 'pending',
       });
       setIsEditing(true);
     }
   }, [appointment]);
 
+  const overlappingAppointments = useMemo(() => {
+    if (!appointmentsForOverlap.length || !formData.data || !formData.ora) return [];
+    const startM = parseOraToMinutes(formData.ora);
+    const durationM = formData.duration_minutes ?? DEFAULT_APPOINTMENT_DURATION_MINUTES;
+    const endM = startM + durationM;
+    return getOverlappingAppointments(
+      formData.data,
+      startM,
+      endM,
+      appointmentsForOverlap,
+      appointment?.id
+    );
+  }, [
+    appointmentsForOverlap,
+    formData.data,
+    formData.ora,
+    formData.duration_minutes,
+    appointment?.id,
+  ]);
+
+  useEffect(() => {
+    setOverlapWarningDismissed(false);
+  }, [overlappingAppointments]);
 
   const loadClients = async () => {
     try {
@@ -268,6 +334,7 @@ export default function AppointmentForm({
         data: formatDateForDatabase(formData.data) || '',
         ora: formData.ora || undefined,
         importo: Number(formData.importo),
+        duration_minutes: formData.duration_minutes ?? DEFAULT_APPOINTMENT_DURATION_MINUTES,
       };
 
       console.log('Dati appuntamento:', appointmentData);
@@ -349,6 +416,11 @@ export default function AppointmentForm({
       value: formData.tipo_trattamento ? formData.tipo_trattamento : 'Da scegliere',
       onClick: () => setActiveStep(2),
     },
+    {
+      label: 'Durata',
+      value: `${formData.duration_minutes ?? 60} min`,
+      onClick: () => setActiveStep(2),
+    },
   ];
 
   const renderStepContent = () => {
@@ -385,8 +457,8 @@ export default function AppointmentForm({
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       className={`p-2 rounded-xl transition-all duration-200 ${viewType === 'list'
-                          ? `bg-white dark:bg-gray-700 ${colors.textPrimary} dark:${colors.textPrimaryDark} shadow-lg`
-                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                        ? `bg-white dark:bg-gray-700 ${colors.textPrimary} dark:${colors.textPrimaryDark} shadow-lg`
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                         }`}
                     >
                       <List className="w-4 h-4" />
@@ -397,8 +469,8 @@ export default function AppointmentForm({
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       className={`p-2 rounded-xl transition-all duration-200 ${viewType === 'grid'
-                          ? `bg-white dark:bg-gray-700 ${colors.textPrimary} dark:${colors.textPrimaryDark} shadow-lg`
-                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                        ? `bg-white dark:bg-gray-700 ${colors.textPrimary} dark:${colors.textPrimaryDark} shadow-lg`
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                         }`}
                     >
                       <Grid3X3 className="w-4 h-4" />
@@ -522,8 +594,8 @@ export default function AppointmentForm({
                             type="button"
                             onClick={() => { hapticSelection(); setFormData(prev => ({ ...prev, client_id: client.id })); }}
                             className={`w-full p-4 rounded-3xl border transition-all duration-500 text-left relative overflow-hidden backdrop-blur-sm ${formData.client_id === client.id
-                                ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimary} ring-2 ${colors.borderPrimary}`
-                                : `border-gray-200/50 dark:border-gray-700/50 bg-white/90 dark:bg-gray-800/90 hover:${colors.borderPrimary} hover:shadow-lg hover:shadow-black/10 ${colors.bgGradientHover} dark:${colors.bgPrimaryDark}`
+                              ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimary} ring-2 ${colors.borderPrimary}`
+                              : `border-gray-200/50 dark:border-gray-700/50 bg-white/90 dark:bg-gray-800/90 hover:${colors.borderPrimary} hover:shadow-lg hover:shadow-black/10 ${colors.bgGradientHover} dark:${colors.bgPrimaryDark}`
                               }`}
                           >
                             {/* Animated Background Glow */}
@@ -545,14 +617,14 @@ export default function AppointmentForm({
                               >
                                 {/* Outer Ring */}
                                 <div className={`absolute inset-0 rounded-3xl transition-all duration-500 ${formData.client_id === client.id
-                                    ? 'bg-gradient-to-br from-[#c2886d]/20 to-[#a06d52]/20 scale-110'
-                                    : 'bg-gradient-to-br from-gray-300/20 to-gray-400/20 scale-100 group-hover:from-[#c2886d]/20 group-hover:to-[#a06d52]/20 group-hover:scale-105'
+                                  ? 'bg-gradient-to-br from-[#c2886d]/20 to-[#a06d52]/20 scale-110'
+                                  : 'bg-gradient-to-br from-gray-300/20 to-gray-400/20 scale-100 group-hover:from-[#c2886d]/20 group-hover:to-[#a06d52]/20 group-hover:scale-105'
                                   }`} />
 
                                 {/* Main Avatar */}
                                 <div className={`relative w-20 h-20 rounded-3xl flex items-center justify-center text-white font-bold text-2xl shadow-lg transition-all duration-500 ${formData.client_id === client.id
-                                    ? `${colors.bgGradient} ${colors.shadowPrimary}`
-                                    : `bg-gradient-to-br from-gray-400 to-gray-500 group-hover:${colors.bgGradient} shadow-black/20`
+                                  ? `${colors.bgGradient} ${colors.shadowPrimary}`
+                                  : `bg-gradient-to-br from-gray-400 to-gray-500 group-hover:${colors.bgGradient} shadow-black/20`
                                   }`}>
                                   <motion.span
                                     initial={{ scale: 0.8 }}
@@ -713,7 +785,7 @@ export default function AppointmentForm({
                           onChange={handleChange('ora')}
                           className={`w-full max-w-[300px] px-3 py-3 sm:px-4 sm:py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl sm:rounded-2xl focus:ring-4 ${colors.focusRing} focus:${colors.borderPrimary} transition-all duration-300 text-gray-900 dark:text-white text-sm sm:text-base font-medium group-hover:border-gray-300 dark:group-hover:border-gray-600`}
                           required
-                          />
+                        />
                       </div>
                       <div className="flex flex-wrap gap-2 pt-1">
                         {quickTimeSlots.map((slot) => {
@@ -754,7 +826,7 @@ export default function AppointmentForm({
 
           return (
             <motion.div
-              className="space-y-4 sm:space-y-6"
+              className="space-y-4 sm:space-y-6 pb-10"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
@@ -762,57 +834,53 @@ export default function AppointmentForm({
 
               {/* Treatment Grid */}
               <div className="space-y-3 max-h-[40vh] sm:max-h-[50vh] overflow-y-auto">
-                <div className="flex flex-col gap-3 sm:gap-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="relative sm:max-w-sm">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="text"
-                        value={treatmentSearch}
-                        onChange={(e) => setTreatmentSearch(e.target.value)}
-                        placeholder="Cerca trattamento..."
-                        className="w-full rounded-xl border border-gray-200 bg-white/80 py-2.5 pl-10 pr-3 text-sm text-gray-900 shadow-inner transition-all duration-200 focus:border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                      />
+
+                {/* Scelta trattamento */}
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.4 }}
+                  className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 shadow-xl shadow-black/5 dark:shadow-black/20 overflow-hidden"
+                >
+                  <div className="p-4 sm:p-6 border-b border-gray-50 dark:border-gray-800">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl sm:rounded-2xl flex items-center justify-center`}>
+                        <Pencil className={`w-4 h-4 sm:w-5 sm:h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={2.5} />
+                      </div>
+                      <div>
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                          Scelta trattamento
+                        </h3>
+                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                          Seleziona il trattamento che vuoi offrire al cliente
+                        </p>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowAdvancedTreatments((prev) => !prev)}
-                      className="rounded-xl border px-3 py-2 text-xs font-semibold text-gray-600 transition-colors duration-200 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 sm:text-sm"
-                      style={{ borderColor: accentSofter }}
-                    >
-                      {showAdvancedTreatments ? 'Mostra meno risultati' : 'Vedi tutti i servizi'}
-                    </button>
                   </div>
-                </div>
+       
 
                 {/* Generic Option - Featured */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.4, delay: 0.1 }}
+                  className="p-4 sm:p-6"
                 >
                   <button
                     type="button"
-                    onClick={() => { hapticSelection(); setFormData(prev => ({ ...prev, tipo_trattamento: '' })); }}
+                    onClick={() => { hapticSelection(); setFormData(prev => ({ ...prev, tipo_trattamento: '', duration_minutes: DEFAULT_APPOINTMENT_DURATION_MINUTES })); }}
                     className={`group w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-300 text-left relative overflow-hidden ${formData.tipo_trattamento === ''
-                        ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimary}`
-                        : `border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:${colors.borderPrimary} hover:shadow-lg hover:shadow-black/5`
+                      ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimary}`
+                      : `border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:${colors.borderPrimary} hover:shadow-lg hover:shadow-black/5`
                       }`}
                   >
                     {/* Subtle gradient overlay */}
                     <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${formData.tipo_trattamento === ''
-                        ? `${colors.bgGradientLight}`
-                        : `${colors.bgGradientLight}`
+                      ? `${colors.bgGradientLight}`
+                      : `${colors.bgGradientLight}`
                       }`} />
 
                     <div className="relative flex items-center gap-3 sm:gap-4">
-                      {/* Icon Container */}
-                      <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 ${formData.tipo_trattamento === ''
-                          ? `${colors.bgGradient} text-white ${colors.shadowPrimary}`
-                          : `bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 ${colors.bgHover} dark:${colors.bgHoverDark} ${colors.textHover} dark:${colors.textHoverDark}`
-                        }`}>
-                        <Clock className="w-4 h-4 sm:w-6 sm:h-6" strokeWidth={2} />
-                      </div>
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
@@ -826,8 +894,8 @@ export default function AppointmentForm({
 
                       {/* Selection Indicator */}
                       <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${formData.tipo_trattamento === ''
-                          ? `${colors.borderPrimary} ${colors.bgGradient}`
-                          : `border-gray-300 dark:border-gray-600 hover:${colors.borderPrimary}`
+                        ? `${colors.borderPrimary} ${colors.bgGradient}`
+                        : `border-gray-300 dark:border-gray-600 hover:${colors.borderPrimary}`
                         }`}>
                         {formData.tipo_trattamento === '' && (
                           <motion.div
@@ -844,7 +912,7 @@ export default function AppointmentForm({
                 </motion.div>
 
                 {/* Treatment Options */}
-                <div className="space-y-2">
+                <div className="space-y-2 p-4 sm:p-6">
                   {displayTreatments.map((treatment, index) => (
                     <motion.div
                       key={treatment}
@@ -854,10 +922,10 @@ export default function AppointmentForm({
                     >
                       <button
                         type="button"
-                        onClick={() => { hapticSelection(); setFormData(prev => ({ ...prev, tipo_trattamento: treatment })); }}
+                        onClick={() => { hapticSelection(); setFormData(prev => ({ ...prev, tipo_trattamento: treatment, duration_minutes: getTreatmentDurationMinutes(appType, treatment) })); }}
                         className={`group w-full p-3 sm:p-4 rounded-xl sm:rounded-xl border transition-all duration-300 text-left relative overflow-hidden ${formData.tipo_trattamento === treatment
-                            ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimaryLight}`
-                            : `border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:${colors.borderPrimary} hover:shadow-md hover:shadow-black/5`
+                          ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimaryLight}`
+                          : `border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:${colors.borderPrimary} hover:shadow-md hover:shadow-black/5`
                           }`}
                       >
                         {/* Hover gradient */}
@@ -867,8 +935,8 @@ export default function AppointmentForm({
                           {/* Treatment Name */}
                           <div className="flex-1 min-w-0 py-3">
                             <h3 className={`text-sm sm:text-base font-semibold transition-colors duration-300 ${formData.tipo_trattamento === treatment
-                                ? `${colors.textPrimary} dark:${colors.textPrimaryDark}`
-                                : `text-gray-900 dark:text-white ${colors.textHover} dark:${colors.textHoverDark}`
+                              ? `${colors.textPrimary} dark:${colors.textPrimaryDark}`
+                              : `text-gray-900 dark:text-white ${colors.textHover} dark:${colors.textHoverDark}`
                               }`}>
                               {treatment}
                             </h3>
@@ -876,8 +944,8 @@ export default function AppointmentForm({
 
                           {/* Selection Radio */}
                           <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${formData.tipo_trattamento === treatment
-                              ? `${colors.borderPrimary} ${colors.bgGradient}`
-                              : `border-gray-300 dark:border-gray-600 hover:${colors.borderPrimary}`
+                            ? `${colors.borderPrimary} ${colors.bgGradient}`
+                            : `border-gray-300 dark:border-gray-600 hover:${colors.borderPrimary}`
                             }`}>
                             {formData.tipo_trattamento === treatment && (
                               <motion.div
@@ -893,8 +961,65 @@ export default function AppointmentForm({
                     </motion.div>
                   ))}
                 </div>
+                </motion.div>
               </div>
 
+              {/* Durata seduta - blocco slot in calendario */}
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 shadow-xl shadow-black/5 dark:shadow-black/20 overflow-hidden"
+              >
+                <div className="p-4 sm:p-6 border-b border-gray-50 dark:border-gray-800">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl sm:rounded-2xl flex items-center justify-center`}>
+                      <Clock className={`w-4 h-4 sm:w-5 sm:h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                        Durata seduta (per blocco in calendario)
+                      </h3>
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                        Definisci la durata della seduta (per blocco in calendario)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4 sm:p-6 grid grid-cols-3 gap-2">
+                  {[30, 60, 90, 120, 180, 240].map((mins) => {
+                    const isSelected = formData.duration_minutes === mins;
+                    // Costruisci la label più leggibile se >= 90 minuti
+                    let label: string;
+                    if (mins === 60) {
+                      label = `1 ora`;
+                    } else if (mins < 90) {
+                      label = `${mins} min`;
+                    } else if (mins === 90) {
+                      label = '1 ora e mezza';
+                    } else if (mins === 120) {
+                      label = '2 ore';
+                    } else if (mins === 180) {
+                      label = '3 ore';
+                    } else if (mins === 240) {
+                      label = '4 ore';
+                    } else {
+                      label = `${mins} min`;
+                    }
+                    return (
+                      <button
+                        key={mins}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, duration_minutes: mins }))}
+                        className={`rounded-xl px-3 py-2 text-sm font-semibold transition-all ${isSelected ? 'text-white shadow-md' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-[#c2886d]'}`}
+                        style={isSelected ? { background: accentGradient } : undefined}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
               {/* Amount Card with Premium Design */}
               <motion.div
                 initial={{ opacity: 0, y: 15 }}
@@ -968,8 +1093,8 @@ export default function AppointmentForm({
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           className={`relative h-12 sm:h-16 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all duration-300 shadow-lg overflow-hidden ${formData.importo === amount
-                              ? `${colors.bgGradient} text-white ${colors.shadowPrimary} shadow-xl`
-                              : `bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:${colors.borderPrimary} hover:shadow-xl ${colors.shadowPrimaryLight}`
+                            ? `${colors.bgGradient} text-white ${colors.shadowPrimary} shadow-xl`
+                            : `bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:${colors.borderPrimary} hover:shadow-xl ${colors.shadowPrimaryLight}`
                             }`}
                         >
                           <div className="flex flex-col items-center justify-center h-full">
@@ -1187,6 +1312,34 @@ export default function AppointmentForm({
                         </div>
                       </div>
                     </motion.div>
+
+                    {/* Duration Card */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 1.05 }}
+                      whileHover={{ y: -4, scale: 1.02 }}
+                      className="group"
+                    >
+                      <div className={`relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-4 sm:p-6 shadow-lg shadow-black/5 hover:shadow-xl ${colors.shadowPrimaryLight} transition-all duration-300`}>
+                        <div className={`absolute inset-0 ${colors.bgGradientLight} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                        <div className="relative">
+                          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
+                            <motion.div
+                              className={`w-8 h-8 sm:w-10 sm:h-10 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl sm:rounded-xl flex items-center justify-center`}
+                              whileHover={{ rotate: 10 }}
+                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                            >
+                              <Clock className={`w-4 h-4 sm:w-5 sm:h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={2} />
+                            </motion.div>
+                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Durata slot</span>
+                          </div>
+                          <p className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
+                            {formData.duration_minutes ?? 60} min
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
                   </div>
 
                   {/* Success Indicator */}
@@ -1261,29 +1414,66 @@ export default function AppointmentForm({
         )}
       </AnimatePresence>
 
+      {/* Avviso sovrapposizione slot - UX/UI migliorata, aggiunta icona warning e pulsante chiudi */}
+      <AnimatePresence>
+        {overlappingAppointments.length > 0 && !overlapWarningDismissed && (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="mx-4 mt-4 p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-2xl text-sm text-amber-900 dark:text-amber-200 shadow-lg flex items-start gap-3"
+            role="alert"
+            aria-live="assertive"
+          >
+            {/* Icona warning */}
+            <div className="flex-shrink-0 pt-0.5">
+              <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-300" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1">
+                <span className="font-semibold text-amber-900 dark:text-amber-100">
+                  Attenzione: sovrapposizione con {overlappingAppointments.length} appuntament{overlappingAppointments.length > 1 ? 'i!' : 'o!'}
+                </span>
+              </div>
+              <ul className="ml-0.5 mt-1 list-none space-y-1 text-[15px] sm:text-base">
+                {overlappingAppointments.map((apt) => {
+                  const startM = parseOraToMinutes(apt.ora);
+                  const endM = getAppointmentEndMinutes(apt);
+                  const startStr = `${Math.floor(startM / 60).toString().padStart(2, '0')}:${(startM % 60).toString().padStart(2, '0')}`;
+                  const endStr = `${Math.floor(endM / 60).toString().padStart(2, '0')}:${(endM % 60).toString().padStart(2, '0')}`;
+                  const label = isPersonalAppointment(apt)
+                    ? (apt.tipo_trattamento || 'Impegno personale')
+                    : (() => {
+                      const c = clients.find((x) => x.id === apt.client_id);
+                      return c ? `${c.nome} ${c.cognome}` : 'Cliente';
+                    })();
+                  return (
+                    <li key={apt.id} className="flex items-center gap-2">
+                      <span className="rounded bg-amber-200/80 dark:bg-amber-800/60 px-2 text-xs font-medium text-amber-900 dark:text-amber-100">{startStr}-{endStr}</span>
+                      <span>{label}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="mt-2 text-xs leading-tight text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                Puoi comunque salvare l'appuntamento, ma verifica che non ci siano conflitti in agenda.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOverlapWarningDismissed(true)}
+              className="flex-shrink-0 p-1 rounded-full text-amber-600 dark:text-amber-400 hover:bg-amber-200/60 dark:hover:bg-amber-800/60 focus:outline-none focus:ring-2 focus:ring-amber-400 dark:focus:ring-amber-600 transition-colors"
+              aria-label="Chiudi avviso"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Contenuto scrollabile: min-h-0 permette al flex item di ridursi e abilitare overflow-y-auto */}
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <form id="appointment-form" onSubmit={handleSubmit} className="px-4 py-6 h-full">
-          {/* Riepilogo step cliccabile — stile ClientForm sections */}
-          <section className="mb-6">
-            <h2 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
-              Riepilogo
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {summaryItems.map((item) => (
-                <button
-                  key={item.label}
-                  type="button"
-                  onClick={() => item.onClick?.()}
-                  className="px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-left transition-colors hover:border-[#c2886d] focus:ring-2 focus:ring-[#c2886d] focus:border-transparent outline-none"
-                >
-                  <span className="text-xs font-medium text-gray-500 block mb-0.5">{item.label}</span>
-                  <span className="text-sm font-semibold text-gray-900 line-clamp-2">{item.value}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-
           <div key={activeStep}>
             {renderStepContent()}
           </div>

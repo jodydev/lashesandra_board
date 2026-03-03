@@ -60,6 +60,7 @@ export function makePersonalAppointment(params: {
     ora: params.time || undefined,
     importo: 0,
     tipo_trattamento: params.title,
+    duration_minutes: 60,
     status: 'pending',
     kind: 'personal',
     created_at: params.createdAt ?? new Date().toISOString(),

@@ -12,6 +12,7 @@ import AppointmentsPage from '../pages/AppointmentsPage';
 import AppointmentsConfirmationPage from '../pages/AppointmentsConfirmationPage';
 import ProfilePage from '../pages/ProfilePage';
 import WhatsAppAdminPage from '../pages/WhatsAppAdminPage';
+import InventarioPage from '../pages/InventarioPage';
 
 export default function LashesAndraApp() {
   return (
@@ -30,6 +31,7 @@ export default function LashesAndraApp() {
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="overview" element={<OverviewPage />} />
             <Route path="whatsapp-admin" element={<WhatsAppAdminPage />} />
+            <Route path="inventario" element={<InventarioPage />} />
             <Route path="profile" element={<ProfilePage />} />
           </Routes>
         </Layout>

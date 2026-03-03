@@ -19,6 +19,8 @@ export interface Appointment {
   ora?: string;
   importo: number;
   tipo_trattamento?: string;
+  /** Durata della seduta in minuti (usata per blocco slot in calendario). Default 60. */
+  duration_minutes?: number;
   status: 'pending' | 'completed' | 'cancelled';
   /**
    * Campo non persistito su DB: usato lato UI per distinguere
@@ -180,4 +182,15 @@ export interface WhatsAppLogEntry {
   message_content: string;
   sent_at?: string;
   error_message?: string;
+}
+
+// Inventario materiali
+export interface Material {
+  id: string;
+  name: string;
+  quantity: number | null;
+  threshold: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at?: string;
 }

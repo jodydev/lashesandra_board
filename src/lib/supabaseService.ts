@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Client, Appointment, ClientWithAppointments, MonthlyStats, ClientProfileData } from '../types';
+import type { Client, Appointment, ClientWithAppointments, MonthlyStats, ClientProfileData, Material } from '../types';
 import { useApp } from '../contexts/AppContext';
 
 const supabaseUrl = 'https://ufondjehytekkbrgrjgd.supabase.co';
@@ -52,6 +52,7 @@ export function useSupabaseServices() {
   const clientsTable = `${tablePrefix}clients`;
   const appointmentsTable = `${tablePrefix}appointments`;
   const clientProfilesTable = `${tablePrefix}client_profiles`;
+  const materialsTable = `${tablePrefix}materials`;
 
   // Client operations
   const clientService = {
@@ -387,10 +388,74 @@ export function useSupabaseServices() {
     }
   };
 
+  // Materials / Inventario
+  const materialService = {
+    async getAll(): Promise<Material[]> {
+      const { data, error } = await supabase
+        .from(materialsTable)
+        .select('*')
+        .order('name', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+
+    async getById(id: string): Promise<Material | null> {
+      const { data, error } = await supabase
+        .from(materialsTable)
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+
+    async create(material: Omit<Material, 'id' | 'created_at'>): Promise<Material> {
+      const { data, error } = await supabase
+        .from(materialsTable)
+        .insert([material])
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+
+    async update(id: string, updates: Partial<Material>): Promise<Material> {
+      const { data, error } = await supabase
+        .from(materialsTable)
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+
+    async delete(id: string): Promise<void> {
+      const { error } = await supabase
+        .from(materialsTable)
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+
+    /** Materiali sotto soglia (per alert Home). */
+    async getBelowThreshold(): Promise<Material[]> {
+      const { data, error } = await supabase
+        .from(materialsTable)
+        .select('*')
+        .not('threshold', 'is', null)
+        .order('name', { ascending: true });
+      if (error) throw error;
+      const list = data || [];
+      return list.filter((m: Material) => m.quantity !== null && m.threshold !== null && m.quantity < m.threshold);
+    },
+  };
+
   return {
     clientService,
     appointmentService,
     statsService,
-    clientProfileService
+    clientProfileService,
+    materialService,
   };
 }

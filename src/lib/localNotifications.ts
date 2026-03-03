@@ -11,7 +11,11 @@ import {
 import type { Appointment } from '../types';
 
 const CHANNEL_ID = 'appointment-reminders';
+const INVENTORY_CHANNEL_ID = 'inventory-alerts';
 const REMINDER_MINUTES_BEFORE = 60;
+
+/** Id fisso per la notifica "materiali sotto soglia" (una sola attiva, sostituibile). */
+export const MATERIALS_LOW_STOCK_NOTIFICATION_ID = 888888;
 
 /** Converte un UUID in un id numerico per le notifiche (Android richiede 32-bit int). */
 function appointmentIdToNotificationId(appointmentId: string): number {
@@ -59,13 +63,21 @@ export async function initLocalNotifications(): Promise<void> {
   if (!isNativePlatform()) return;
 
   try {
-    // Android: crea il canale per le notifiche
+    // Android: crea i canali per le notifiche
     if (Capacitor.getPlatform() === 'android') {
       await LocalNotifications.createChannel({
         id: CHANNEL_ID,
         name: 'Promemoria appuntamenti',
         description: 'Notifiche un\'ora prima degli appuntamenti',
         importance: 4, // IMPORTANCE_HIGH
+        visibility: 1,
+        sound: undefined,
+      });
+      await LocalNotifications.createChannel({
+        id: INVENTORY_CHANNEL_ID,
+        name: 'Inventario materiali',
+        description: 'Avvisi quando alcuni materiali sono sotto soglia',
+        importance: 4,
         visibility: 1,
         sound: undefined,
       });
@@ -148,5 +160,60 @@ export async function syncAppointmentReminders(
   );
   for (const apt of pending) {
     await scheduleAppointmentReminder(apt, getClientName(apt.client_id));
+  }
+}
+
+const MATERIALS_NOTIFIED_STORAGE_KEY = 'materials-low-stock-notified-date';
+
+/** Restituisce la data (YYYY-MM-DD) dell’ultima notifica materiali sotto soglia, o null. */
+export function getMaterialsLowStockLastNotifiedDate(): string | null {
+  try {
+    return localStorage.getItem(MATERIALS_NOTIFIED_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Segna che oggi è stata mostrata la notifica materiali sotto soglia. */
+export function setMaterialsLowStockNotifiedToday(): void {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    localStorage.setItem(MATERIALS_NOTIFIED_STORAGE_KEY, today);
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Schedula una notifica push locale per materiali sotto soglia.
+ * Viene mostrata dopo qualche secondo (effetto “push”). Solo su nativo.
+ * Usa id fisso così da sostituire eventuali notifiche precedenti.
+ */
+export async function scheduleMaterialsLowStockNotification(count: number): Promise<void> {
+  if (!isNativePlatform()) return;
+  if (count <= 0) return;
+
+  const title = 'Inventario: materiali sotto soglia';
+  const body =
+    count === 1
+      ? '1 materiale è sotto la soglia. Controlla l\'inventario.'
+      : `${count} materiali sono sotto la soglia. Controlla l'inventario.`;
+
+  const notification: LocalNotificationSchema = {
+    id: MATERIALS_LOW_STOCK_NOTIFICATION_ID,
+    title,
+    body,
+    schedule: {
+      at: new Date(Date.now() + 2000),
+      allowWhileIdle: true,
+    },
+    channelId: INVENTORY_CHANNEL_ID,
+    extra: { type: 'materials-low-stock', count },
+  };
+
+  try {
+    await LocalNotifications.schedule({ notifications: [notification] });
+  } catch (e) {
+    console.warn('Failed to schedule materials low stock notification', e);
   }
 }

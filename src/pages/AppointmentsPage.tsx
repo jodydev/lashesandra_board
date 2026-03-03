@@ -16,6 +16,7 @@ import {
 import PageHeader from '../components/PageHeader';
 import type { Appointment, Client } from '../types';
 import { useSupabaseServices } from '../lib/supabaseService';
+import { loadPersonalAppointments } from '../lib/personalEvents';
 import { useAppColors } from '../hooks/useAppColors';
 import AppointmentForm from '../components/AppointmentForm';
 import { formatDate, formatCurrency } from '../lib/utils';
@@ -571,6 +572,7 @@ export default function AppointmentsPage() {
           <div className="fixed inset-0 z-50 flex flex-col h-screen min-h-full" style={{ backgroundColor: surfaceColor }}>
             <AppointmentForm
               appointment={selectedAppointment}
+              appointmentsForOverlap={[...appointments, ...loadPersonalAppointments(appType)]}
               onSuccess={handleFormSuccess}
               onCancel={handleFormCancel}
             />

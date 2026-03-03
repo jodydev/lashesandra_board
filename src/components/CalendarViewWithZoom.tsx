@@ -461,6 +461,7 @@ export default function CalendarViewWithZoom() {
             <AppointmentForm
               appointment={editingAppointment}
               selectedDate={selectedDate}
+              appointmentsForOverlap={allAppointments}
               onSuccess={handleAppointmentFormSuccess}
               onCancel={handleAppointmentFormCancel}
             />
