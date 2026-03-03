@@ -77,12 +77,12 @@ export default function FloatingNotification() {
         initial={{ opacity: 0, y: 100, scale: 0.8 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 100, scale: 0.8 }}
-        transition={{ 
-          type: "spring", 
-          stiffness: 300, 
-          damping: 30 
+        transition={{
+          type: "spring",
+          stiffness: 300,
+          damping: 30
         }}
-        className="fixed bottom-10 right-10 lg:right-6 z-50 max-w-sm"
+        className="fixed bottom-10 left-1/2 z-50 max-w-sm -translate-x-1/2"
       >
         <div className={`${content.color} ${content.textColor} rounded-2xl shadow-2xl border-2 ${content.borderColor} overflow-hidden`}>
           {/* Header */}
@@ -96,7 +96,7 @@ export default function FloatingNotification() {
                 <p className="text-sm opacity-90">{content.message}</p>
               </div>
             </div>
-            
+
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
