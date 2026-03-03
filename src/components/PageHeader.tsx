@@ -73,7 +73,7 @@ export default function PageHeader({
       style={{ backgroundColor: surfaceColor, ...borderStyle }}
     >
       {/* Sinistra: indietro o spacer */}
-      <div className="flex h-full min-w-[2.25rem] flex-shrink-0 items-center justify-start">
+      <div className="absolute left-4 top-1/2 flex -translate-y-1/2 items-center justify-start">
         {showBack ? (
           <button
             type="button"
@@ -99,7 +99,7 @@ export default function PageHeader({
       </h1>
 
       {/* Destra: azione o spacer */}
-      <div className="flex h-full min-w-[2.25rem] flex-shrink-0 items-center justify-end">
+      <div className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center justify-end">
         {rightAction ? (
           rightAction.type === 'icon' ? (
             <button

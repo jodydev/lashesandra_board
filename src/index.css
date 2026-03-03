@@ -68,25 +68,13 @@ html.page-header-visible #root {
   display: none;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Nasconde le scrollbar in tutta l'app (scroll ancora funzionante) */
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
-
-::-webkit-scrollbar-track {
-  background: #F5F5F5;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #E0E0E0;
-  border-radius: 4px;
-  transition: background 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #BDBDBD;
+*::-webkit-scrollbar {
+  display: none;
 }
 
 /* Selection styles */

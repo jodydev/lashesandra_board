@@ -214,10 +214,9 @@ export default function ClientList() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Carosello statistiche scrollabile */}
-        <div className="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+        <div className="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8 sm:px-6 lg:px-8">
           <div
-            className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory scrollbar-thin"
-            style={{ scrollbarWidth: 'thin' }}
+            className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 px-4 scroll-smooth snap-x snap-mandatory"
           >
             {[
               {
@@ -297,7 +296,7 @@ export default function ClientList() {
           ];
           return (
             <div
-              className="my-3 overflow-hidden rounded-2xl border-2 p-4 sm:p-5"
+              className="my-3 overflow-hidden rounded-2xl border-2 p-4 sm:p-5 mx-4"
               style={{
                 borderColor: rankStyles[0].border,
                 background: `linear-gradient(160deg, ${rankStyles[0].glow} 0%, ${surfaceColor} 35%)`,

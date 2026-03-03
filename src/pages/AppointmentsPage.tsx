@@ -278,8 +278,7 @@ export default function AppointmentsPage() {
         {/* Carosello statistiche scrollabile */}
         <div className="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
           <div
-            className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory scrollbar-thin"
-            style={{ scrollbarWidth: 'thin' }}
+            className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory"
           >
             {[
               { title: 'Appuntamenti Totali', value: totalAppointments, icon: Calendar },

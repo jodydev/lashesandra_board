@@ -148,7 +148,7 @@ export default function WeekView({
 
   return (
     <div
-      className="relative border overflow-hidden min-h-[320px] h-screen"
+      className="relative border overflow-hidden min-h-[320px]"
       style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
     >
       {/* Header: mese + frecce */}

@@ -166,7 +166,7 @@ const ClientProfilesPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           {/* Skeleton carosello statistiche */}
           <div className="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
-            <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory" style={{ scrollbarWidth: 'thin' }}>
+            <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory">
               {[...Array(3)].map((_, i) => (
                 <div key={i} className="flex-shrink-0 w-[min(88vw,320px)] sm:w-72 snap-center rounded-2xl border p-6 sm:p-7 bg-white dark:bg-gray-900 animate-pulse" style={{ borderColor: accentSofter }}>
                   <div className="flex items-center justify-between gap-3">
@@ -213,8 +213,7 @@ const ClientProfilesPage: React.FC = () => {
         {/* Carosello statistiche scrollabile */}
         <div className="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
           <div
-            className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory scrollbar-thin"
-            style={{ scrollbarWidth: 'thin' }}
+            className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory"
           >
             {[
               { title: 'Clienti totali', value: clients.length, icon: Users },

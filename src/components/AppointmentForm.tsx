@@ -761,7 +761,7 @@ export default function AppointmentForm({
             >
 
               {/* Treatment Grid */}
-              <div className="space-y-3 max-h-[40vh] sm:max-h-[50vh] overflow-y-auto scrollbar-thin scrollbar-thumb-pink-200 dark:scrollbar-thumb-pink-800 scrollbar-track-transparent">
+              <div className="space-y-3 max-h-[40vh] sm:max-h-[50vh] overflow-y-auto">
                 <div className="flex flex-col gap-3 sm:gap-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="relative sm:max-w-sm">
