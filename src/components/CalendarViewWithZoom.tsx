@@ -433,6 +433,20 @@ export default function CalendarViewWithZoom() {
                                               {formatCurrency(appointment.importo)}
                                             </span>
                                           </div>
+                                          {(appointment.note || (appointment.checklist && appointment.checklist.length > 0)) && (
+                                            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs" style={{ color: textSecondaryColor }}>
+                                              {appointment.note && (
+                                                <span className="truncate max-w-full" title={appointment.note}>
+                                                  {appointment.note.length > 35 ? `${appointment.note.slice(0, 35)}…` : appointment.note}
+                                                </span>
+                                              )}
+                                              {appointment.checklist && appointment.checklist.length > 0 && (
+                                                <span className="flex-shrink-0">
+                                                  {appointment.checklist.filter((i: { done?: boolean }) => i.done).length}/{appointment.checklist.length} da fare
+                                                </span>
+                                              )}
+                                            </div>
+                                          )}
                                         </>
                                       )}
                                     </div>

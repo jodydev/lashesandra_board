@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSupabaseServices } from '../lib/supabaseService';
 import { useAppColors } from '../hooks/useAppColors';
 import { useAppointmentNotifications } from '../hooks/useAppointmentNotifications';
+import { useRecallList } from '../hooks/useRecallList';
 import { useApp } from '../contexts/AppContext';
 import type { Client, Appointment } from '../types';
 import { formatCurrency } from '../lib/utils';
@@ -21,6 +22,9 @@ import {
   Sparkles,
   Package,
   AlertTriangle,
+  Phone,
+  ChevronRight,
+  Timer,
 } from 'lucide-react';
 import FullPageLoader from '../components/FullPageLoader';
 import {
@@ -190,6 +194,9 @@ export default function HomePage() {
     };
   }, [appointments, clients]);
 
+  const { recallList, counts: recallCounts } = useRecallList(clients, appointments);
+  const recallPreview = recallList.slice(0, 5);
+
   const getClientById = (id: string): Client | undefined =>
     clients.find((c: Client) => c.id === id);
 
@@ -213,11 +220,23 @@ export default function HomePage() {
       imageSrc: '/icon-client-3d.png',
     },
     {
+      title: 'Inventario',
+      icon: Package,
+      path: `${appPrefix}/inventario`,
+      imageSrc: '/bag.png',
+    },
+    {
+      title: 'Timer',
+      icon: Timer,
+      path: `${appPrefix}/timer`,
+      imageSrc: '/timer.png',
+    },
+    {
       title: 'Statistiche',
       icon: BarChart3,
       path: `${appPrefix}/overview`,
       imageSrc: '/icon-chart-3d.png',
-    },
+    }
   ];
 
   const monthLabel = dayjs().format('MMMM YYYY').toUpperCase();
@@ -254,7 +273,7 @@ export default function HomePage() {
 
   return (
     <div
-      className="min-h-screen w-full pb-4"
+      className="min-h-screen w-full"
       style={{ backgroundColor }}
     >
       <div className="mx-auto max-w-lg px-4">
@@ -500,6 +519,98 @@ export default function HomePage() {
             </div>
           )}
         </section>
+
+        {/* Clienti da richiamare (refill) - solo LashesAndra */}
+        {appType !== 'isabellenails' && (
+          <section className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-bold" style={{ color: textPrimaryColor }}>
+                Clienti da richiamare
+              </h2>
+              {recallCounts.total > 0 && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`${appPrefix}/richiami`)}
+                  className="flex items-center gap-1 text-sm font-semibold"
+                  style={{ color: accentColor }}
+                >
+                  Vedi tutti
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              )}
+            </div>
+            {recallCounts.total === 0 ? (
+              <div
+                className="rounded-xl border p-4 text-center"
+                style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
+              >
+                <p className="text-sm" style={{ color: textSecondaryColor }}>
+                  Nessun refill in scadenza. Il prossimo refill è calcolato 2 settimane dopo l&apos;ultimo trattamento.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => navigate(`${appPrefix}/richiami`)}
+                  className="mt-2 text-sm font-semibold"
+                  style={{ color: accentColor }}
+                >
+                  Apri Richiami
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2 bg-white rounded-xl p-4">
+                {recallPreview.map((entry) => (
+                  <div
+                    key={entry.client.id}
+                    className="flex items-center justify-between gap-3 rounded-xl border-2 border-dashed p-3"
+                    style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold truncate text-sm" style={{ color: textPrimaryColor }}>
+                        {entry.client.nome} {entry.client.cognome}
+                      </p>
+                      <p className="text-xs" style={{ color: textSecondaryColor }}>
+                        Refill consigliato: {dayjs(entry.suggestedRefillDate).format('D MMM')}
+                        {entry.filter === 'overdue' && (
+                          <span className="ml-1.5 font-medium text-amber-600">• In ritardo</span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex flex-shrink-0 items-center gap-2">
+                      {entry.client.telefono && (
+                        <a
+                          href={`tel:${entry.client.telefono.replace(/\s/g, '')}`}
+                          className="flex h-9 w-9 items-center justify-center rounded-full"
+                          style={{ backgroundColor: accentSofter, color: accentColor }}
+                          aria-label={`Chiama ${entry.client.nome}`}
+                        >
+                          <Phone className="h-4 w-4" />
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => navigate(`${appPrefix}/appointments`)}
+                        className="rounded-xl px-3 py-1.5 text-xs font-semibold text-white"
+                        style={{ background: accentGradient }}
+                      >
+                        Prenota
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {recallCounts.total > 5 && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`${appPrefix}/richiami`)}
+                    className="w-full rounded-xl border border-dashed py-2.5 text-sm font-medium"
+                    style={{ borderColor: accentSofter, color: accentColor }}
+                  >
+                    Altri {recallCounts.total - 5} richiami →
+                  </button>
+                )}
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Love card solo LashesAndra - compatto */}
         {appType !== 'isabellenails' && (

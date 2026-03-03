@@ -12,6 +12,8 @@ import AppointmentsConfirmationPage from '../pages/AppointmentsConfirmationPage'
 import ProfilePage from '../pages/ProfilePage';
 import WhatsAppAdminPage from '../pages/WhatsAppAdminPage';
 import InventarioPage from '../pages/InventarioPage';
+import ListinoPage from '../pages/ListinoPage';
+import TimerPage from '../pages/TimerPage';
 
 export default function IsabelleNailsApp() {
   return (
@@ -30,6 +32,8 @@ export default function IsabelleNailsApp() {
             <Route path="overview" element={<OverviewPage />} />
             <Route path="whatsapp-admin" element={<WhatsAppAdminPage />} />
             <Route path="inventario" element={<InventarioPage />} />
+            <Route path="listino" element={<ListinoPage />} />
+            <Route path="timer" element={<TimerPage />} />
             <Route path="profile" element={<ProfilePage />} />
           </Routes>
         </Layout>

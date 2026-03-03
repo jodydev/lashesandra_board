@@ -10,9 +10,12 @@ import CalendarPage from '../pages/CalendarPage';
 import OverviewPage from '../pages/OverviewPage';
 import AppointmentsPage from '../pages/AppointmentsPage';
 import AppointmentsConfirmationPage from '../pages/AppointmentsConfirmationPage';
+import RecallsPage from '../pages/RecallsPage';
 import ProfilePage from '../pages/ProfilePage';
 import WhatsAppAdminPage from '../pages/WhatsAppAdminPage';
 import InventarioPage from '../pages/InventarioPage';
+import ListinoPage from '../pages/ListinoPage';
+import TimerPage from '../pages/TimerPage';
 
 export default function LashesAndraApp() {
   return (
@@ -28,10 +31,13 @@ export default function LashesAndraApp() {
             <Route path="client-profiles" element={<ClientProfilesPage />} />
             <Route path="appointments" element={<AppointmentsPage />} />
             <Route path="confirmations" element={<AppointmentsConfirmationPage />} />
+            <Route path="richiami" element={<RecallsPage />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="overview" element={<OverviewPage />} />
             <Route path="whatsapp-admin" element={<WhatsAppAdminPage />} />
             <Route path="inventario" element={<InventarioPage />} />
+            <Route path="listino" element={<ListinoPage />} />
+            <Route path="timer" element={<TimerPage />} />
             <Route path="profile" element={<ProfilePage />} />
           </Routes>
         </Layout>

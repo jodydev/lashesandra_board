@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Client, Appointment, ClientWithAppointments, MonthlyStats, ClientProfileData, Material } from '../types';
+import type { Client, Appointment, ClientWithAppointments, MonthlyStats, ClientProfileData, Material, TreatmentCatalogEntry } from '../types';
 import { useApp } from '../contexts/AppContext';
 
 const supabaseUrl = 'https://ufondjehytekkbrgrjgd.supabase.co';
@@ -200,6 +200,48 @@ export function useSupabaseServices() {
       
       if (error) throw error;
     }
+  };
+
+  // Listino tipi di trattamento (tabella condivisa, filtrata per app_type)
+  const treatmentCatalogService = {
+    async getAllByAppType(appType: 'lashesandra' | 'isabellenails'): Promise<TreatmentCatalogEntry[]> {
+      const { data, error } = await supabase
+        .from('treatments_catalog')
+        .select('*')
+        .eq('app_type', appType)
+        .order('sort_order', { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+
+    async create(entry: Omit<TreatmentCatalogEntry, 'id' | 'created_at'>): Promise<TreatmentCatalogEntry> {
+      const { data, error } = await supabase
+        .from('treatments_catalog')
+        .insert([entry])
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+
+    async update(id: string, updates: Partial<Pick<TreatmentCatalogEntry, 'name' | 'base_price' | 'duration_minutes' | 'sort_order'>>): Promise<TreatmentCatalogEntry> {
+      const { data, error } = await supabase
+        .from('treatments_catalog')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+
+    async delete(id: string): Promise<void> {
+      const { error } = await supabase
+        .from('treatments_catalog')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
   };
 
   // Statistics operations
@@ -457,5 +499,6 @@ export function useSupabaseServices() {
     statsService,
     clientProfileService,
     materialService,
+    treatmentCatalogService,
   };
 }

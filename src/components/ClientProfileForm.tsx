@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import type { Client, ClientProfileData, EyeCharacteristics, ClientProfile, Treatment } from '../types';
+import type { Client, ClientProfileData, EyeCharacteristics, ClientProfile, Treatment, TreatmentCatalogEntry } from '../types';
 import TreatmentForm from './TreatmentForm';
+import { useSupabaseServices } from '../lib/supabaseService';
 import {
   User,
   Eye,
@@ -65,6 +66,12 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
   const colors = useAppColors();
   const { showSuccess, showError } = useToast();
   const { appType } = useApp();
+  const { treatmentCatalogService } = useSupabaseServices();
+  const [catalogEntries, setCatalogEntries] = useState<TreatmentCatalogEntry[]>([]);
+
+  useEffect(() => {
+    treatmentCatalogService.getAllByAppType(appType).then(setCatalogEntries).catch(() => setCatalogEntries([]));
+  }, [appType, treatmentCatalogService]);
 
   const textPrimaryColor = '#2C2C2C';
   const textSecondaryColor = '#7A7A7A';
@@ -742,6 +749,7 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                           onChange={(updatedTreatment) => handleTreatmentChange(index, updatedTreatment)}
                           onRemove={() => removeTreatment(index)}
                           isLast={index === formData.trattamenti.length - 1}
+                          catalogEntries={catalogEntries}
                         />
                       </div>
                     ))}

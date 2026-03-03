@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Treatment, EyeLengthMap } from '../types';
+import type { Treatment, EyeLengthMap, TreatmentCatalogEntry } from '../types';
 import EyeSchemaCanvas from './EyeSchemaCanvas';
 import {
   Trash2,
@@ -20,6 +20,8 @@ interface TreatmentFormProps {
   onChange: (treatment: Treatment) => void;
   onRemove: () => void;
   isLast: boolean;
+  /** Listino tipi di trattamento: se fornito, mostra selezione tipo e prefill prezzo. */
+  catalogEntries?: TreatmentCatalogEntry[];
 }
 
 const TreatmentForm: React.FC<TreatmentFormProps> = ({
@@ -27,7 +29,8 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
   index,
   onChange,
   onRemove,
-  isLast
+  isLast,
+  catalogEntries = [],
 }) => {
   const [isExpanded, setIsExpanded] = useState(isLast);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -464,6 +467,35 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
                 ))}
               </div>
             </div>
+
+            {/* Tipo da listino (opzionale) */}
+            {catalogEntries.length > 0 && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium" style={{ color: textPrimary }}>
+                  Tipo trattamento (da listino)
+                </label>
+                <select
+                  value={treatment.treatment_catalog_id ?? ''}
+                  onChange={(e) => {
+                    const id = e.target.value || null;
+                    const entry = id ? catalogEntries.find((c) => c.id === id) : null;
+                    onChange({
+                      ...treatment,
+                      treatment_catalog_id: id || undefined,
+                      prezzo: entry ? entry.base_price : treatment.prezzo,
+                    });
+                  }}
+                  className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
+                >
+                  <option value="">— Nessuno / personalizzato —</option>
+                  {catalogEntries.map((entry) => (
+                    <option key={entry.id} value={entry.id}>
+                      {entry.name} — €{entry.base_price} · {entry.duration_minutes} min
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Colore e prezzo */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">

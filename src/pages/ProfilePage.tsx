@@ -12,6 +12,7 @@ import {
   AlertCircle,
   CheckCircle,
   Package,
+  Sparkles,
 } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import FullPageLoader from '../components/FullPageLoader';
@@ -465,6 +466,15 @@ export default function ProfilePage() {
                 >
                   <Package className="w-5 h-5" style={{ color: accentColor }} />
                   <span>Inventario materiali</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate(appType === 'isabellenails' ? '/isabellenails/listino' : '/lashesandra/listino')}
+                  className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors duration-200 hover:opacity-90"
+                  style={{ backgroundColor: accentSofter, color: textPrimaryColor }}
+                >
+                  <Sparkles className="w-5 h-5" style={{ color: accentColor }} />
+                  <span>Gestione listino prezzi</span>
                 </button>
                 <button
                   type="button"

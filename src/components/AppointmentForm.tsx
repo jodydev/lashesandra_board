@@ -17,9 +17,11 @@ import {
   FileWarning,
   AlertTriangle,
   X,
-  Pencil
+  Pencil,
+  ListTodo,
+  Plus
 } from 'lucide-react';
-import type { Appointment, Client } from '../types';
+import type { Appointment, Client, AppointmentChecklistItem, TreatmentCatalogEntry } from '../types';
 import { useSupabaseServices } from '../lib/supabaseService';
 import { formatDateForDatabase, formatDateForDisplay } from '../lib/utils';
 import { getTreatmentDurationMinutes, DEFAULT_APPOINTMENT_DURATION_MINUTES } from '../lib/treatmentDurations';
@@ -180,7 +182,7 @@ export default function AppointmentForm({
   onSuccess,
   onCancel
 }: AppointmentFormProps) {
-  const { appointmentService, clientService } = useSupabaseServices();
+  const { appointmentService, clientService, treatmentCatalogService } = useSupabaseServices();
   const { appType } = useApp();
   const colors = useAppColors();
   const textPrimaryColor = '#2C2C2C';
@@ -199,8 +201,12 @@ export default function AppointmentForm({
     importo: 0,
     tipo_trattamento: '',
     duration_minutes: DEFAULT_APPOINTMENT_DURATION_MINUTES,
+    treatment_catalog_id: null as string | null,
     status: 'pending' as 'pending' | 'completed' | 'cancelled',
+    note: '' as string,
+    checklist: [] as AppointmentChecklistItem[],
   });
+  const [catalogEntries, setCatalogEntries] = useState<TreatmentCatalogEntry[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -214,6 +220,7 @@ export default function AppointmentForm({
   const [alphabetFilter, setAlphabetFilter] = useState('ALL');
   const [showSuccess, setShowSuccess] = useState(false);
   const [overlapWarningDismissed, setOverlapWarningDismissed] = useState(false);
+  const [newChecklistLabel, setNewChecklistLabel] = useState('');
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -229,6 +236,7 @@ export default function AppointmentForm({
   useEffect(() => {
     loadClients();
     if (appointment) {
+      const list = Array.isArray(appointment.checklist) ? appointment.checklist : [];
       setFormData({
         client_id: appointment.client_id,
         data: dayjs(appointment.data),
@@ -236,11 +244,22 @@ export default function AppointmentForm({
         importo: appointment.importo,
         tipo_trattamento: appointment.tipo_trattamento || '',
         duration_minutes: appointment.duration_minutes ?? DEFAULT_APPOINTMENT_DURATION_MINUTES,
+        treatment_catalog_id: appointment.treatment_catalog_id ?? null,
         status: appointment.status || 'pending',
+        note: appointment.note ?? '',
+        checklist: list.map((item) => ({
+          id: typeof item === 'object' && item && 'id' in item ? (item as AppointmentChecklistItem).id : crypto.randomUUID(),
+          label: typeof item === 'object' && item && 'label' in item ? (item as AppointmentChecklistItem).label : String(item),
+          done: typeof item === 'object' && item && 'done' in item ? (item as AppointmentChecklistItem).done : false,
+        })),
       });
       setIsEditing(true);
     }
   }, [appointment]);
+
+  useEffect(() => {
+    treatmentCatalogService.getAllByAppType(appType).then(setCatalogEntries).catch(() => setCatalogEntries([]));
+  }, [appType, treatmentCatalogService]);
 
   const overlappingAppointments = useMemo(() => {
     if (!appointmentsForOverlap.length || !formData.data || !formData.ora) return [];
@@ -335,6 +354,9 @@ export default function AppointmentForm({
         ora: formData.ora || undefined,
         importo: Number(formData.importo),
         duration_minutes: formData.duration_minutes ?? DEFAULT_APPOINTMENT_DURATION_MINUTES,
+        treatment_catalog_id: formData.treatment_catalog_id || null,
+        note: formData.note?.trim() || null,
+        checklist: (formData.checklist?.length ? formData.checklist : null) ?? null,
       };
 
       console.log('Dati appuntamento:', appointmentData);
@@ -818,11 +840,14 @@ export default function AppointmentForm({
 
       case 2:
         {
-          const allTreatments = appType === 'isabellenails' ? treatmentTypesIsabelle : treatmentTypesLashesAndra;
-          const filteredTreatments = allTreatments.filter((treatment) =>
-            treatment.toLowerCase().includes(treatmentSearch.toLowerCase())
-          );
-          const displayTreatments = showAdvancedTreatments ? filteredTreatments : filteredTreatments.slice(0, 16);
+          const useCatalog = catalogEntries.length > 0;
+          const filteredCatalogEntries = useCatalog
+            ? catalogEntries.filter((e) => e.name.toLowerCase().includes(treatmentSearch.toLowerCase()))
+            : [];
+          const displayCatalogEntries = showAdvancedTreatments ? filteredCatalogEntries : filteredCatalogEntries.slice(0, 16);
+          const allTreatmentNames = appType === 'isabellenails' ? treatmentTypesIsabelle : treatmentTypesLashesAndra;
+          const filteredNames = allTreatmentNames.filter((t) => t.toLowerCase().includes(treatmentSearch.toLowerCase()));
+          const displayNames = showAdvancedTreatments ? filteredNames : filteredNames.slice(0, 16);
 
           return (
             <motion.div
@@ -868,7 +893,7 @@ export default function AppointmentForm({
                 >
                   <button
                     type="button"
-                    onClick={() => { hapticSelection(); setFormData(prev => ({ ...prev, tipo_trattamento: '', duration_minutes: DEFAULT_APPOINTMENT_DURATION_MINUTES })); }}
+                    onClick={() => { hapticSelection(); setFormData(prev => ({ ...prev, treatment_catalog_id: null, tipo_trattamento: '', duration_minutes: DEFAULT_APPOINTMENT_DURATION_MINUTES })); }}
                     className={`group w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-300 text-left relative overflow-hidden ${formData.tipo_trattamento === ''
                       ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimary}`
                       : `border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:${colors.borderPrimary} hover:shadow-lg hover:shadow-black/5`
@@ -911,9 +936,55 @@ export default function AppointmentForm({
                   </button>
                 </motion.div>
 
-                {/* Treatment Options */}
+                {/* Treatment Options (da listino o elenco statico) */}
                 <div className="space-y-2 p-4 sm:p-6">
-                  {displayTreatments.map((treatment, index) => (
+                  {useCatalog && displayCatalogEntries.map((entry, index) => {
+                    const isSelected = formData.treatment_catalog_id === entry.id || (formData.tipo_trattamento === entry.name && !formData.treatment_catalog_id);
+                    return (
+                      <motion.div
+                        key={entry.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: 0.15 + index * 0.02 }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            hapticSelection();
+                            setFormData((prev) => ({
+                              ...prev,
+                              treatment_catalog_id: entry.id,
+                              tipo_trattamento: entry.name,
+                              importo: entry.base_price,
+                              duration_minutes: entry.duration_minutes,
+                            }));
+                          }}
+                          className={`group w-full p-3 sm:p-4 rounded-xl sm:rounded-xl border transition-all duration-300 text-left relative overflow-hidden ${isSelected
+                            ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimaryLight}`
+                            : `border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:${colors.borderPrimary} hover:shadow-md hover:shadow-black/5`
+                            }`}
+                        >
+                          <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${colors.bgGradientLight}`} />
+                          <div className="relative flex items-center gap-3 sm:gap-4">
+                            <div className="flex-1 min-w-0 py-3">
+                              <h3 className={`text-sm sm:text-base font-semibold transition-colors duration-300 ${isSelected ? `${colors.textPrimary} dark:${colors.textPrimaryDark}` : `text-gray-900 dark:text-white ${colors.textHover} dark:${colors.textHoverDark}`}`}>
+                                {entry.name}
+                              </h3>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                €{entry.base_price} · {entry.duration_minutes} min
+                              </p>
+                            </div>
+                            <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${isSelected ? `${colors.borderPrimary} ${colors.bgGradient}` : `border-gray-300 dark:border-gray-600 hover:${colors.borderPrimary}`}`}>
+                              {isSelected && (
+                                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }} className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full" />
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      </motion.div>
+                    );
+                  })}
+                  {!useCatalog && displayNames.map((treatment, index) => (
                     <motion.div
                       key={treatment}
                       initial={{ opacity: 0, x: -20 }}
@@ -922,38 +993,22 @@ export default function AppointmentForm({
                     >
                       <button
                         type="button"
-                        onClick={() => { hapticSelection(); setFormData(prev => ({ ...prev, tipo_trattamento: treatment, duration_minutes: getTreatmentDurationMinutes(appType, treatment) })); }}
+                        onClick={() => { hapticSelection(); setFormData(prev => ({ ...prev, treatment_catalog_id: null, tipo_trattamento: treatment, duration_minutes: getTreatmentDurationMinutes(appType, treatment) })); }}
                         className={`group w-full p-3 sm:p-4 rounded-xl sm:rounded-xl border transition-all duration-300 text-left relative overflow-hidden ${formData.tipo_trattamento === treatment
                           ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimaryLight}`
                           : `border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:${colors.borderPrimary} hover:shadow-md hover:shadow-black/5`
                           }`}
                       >
-                        {/* Hover gradient */}
                         <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${colors.bgGradientLight}`} />
-
                         <div className="relative flex items-center gap-3 sm:gap-4">
-                          {/* Treatment Name */}
                           <div className="flex-1 min-w-0 py-3">
-                            <h3 className={`text-sm sm:text-base font-semibold transition-colors duration-300 ${formData.tipo_trattamento === treatment
-                              ? `${colors.textPrimary} dark:${colors.textPrimaryDark}`
-                              : `text-gray-900 dark:text-white ${colors.textHover} dark:${colors.textHoverDark}`
-                              }`}>
+                            <h3 className={`text-sm sm:text-base font-semibold transition-colors duration-300 ${formData.tipo_trattamento === treatment ? `${colors.textPrimary} dark:${colors.textPrimaryDark}` : `text-gray-900 dark:text-white ${colors.textHover} dark:${colors.textHoverDark}`}`}>
                               {treatment}
                             </h3>
                           </div>
-
-                          {/* Selection Radio */}
-                          <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${formData.tipo_trattamento === treatment
-                            ? `${colors.borderPrimary} ${colors.bgGradient}`
-                            : `border-gray-300 dark:border-gray-600 hover:${colors.borderPrimary}`
-                            }`}>
+                          <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${formData.tipo_trattamento === treatment ? `${colors.borderPrimary} ${colors.bgGradient}` : `border-gray-300 dark:border-gray-600 hover:${colors.borderPrimary}`}`}>
                             {formData.tipo_trattamento === treatment && (
-                              <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full"
-                              />
+                              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }} className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full" />
                             )}
                           </div>
                         </div>
@@ -1341,6 +1396,99 @@ export default function AppointmentForm({
                       </div>
                     </motion.div>
                   </div>
+
+                  {/* Note rapide e checklist "da fare" */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 1.1 }}
+                    className="mt-4 sm:mt-6 space-y-3"
+                  >
+                    <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                      <ListTodo className="w-4 h-4" />
+                      Note e da fare
+                    </h3>
+                    <div className="rounded-xl sm:rounded-2xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800/50 p-4 sm:p-5 space-y-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Note seduta</label>
+                        <textarea
+                          value={formData.note}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, note: e.target.value }))}
+                          placeholder="es. refill, ricordarsi bigodino 0.15"
+                          rows={2}
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:ring-2 focus:ring-offset-0 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Checklist da fare (opzionale)</label>
+                        <ul className="space-y-2 mb-2">
+                          {(formData.checklist ?? []).map((item) => (
+                            <li key={item.id} className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setFormData((prev) => ({
+                                  ...prev,
+                                  checklist: (prev.checklist ?? []).map((i) => i.id === item.id ? { ...i, done: !i.done } : i),
+                                }))}
+                                className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition ${item.done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 dark:border-gray-500'}`}
+                              >
+                                {item.done && <Check className="w-3 h-3" strokeWidth={2.5} />}
+                              </button>
+                              <span className={`flex-1 text-sm ${item.done ? 'line-through text-gray-500' : 'text-gray-900 dark:text-white'}`}>
+                                {item.label || '(senza testo)'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setFormData((prev) => ({
+                                  ...prev,
+                                  checklist: (prev.checklist ?? []).filter((i) => i.id !== item.id),
+                                }))}
+                                className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                aria-label="Rimuovi"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={newChecklistLabel}
+                            onChange={(e) => setNewChecklistLabel(e.target.value)}
+                            placeholder="Aggiungi voce (es. pulizia, patch test)"
+                            className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 text-sm"
+                            onKeyDown={(e) => {
+                              if (e.key !== 'Enter') return;
+                              e.preventDefault();
+                              const label = newChecklistLabel.trim();
+                              if (!label) return;
+                              setFormData((prev) => ({
+                                ...prev,
+                                checklist: [...(prev.checklist ?? []), { id: crypto.randomUUID(), label, done: false }],
+                              }));
+                              setNewChecklistLabel('');
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const label = newChecklistLabel.trim();
+                              if (!label) return;
+                              setFormData((prev) => ({
+                                ...prev,
+                                checklist: [...(prev.checklist ?? []), { id: crypto.randomUUID(), label, done: false }],
+                              }));
+                              setNewChecklistLabel('');
+                            }}
+                            className={`px-3 py-2 rounded-xl font-medium text-sm ${colors.bgPrimary} ${colors.textPrimary} dark:${colors.bgPrimaryDark} dark:${colors.textPrimaryDark}`}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
 
                   {/* Success Indicator */}
                   <motion.div

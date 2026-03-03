@@ -12,6 +12,24 @@ export interface Client {
   created_at: string;
 }
 
+/** Voce della checklist "da fare" per un appuntamento (es. pulizia, patch test, schema da seguire). */
+export interface AppointmentChecklistItem {
+  id: string;
+  label: string;
+  done: boolean;
+}
+
+/** Voce del listino prezzi/durate (tipi di trattamento). */
+export interface TreatmentCatalogEntry {
+  id: string;
+  app_type: 'lashesandra' | 'isabellenails';
+  name: string;
+  base_price: number;
+  duration_minutes: number;
+  sort_order: number;
+  created_at?: string;
+}
+
 export interface Appointment {
   id: string;
   client_id: string;
@@ -21,7 +39,13 @@ export interface Appointment {
   tipo_trattamento?: string;
   /** Durata della seduta in minuti (usata per blocco slot in calendario). Default 60. */
   duration_minutes?: number;
+  /** Riferimento al listino; se valorizzato, tipo/importo/durata coerenti con il listino. */
+  treatment_catalog_id?: string | null;
   status: 'pending' | 'completed' | 'cancelled';
+  /** Note rapide per la seduta (es. refill, ricordarsi bigodino 0.15). */
+  note?: string | null;
+  /** Checklist "da fare" opzionale (es. pulizia, patch test, schema da seguire). */
+  checklist?: AppointmentChecklistItem[] | null;
   /**
    * Campo non persistito su DB: usato lato UI per distinguere
    * eventi personali da appuntamenti di lavoro.
@@ -103,6 +127,8 @@ export interface EyeLengthMap {
 export interface Treatment {
   id?: string;
   data: string;
+  /** Id voce listino (opzionale); se valorizzato il prezzo può essere prefilled dal listino. */
+  treatment_catalog_id?: string | null;
   curvatura: string;
   spessore: number;
   lunghezze: string;
@@ -182,6 +208,18 @@ export interface WhatsAppLogEntry {
   message_content: string;
   sent_at?: string;
   error_message?: string;
+}
+
+// Refill / richiami clienti
+/** Settimane consigliate per il refill dopo l'ultimo trattamento (extension). */
+export const REFILL_WEEKS = 3;
+export type RecallFilter = 'overdue' | 'this_week' | 'next_two_weeks';
+export interface RecallEntry {
+  client: Client;
+  lastAppointmentDate: string;
+  lastAppointmentTreatment?: string;
+  suggestedRefillDate: string;
+  filter: RecallFilter;
 }
 
 // Inventario materiali
