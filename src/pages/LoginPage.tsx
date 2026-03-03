@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, AtSign, Eye, EyeOff, AlertCircle, ScanFace, ArrowRight, Heart } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import FullPageLoader from '../components/FullPageLoader';
 import { isFaceIdAvailable, performFaceIdAuth } from '../lib/faceIdPlugin';
 
 const FACE_ID_EMAIL = 'lasheshandra@gmail.com';
@@ -111,13 +112,7 @@ export default function LoginPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-[100dvh] bg-white flex items-center justify-center">
-        <div
-          className="animate-spin rounded-full h-12 w-12 border-2 border-gray-200 border-t-[#c2886d]"
-        />
-      </div>
-    );
+    return <FullPageLoader className="min-h-[100dvh]" />;
   }
 
   return (

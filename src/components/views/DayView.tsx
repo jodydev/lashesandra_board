@@ -126,7 +126,7 @@ export default function DayView({
 
   return (
     <div
-      className="relative border overflow-hidden min-h-[420px]"
+      className="relative border overflow-hidden min-h-[420px] mb-40"
       style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
     >
 

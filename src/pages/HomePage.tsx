@@ -20,6 +20,7 @@ import {
   Smile,
   Sparkles,
 } from 'lucide-react';
+import FullPageLoader from '../components/FullPageLoader';
 
 const textPrimaryColor = '#2C2C2C';
 const textSecondaryColor = '#7A7A7A';
@@ -187,17 +188,7 @@ export default function HomePage() {
   const monthLabel = dayjs().format('MMMM YYYY').toUpperCase();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-6" style={{ backgroundColor }}>
-        <div className="flex flex-col items-center gap-4">
-          <div
-            className="h-12 w-12 rounded-full border-2 animate-spin"
-            style={{ borderColor: accentSofter, borderTopColor: accentColor }}
-          />
-          <p className="text-sm font-medium" style={{ color: textSecondaryColor }}>Caricamento in corso...</p>
-        </div>
-      </div>
-    );
+    return <FullPageLoader />;
   }
 
   if (error) {
@@ -227,7 +218,7 @@ export default function HomePage() {
   const nextClient = nextAppointment ? getClientById(nextAppointment.client_id) : null;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor }}>
+    <div className="absolute inset-0 -top-10" style={{ backgroundColor }}>
       <div className="mx-auto max-w-lg px-4 safe-area-content-below-header">
         {/* Header: profilo + benvenuta, campanella */}
         <header className="flex items-center justify-between mb-6">

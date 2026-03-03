@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ChevronLeft,
   ChevronRight,
   Calendar,
   Activity,
@@ -10,6 +9,7 @@ import {
   Sparkles,
   CircleDot,
 } from 'lucide-react';
+import PageHeader from './PageHeader';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -342,32 +342,16 @@ export default function MonthlyOverview() {
   if (loading) {
     return (
       <div className="min-h-screen" style={{ backgroundColor }}>
-        <header
-          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm safe-area-header"
-          style={{ borderColor: `${accentColor}14` }}
-        >
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="flex items-center justify-center w-10 h-10 rounded-full -ml-1"
-            style={{ color: accentColor }}
-            aria-label="Indietro"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </button>
-          <h1
-            className="text-lg font-bold absolute left-1/2 -translate-x-1/2"
-            style={{ color: textPrimaryColor }}
-          >
-            Statistiche
-          </h1>
-          <div
-            className="flex items-center justify-center w-10 h-10 rounded-full"
-            style={{ color: accentColor }}
-          >
-            <Calendar className="h-5 w-5" />
-          </div>
-        </header>
+        <PageHeader
+          title="Statistiche"
+          showBack
+          rightAction={{
+            type: 'icon',
+            icon: Calendar,
+            ariaLabel: 'Calendario',
+            onClick: () => navigate(appType === 'isabellenails' ? '/isabellenails/calendar' : '/lashesandra/calendar'),
+          }}
+        />
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
           <div className="h-10 bg-white rounded-full border animate-pulse" style={{ borderColor: `${accentColor}20` }} />
           <div className="grid grid-cols-2 gap-3">
@@ -384,34 +368,16 @@ export default function MonthlyOverview() {
   return (
     <div className="min-h-screen pb-8" style={{ backgroundColor }}>
       {/* Header: freccia, titolo Statistiche, icona calendario */}
-      <header
-        className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm safe-area-header"
-        style={{ borderColor: `${accentColor}14` }}
-      >
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="flex items-center justify-center w-10 h-10 rounded-full -ml-1 transition-opacity hover:opacity-90"
-          style={{ color: accentColor }}
-          aria-label="Indietro"
-        >
-          <ChevronLeft className="h-6 w-6" />
-        </button>
-        <h1
-          className="text-lg font-bold absolute left-1/2 -translate-x-1/2"
-          style={{ color: textPrimaryColor }}
-        >
-          Statistiche
-        </h1>
-        <button
-          type="button"
-          className="flex items-center justify-center w-10 h-10 rounded-full"
-          style={{ color: accentColor }}
-          aria-label="Calendario"
-        >
-          <Calendar className="h-5 w-5" />
-        </button>
-      </header>
+      <PageHeader
+        title="Statistiche"
+        showBack
+        rightAction={{
+          type: 'icon',
+          icon: Calendar,
+          ariaLabel: 'Calendario',
+          onClick: () => navigate(appType === 'isabellenails' ? '/isabellenails/calendar' : '/lashesandra/calendar'),
+        }}
+      />
 
       <div className="max-w-2xl mx-auto px-4 py-5 sm:py-6 space-y-5 sm:space-y-6">
         {/* Segmented control: Giorno, Settimana, Mese, Anno */}

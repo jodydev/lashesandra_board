@@ -11,8 +11,9 @@ import {
   Save,
   AlertCircle,
   CheckCircle,
-  ChevronLeft,
 } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
+import FullPageLoader from '../components/FullPageLoader';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../contexts/AppContext';
@@ -203,56 +204,12 @@ export default function ProfilePage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen" style={{ backgroundColor }}>
-        <header
-          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
-          style={{ borderColor: accentSofter }}
-        >
-          <button type="button" className="flex items-center gap-1.5 font-medium" style={{ color: accentColor }} aria-label="Indietro">
-            <ChevronLeft className="h-6 w-6" />
-            <span>Indietro</span>
-          </button>
-          <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white" style={{ color: textPrimaryColor }}>
-            Profilo
-          </h1>
-          <div className="h-9 w-9" />
-        </header>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 flex items-center justify-center min-h-[50vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: accentColor }} />
-            <p style={{ color: textSecondaryColor }}>Caricamento profilo...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <FullPageLoader message="Caricamento profilo..." />;
   }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor }}>
-      {/* Header navigazione: Indietro | Profilo (stile ClientList) */}
-        <header
-          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
-          style={{ borderColor: accentSofter }}
-        >
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 font-medium transition-opacity hover:opacity-90"
-          style={{ color: accentColor }}
-          aria-label="Indietro"
-        >
-          <ChevronLeft className="h-6 w-6" />
-          <span>Indietro</span>
-        </button>
-        <h1
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white"
-          style={{ color: textPrimaryColor }}
-        >
-          Profilo
-        </h1>
-        <div className="h-9 w-9" />
-      </header>
+      <PageHeader title="Profilo" showBack backLabel="Indietro" />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Success Message (stile ClientList: no motion) */}

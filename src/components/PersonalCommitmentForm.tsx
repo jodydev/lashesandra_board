@@ -7,6 +7,7 @@ import { useAppColors } from '../hooks/useAppColors';
 import type { Appointment } from '../types';
 import { formatDateForDatabase, formatDateForDisplay } from '../lib/utils';
 import { makePersonalAppointment } from '../lib/personalEvents';
+import PageHeader from './PageHeader';
 
 dayjs.locale('it');
 
@@ -80,29 +81,14 @@ export default function PersonalCommitmentForm({
       className="w-full h-full min-h-screen flex flex-col bg-white relative"
       style={{ backgroundColor: appType === 'isabellenails' ? '#F7F3FA' : '#faede0' }}
     >
-      <header className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0 bg-white safe-area-header min-h-14">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={loading}
-          className="flex items-center gap-1 font-medium disabled:opacity-50"
-          style={{ color: colors.primary }}
-        >
-          <span className="text-lg leading-none" aria-hidden>‹</span> Annulla
-        </button>
-        <h1 className="text-lg font-bold text-gray-900">
-          {isEditing ? 'Modifica impegno personale' : 'Nuovo impegno personale'}
-        </h1>
-        <button
-          type="submit"
-          form="personal-commitment-form"
-          disabled={loading}
-          className="shrink-0 text-sm font-semibold disabled:opacity-50"
-          style={{ color: colors.primary }}
-        >
-          {loading ? '...' : 'Salva'}
-        </button>
-      </header>
+      <PageHeader
+        title={isEditing ? 'Modifica impegno personale' : 'Nuovo impegno personale'}
+        showBack
+        onBack={onCancel}
+        backLabel="Annulla"
+        variant="fixed"
+        rightAction={{ type: 'label', label: loading ? '...' : 'Salva', formId: 'personal-commitment-form', disabled: loading }}
+      />
 
       <div className="safe-area-content-below-header px-4 pb-6 flex-1 min-h-0 overflow-y-auto">
         {error && (

@@ -5,11 +5,11 @@ import { Dialog, DialogContent } from '@mui/material';
 import { 
   Plus, 
   Calendar, 
-  Loader2,
   Check,
-  Clock,
-  ChevronLeft
+  Clock
 } from 'lucide-react';
+import PageHeader from './PageHeader';
+import FullPageLoader from './FullPageLoader';
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/it';
 import { useSupabaseServices } from '../lib/supabaseService';
@@ -174,70 +174,14 @@ export default function CalendarViewWithZoom() {
 
   // Loading state
   if (loading) {
-    return (
-      <div className="min-h-screen" style={{ backgroundColor }}>
-        <header
-          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
-          style={{ borderColor: accentSofter, backgroundColor: surfaceColor }}
-        >
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-1.5 font-medium transition-opacity hover:opacity-90"
-            style={{ color: accentColor }}
-            aria-label="Indietro"
-          >
-            <ChevronLeft className="h-6 w-6" />
-            <span>Indietro</span>
-          </button>
-          <h1
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white"
-            style={{ color: textPrimaryColor }}
-          >
-            Agenda
-          </h1>
-          <div className="h-9 w-9" />
-        </header>
-        <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center space-y-4"
-          >
-            <Loader2 className="w-8 h-8 animate-spin" style={{ color: accentColor }} />
-            <p className="font-medium" style={{ color: textSecondaryColor }}>Caricamento calendario...</p>
-          </motion.div>
-        </div>
-      </div>
-    );
+    return <FullPageLoader message="Caricamento calendario..." />;
   }
 
   // Error state
   if (error) {
     return (
       <div className="min-h-screen" style={{ backgroundColor }}>
-        <header
-          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
-          style={{ borderColor: accentSofter, backgroundColor: surfaceColor }}
-        >
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-1.5 font-medium transition-opacity hover:opacity-90"
-            style={{ color: accentColor }}
-            aria-label="Indietro"
-          >
-            <ChevronLeft className="h-6 w-6" />
-            <span>Indietro</span>
-          </button>
-          <h1
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white"
-            style={{ color: textPrimaryColor }}
-          >
-            Agenda
-          </h1>
-          <div className="h-9 w-9" />
-        </header>
+        <PageHeader title="Agenda" showBack backLabel="Indietro" />
         <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center p-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -257,37 +201,12 @@ export default function CalendarViewWithZoom() {
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor }}>
-      {/* Header navigazione: Indietro | Agenda | + */}
-      <header
-        className="sticky top-0 z-30 flex h-14 items-center justify-between border-b px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
-        style={{ borderColor: accentSofter, backgroundColor: surfaceColor }}
-      >
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 font-medium transition-opacity hover:opacity-90"
-          style={{ color: accentColor }}
-          aria-label="Indietro"
-        >
-          <ChevronLeft className="h-6 w-6" />
-          <span>Indietro</span>
-        </button>
-        <h1
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white"
-          style={{ color: textPrimaryColor }}
-        >
-          Agenda
-        </h1>
-        <button
-          type="button"
-          onClick={handleNewAppointment}
-          className="flex h-9 w-9 items-center justify-center rounded-xl transition-opacity hover:opacity-90"
-          style={{ color: accentColor }}
-          aria-label="Nuovo evento"
-        >
-          <Plus className="h-6 w-6" />
-        </button>
-      </header>
+      <PageHeader
+        title="Agenda"
+        showBack
+        backLabel="Indietro"
+        rightAction={{ type: 'icon', icon: Plus, ariaLabel: 'Nuovo evento', onClick: handleNewAppointment }}
+      />
 
       <div className="max-w-4xl mx-auto h-screen pt-4">
         {/* View selector: Giorno | Settimana | Mese */}
@@ -428,25 +347,12 @@ export default function CalendarViewWithZoom() {
           <DialogContent sx={{ p: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {selectedDate && (
               <>
-                {/* Header: Chiudi | Data | (vuoto) — come ClientForm */}
-                <header
-                  className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0 safe-area-header"
-                  style={{ borderColor: accentSofter, backgroundColor: surfaceColor }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setShowAppointmentDetails(false)}
-                    className="flex items-center gap-1 font-medium"
-                    style={{ color: accentColor }}
-                    aria-label="Chiudi"
-                  >
-                    <span className="text-xl leading-none" aria-hidden>‹</span>
-                  </button>
-                  <h1 className="text-lg font-bold" style={{ color: textPrimaryColor }}>
-                    {formatDateForDisplay(selectedDate)}
-                  </h1>
-                  <div className="w-14" aria-hidden />
-                </header>
+                <PageHeader
+                  title={formatDateForDisplay(selectedDate)}
+                  showBack
+                  onBack={() => setShowAppointmentDetails(false)}
+                  variant="static"
+                />
 
                 <div className="flex-1 overflow-y-auto pb-8">
                   <div className="px-4 py-6">

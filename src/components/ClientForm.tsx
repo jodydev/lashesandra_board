@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CircularProgress } from '@mui/material';
 import { useSupabaseServices } from '../lib/supabaseService';
 import { formatDateForDatabase, parseDateFromDatabase } from '../lib/utils';
 import { useApp } from '../contexts/AppContext';
 import { useAppColors } from '../hooks/useAppColors';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Phone, Mail, Camera, Bell, Check, Trash2 } from 'lucide-react';
+import PageHeader from './PageHeader';
+import { LoaderContent } from './FullPageLoader';
 import dayjs from 'dayjs';
 
 interface ClientFormProps {
@@ -123,17 +124,9 @@ export default function ClientForm({ clientId, onSuccess, onCancel, onRequestDel
 
   if (loading && !isEditing) {
     return (
-      <div className="fixed inset-0 backdrop-blur-sm z-50 flex items-center justify-center" style={{ backgroundColor: `${surfaceColor}CC` }}>
+      <div className="fixed inset-0 backdrop-blur-sm z-50 flex items-center justify-center bg-white/80">
         <div className="flex flex-col items-center gap-4">
-          <CircularProgress
-            size={90}
-            thickness={4}
-            sx={{
-              color: colors.primary,
-              '& .MuiCircularProgress-circle': { strokeLinecap: 'round' },
-            }}
-          />
-          <p className="text-lg font-semibold" style={{ color: textPrimaryColor }}>Caricamento in corso...</p>
+          <LoaderContent />
         </div>
       </div>
     );
@@ -141,30 +134,14 @@ export default function ClientForm({ clientId, onSuccess, onCancel, onRequestDel
 
   return (
     <div className="w-full h-full flex flex-col relative min-h-[480px]" style={{ backgroundColor: surfaceColor }}>
-      {/* Top bar: Annulla | Nuovo Cliente | Salva */}
-      <header className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0 safe-area-header" style={{ borderColor: accentSofter }}>
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={loading}
-          className="flex items-center gap-1 font-medium disabled:opacity-50"
-          style={{ color: accentColor }}
-        >
-          <span className="text-lg leading-none" aria-hidden>‹</span> Annulla
-        </button>
-        <h1 className="text-lg font-bold" style={{ color: textPrimaryColor }}>
-          {isEditing ? 'Modifica Cliente' : 'Nuovo Cliente'}
-        </h1>
-        <button
-          type="button"
-          onClick={() => handleSubmit()}
-          disabled={loading}
-          className="font-medium disabled:opacity-50"
-          style={{ color: accentColor }}
-        >
-          Salva
-        </button>
-      </header>
+      <PageHeader
+        title={isEditing ? 'Modifica Cliente' : 'Nuovo Cliente'}
+        showBack
+        onBack={onCancel}
+        backLabel="Annulla"
+        rightAction={{ type: 'label', label: 'Salva', onClick: () => handleSubmit(), disabled: loading }}
+        variant="static"
+      />
 
       <div className="flex-1 overflow-y-auto pb-32">
         <form onSubmit={handleSubmit} className="px-4 py-6">

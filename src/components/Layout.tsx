@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Box } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,6 +6,7 @@ import { Home, Calendar, Users, IdCard, UserCog } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { useAppColors } from '../hooks/useAppColors';
 import FloatingNotification from './FloatingNotification';
+import { initLocalNotifications } from '../lib/localNotifications';
 
 interface LayoutProps {
   readonly children: React.ReactNode;
@@ -22,6 +23,10 @@ export default function Layout({ children }: LayoutProps) {
   const colors = useAppColors();
   const accentSofter = `${colors.primary}14`;
   const appPrefix = appType === 'isabellenails' ? '/isabellenails' : '/lashesandra';
+
+  useEffect(() => {
+    initLocalNotifications();
+  }, []);
 
   const isActive = (path: string) => {
     if (path === 'home') return location.pathname === appPrefix || location.pathname === `${appPrefix}/home`;
@@ -63,55 +68,167 @@ export default function Layout({ children }: LayoutProps) {
           <button
             type="button"
             onClick={() => navigate(`${appPrefix}/home`)}
-            className="flex flex-col items-center gap-1 rounded-xl px-4 py-2"
-            style={{ color: isActive('home') ? textPrimaryColor : textSecondaryColor }}
+            className={`flex flex-col items-center gap-1 rounded-xl px-4 py-2 transition`}
+            style={{
+              color: isActive('home') ? textPrimaryColor : textSecondaryColor,
+              background: isActive('home') ? accentSofter : undefined,
+            }}
             aria-current={isActive('home') ? 'page' : undefined}
           >
-            <Home className="h-5 w-5" />
-            <span className="text-[10px] font-semibold uppercase">Home</span>
+            <Home
+              className="h-5 w-5"
+              style={
+                isActive('home')
+                  ? {
+                      color: colors.primary,
+                      filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.08))',
+                      fontWeight: 700,
+                    }
+                  : undefined
+              }
+            />
+            <span
+              className="text-[10px] font-semibold uppercase"
+              style={
+                isActive('home')
+                  ? { color: colors.primary }
+                  : undefined
+              }
+            >
+              Home
+            </span>
           </button>
           <button
             type="button"
             onClick={() => navigate(`${appPrefix}/calendar`)}
-            className="flex flex-col items-center gap-1 rounded-xl px-4 py-2"
-            style={{ color: isActive('calendar') ? textPrimaryColor : textSecondaryColor }}
+            className={`flex flex-col items-center gap-1 rounded-xl px-4 py-2 transition`}
+            style={{
+              color: isActive('calendar') ? textPrimaryColor : textSecondaryColor,
+              background: isActive('calendar') ? accentSofter : undefined,
+            }}
             aria-current={isActive('calendar') ? 'page' : undefined}
           >
-            <Calendar className="h-5 w-5" />
-            <span className="text-[10px] font-semibold uppercase">Agenda</span>
-            {isActive('calendar') && (
-              <span className="w-1.5 h-1.5 rounded-full -mt-0.5" style={{ backgroundColor: colors.primary }} aria-hidden />
-            )}
+            <Calendar
+              className="h-5 w-5"
+              style={
+                isActive('calendar')
+                  ? {
+                      color: colors.primary,
+                      filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.08))',
+                      fontWeight: 700,
+                    }
+                  : undefined
+              }
+            />
+            <span
+              className="text-[10px] font-semibold uppercase"
+              style={
+                isActive('calendar')
+                  ? { color: colors.primary }
+                  : undefined
+              }
+            >
+              Agenda
+            </span>
           </button>
           <button
             type="button"
             onClick={() => navigate(`${appPrefix}/clients`)}
-            className="flex flex-col items-center gap-1 rounded-xl px-4 py-2"
-            style={{ color: isActive('clients') ? textPrimaryColor : textSecondaryColor }}
+            className={`flex flex-col items-center gap-1 rounded-xl px-4 py-2 transition`}
+            style={{
+              color: isActive('clients') ? textPrimaryColor : textSecondaryColor,
+              background: isActive('clients') ? accentSofter : undefined,
+            }}
             aria-current={isActive('clients') ? 'page' : undefined}
           >
-            <Users className="h-5 w-5" />
-            <span className="text-[10px] font-semibold uppercase">Clienti</span>
+            <Users
+              className="h-5 w-5"
+              style={
+                isActive('clients')
+                  ? {
+                      color: colors.primary,
+                      filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.08))',
+                      fontWeight: 700,
+                    }
+                  : undefined
+              }
+            />
+            <span
+              className="text-[10px] font-semibold uppercase"
+              style={
+                isActive('clients')
+                  ? { color: colors.primary }
+                  : undefined
+              }
+            >
+              Clienti
+            </span>
           </button>
           <button
             type="button"
             onClick={() => navigate(`${appPrefix}/client-profiles`)}
-            className="flex flex-col items-center gap-1 rounded-xl px-4 py-2"
-            style={{ color: isActive('client-profiles') ? textPrimaryColor : textSecondaryColor }}
+            className={`flex flex-col items-center gap-1 rounded-xl px-4 py-2 transition`}
+            style={{
+              color: isActive('client-profiles') ? textPrimaryColor : textSecondaryColor,
+              background: isActive('client-profiles') ? accentSofter : undefined,
+            }}
             aria-current={isActive('client-profiles') ? 'page' : undefined}
           >
-            <IdCard className="h-5 w-5" />
-            <span className="text-[10px] font-semibold uppercase">Schemi</span>
+            <IdCard
+              className="h-5 w-5"
+              style={
+                isActive('client-profiles')
+                  ? {
+                      color: colors.primary,
+                      filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.08))',
+                      fontWeight: 700,
+                    }
+                  : undefined
+              }
+            />
+            <span
+              className="text-[10px] font-semibold uppercase"
+              style={
+                isActive('client-profiles')
+                  ? { color: colors.primary }
+                  : undefined
+              }
+            >
+              Schemi
+            </span>
           </button>
           <button
             type="button"
             onClick={() => navigate(`${appPrefix}/profile`)}
-            className="flex flex-col items-center gap-1 rounded-xl px-4 py-2"
-            style={{ color: isActive('profile') ? textPrimaryColor : textSecondaryColor }}
+            className={`flex flex-col items-center gap-1 rounded-xl px-4 py-2 transition`}
+            style={{
+              color: isActive('profile') ? textPrimaryColor : textSecondaryColor,
+              background: isActive('profile') ? accentSofter : undefined,
+            }}
             aria-current={isActive('profile') ? 'page' : undefined}
           >
-            <UserCog className="h-5 w-5" />
-            <span className="text-[10px] font-semibold uppercase">Menú</span>
+            <UserCog
+              className="h-5 w-5"
+              style={
+                isActive('profile')
+                  ? {
+                      color: colors.primary,
+                      filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.08))',
+                      fontWeight: 700,
+                    }
+                  : undefined
+              }
+            />
+            <span
+              className="text-[10px] font-semibold uppercase"
+              style={
+                isActive('profile')
+                  ? { color: colors.primary }
+                  : undefined
+              }
+            >
+              Menú
+            </span>
           </button>
         </div>
       </nav>

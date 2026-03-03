@@ -10,8 +10,8 @@ import {
   Timer,
   Banknote,
   Calendar,
-  ChevronLeft,
 } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 import type { Appointment, Client } from '../types';
 import { useSupabaseServices } from '../lib/supabaseService';
 import { useAppColors } from '../hooks/useAppColors';
@@ -112,7 +112,10 @@ export default function AppointmentsConfirmationPage() {
     try {
       setUpdating(appointmentId);
       await appointmentService.update(appointmentId, { status: newStatus });
-      
+      const { cancelAppointmentReminder } = await import(
+        '../lib/localNotifications'
+      );
+      await cancelAppointmentReminder(appointmentId);
       // Update local state
       setAppointments(prev => 
         prev.map(apt => 
@@ -195,18 +198,7 @@ export default function AppointmentsConfirmationPage() {
   if (loading) {
     return (
       <div className="min-h-screen" style={{ backgroundColor }}>
-        <header
-          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
-          style={{ borderColor: accentSofter }}
-        >
-          <button type="button" className="flex items-center gap-1.5 font-medium" style={{ color: accentColor }} aria-label="Indietro">
-            <ChevronLeft className="h-6 w-6" />
-          </button>
-          <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white whitespace-nowrap" style={{ color: textPrimaryColor }}>
-            Conferma Appuntamenti
-          </h1>
-          <div className="h-9 w-9" />
-        </header>
+        <PageHeader title="Conferma Appuntamenti" showBack />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           {/* Skeleton carosello statistiche */}
           <div className="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
@@ -245,28 +237,7 @@ export default function AppointmentsConfirmationPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor }}>
-      {/* Header navigazione: Indietro | Conferma Appuntamenti (stile ClientList) */}
-        <header
-          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
-          style={{ borderColor: accentSofter }}
-        >
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 font-medium transition-opacity hover:opacity-90"
-          style={{ color: accentColor }}
-          aria-label="Indietro"
-        >
-          <ChevronLeft className="h-6 w-6" />
-        </button>
-        <h1
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white whitespace-nowrap"
-          style={{ color: textPrimaryColor }}
-        >
-          Conferma Appuntamenti
-        </h1>
-        <div className="h-9 w-9" />
-      </header>
+      <PageHeader title="Conferma Appuntamenti" showBack />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-6 sm:space-y-8">
         {/* Error (stile ClientList) */}
@@ -311,7 +282,6 @@ export default function AppointmentsConfirmationPage() {
             />
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <Filter className="h-4 w-4 shrink-0 text-gray-400" />
             {[
               { key: 'all' as StatusFilter, label: 'Tutti', count: appointments.length },
               { key: 'pending' as StatusFilter, label: 'In Attesa', count: pendingCount },

@@ -22,6 +22,11 @@ import { useAppColors } from '../hooks/useAppColors';
 import dayjs, { Dayjs } from 'dayjs';
 import { useApp } from '../contexts/AppContext';
 import { hapticSelection } from '../lib/haptics';
+import {
+  scheduleAppointmentReminder,
+  cancelAppointmentReminder,
+} from '../lib/localNotifications';
+import PageHeader from './PageHeader';
 
 interface AppointmentFormProps {
   appointment?: Appointment | null;
@@ -267,12 +272,24 @@ export default function AppointmentForm({
 
       console.log('Dati appuntamento:', appointmentData);
 
+      const selected = getSelectedClient();
+      const clientName =
+        selected?.nome != null || selected?.cognome != null
+          ? `${selected?.nome ?? ''} ${selected?.cognome ?? ''}`.trim() || 'Cliente'
+          : 'Cliente';
+
       if (isEditing && appointment) {
         console.log('Aggiornamento appuntamento...');
-        await appointmentService.update(appointment.id, appointmentData);
+        const updated = await appointmentService.update(
+          appointment.id,
+          appointmentData
+        );
+        await cancelAppointmentReminder(updated.id);
+        await scheduleAppointmentReminder(updated, clientName);
       } else {
         console.log('Creazione nuovo appuntamento...');
-        await appointmentService.create(appointmentData);
+        const created = await appointmentService.create(appointmentData);
+        await scheduleAppointmentReminder(created, clientName);
       }
 
       console.log('Appuntamento salvato con successo!');
@@ -1201,42 +1218,18 @@ export default function AppointmentForm({
 
   return (
     <div className="w-full h-full min-h-screen flex flex-col bg-white relative">
-      {/* Top bar: Annulla | Titolo | (vuoto) — come ClientForm */}
-      <header className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0 bg-white safe-area-header min-h-14">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={loading}
-          className="flex items-center gap-1 font-medium disabled:opacity-50"
-          style={{ color: colors.primary }}
-        >
-          <span className="text-lg leading-none" aria-hidden>‹</span> Annulla
-        </button>
-        <h1 className="text-lg font-bold text-gray-900">
-          {isEditing ? 'Modifica Appuntamento' : 'Nuovo Appuntamento'}
-        </h1>
-        {activeStep === steps.length - 1 ? (
-          <button
-            type="submit"
-            form="appointment-form"
-            disabled={loading}
-            className="shrink-0 text-sm font-semibold disabled:opacity-50"
-            style={{ color: colors.primary }}
-          >
-            {loading ? '...' : isEditing ? 'Aggiorna' : 'Salva'}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={(e) => { e.preventDefault(); handleNext(); }}
-            disabled={!canProceed()}
-            className="shrink-0 text-sm font-semibold disabled:opacity-50"
-            style={{ color: colors.primary }}
-          >
-            Continua
-          </button>
-        )}
-      </header>
+      <PageHeader
+        title={isEditing ? 'Modifica Appuntamento' : 'Nuovo Appuntamento'}
+        showBack
+        onBack={onCancel}
+        backLabel="Annulla"
+        variant="fixed"
+        rightAction={
+          activeStep === steps.length - 1
+            ? { type: 'label', label: loading ? '...' : isEditing ? 'Aggiorna' : 'Salva', formId: 'appointment-form', disabled: loading }
+            : { type: 'label', label: 'Continua', onClick: () => handleNext(), disabled: !canProceed() }
+        }
+      />
 
       {/* Step indicator compatto — pt per non restare sotto l'header fixed */}
       <div className="safe-area-content-below-header px-4 py-2 border-b border-gray-100 flex-shrink-0">

@@ -11,9 +11,9 @@ import {
   Trash2, 
   TrendingUp,
   Sparkles,
-  Check,
-  ChevronLeft
+  Check
 } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 import type { Appointment, Client } from '../types';
 import { useSupabaseServices } from '../lib/supabaseService';
 import { useAppColors } from '../hooks/useAppColors';
@@ -91,6 +91,10 @@ export default function AppointmentsPage() {
     if (!appointmentToDelete) return;
 
     try {
+      const { cancelAppointmentReminder } = await import(
+        '../lib/localNotifications'
+      );
+      await cancelAppointmentReminder(appointmentToDelete.id);
       await appointmentService.delete(appointmentToDelete.id);
       await loadData();
       setShowDeleteDialog(false);
@@ -187,19 +191,7 @@ export default function AppointmentsPage() {
   if (loading) {
     return (
       <div className="min-h-screen" style={{ backgroundColor }}>
-        <header
-          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
-          style={{ borderColor: accentSofter }}
-        >
-          <button type="button" className="flex items-center gap-1.5 font-medium" style={{ color: accentColor }} aria-label="Indietro">
-            <ChevronLeft className="h-6 w-6" />
-            <span>Indietro</span>
-          </button>
-          <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white" style={{ color: textPrimaryColor }}>
-            Gestione Appuntamenti
-          </h1>
-          <div className="h-9 w-9" />
-        </header>
+        <PageHeader title="Gestione Appuntamenti" showBack />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
             {[...Array(4)].map((_, i) => (
@@ -235,36 +227,11 @@ export default function AppointmentsPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor }}>
-      {/* Header navigazione: Indietro | Gestione Appuntamenti | + (stile ClientList) */}
-      <header
-        className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
-        style={{ borderColor: accentSofter }}
-      >
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 font-medium transition-opacity hover:opacity-90"
-          style={{ color: accentColor }}
-          aria-label="Indietro"
-        >
-          <ChevronLeft className="h-6 w-6" />
-        </button>
-        <h1
-          className="text-lg font-bold dark:text-white"
-          style={{ color: textPrimaryColor }}
-        >
-          Gestione Appuntamenti
-        </h1>
-        <button
-          type="button"
-          onClick={handleAddAppointment}
-          className="flex h-9 w-9 items-center justify-center rounded-xl transition-opacity hover:opacity-90"
-          style={{ color: accentColor }}
-          aria-label="Nuovo appuntamento"
-        >
-          <Plus className="h-6 w-6" />
-        </button>
-      </header>
+      <PageHeader
+        title="Gestione Appuntamenti"
+        showBack
+        rightAction={{ type: 'icon', icon: Plus, ariaLabel: 'Nuovo appuntamento', onClick: handleAddAppointment }}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 
@@ -324,7 +291,6 @@ export default function AppointmentsPage() {
             />
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <Filter className="h-4 w-4 shrink-0 text-gray-400" />
             {[
               { key: 'all', label: 'Tutti', count: totalAppointments },
               { key: 'oggi', label: 'Oggi', count: todayAppointments },

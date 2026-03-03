@@ -9,6 +9,13 @@
   box-sizing: border-box;
 }
 
+/* Nessuna sottolineatura in tutta l'app (link, focus, ecc.); line-through inline resta valido */
+*,
+*::before,
+*::after {
+  text-decoration: none;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -26,11 +33,12 @@ html, body {
 #root {
   height: 100%;
   min-height: 100vh;
-  /* Safe area iOS: rispetta notch e home indicator (ignorato su web) */
+  /* Safe area iOS: rispetta notch e home indicator; colore bande #faede0 */
   padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
+  background-color: #faede0;
 }
 
 /* Utility per header sotto notch/Dynamic Island */

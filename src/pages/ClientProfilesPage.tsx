@@ -6,7 +6,8 @@ import { supabaseService } from '../lib/supabaseService';
 import { useAppColors } from '../hooks/useAppColors';
 import { useApp } from '../contexts/AppContext';
 import { useToast } from '../hooks/useToast';
-import { User, Eye, Calendar, Edit3, Search, Filter, ChevronLeft, Users, FileText, List } from 'lucide-react';
+import { User, Eye, Calendar, Edit3, Search, Filter, Users, FileText, List } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 
 const textPrimaryColor = '#2C2C2C';
 const textSecondaryColor = '#7A7A7A';
@@ -161,19 +162,7 @@ const ClientProfilesPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen" style={{ backgroundColor }}>
-        <header
-          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
-          style={{ borderColor: accentSofter }}
-        >
-          <button type="button" className="flex items-center gap-1.5 font-medium" style={{ color: accentColor }} aria-label="Indietro">
-            <ChevronLeft className="h-6 w-6" />
-            <span>Indietro</span>
-          </button>
-          <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white" style={{ color: textPrimaryColor }}>
-            Schede Cliente
-          </h1>
-          <div className="h-9 w-9" />
-        </header>
+        <PageHeader title="Schede Cliente" showBack backLabel="Indietro" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           {/* Skeleton carosello statistiche */}
           <div className="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
@@ -218,29 +207,7 @@ const ClientProfilesPage: React.FC = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor }}>
-      {/* Header navigazione: Indietro | Schede Cliente (stile ClientList) */}
-        <header
-          className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
-          style={{ borderColor: accentSofter }}
-        >
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 font-medium transition-opacity hover:opacity-90"
-          style={{ color: accentColor }}
-          aria-label="Indietro"
-        >
-          <ChevronLeft className="h-6 w-6" />
-          <span>Indietro</span>
-        </button>
-        <h1
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white"
-          style={{ color: textPrimaryColor }}
-        >
-          Schede Cliente
-        </h1>
-        <div className="h-9 w-9" />
-      </header>
+      <PageHeader title="Schede Cliente" showBack backLabel="Indietro" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Carosello statistiche scrollabile */}
@@ -298,7 +265,6 @@ const ClientProfilesPage: React.FC = () => {
             />
           </div>
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 shrink-0 text-gray-400" />
             <span className="text-sm text-gray-500 dark:text-gray-400">{filteredClients.length} clienti</span>
           </div>
         </div>

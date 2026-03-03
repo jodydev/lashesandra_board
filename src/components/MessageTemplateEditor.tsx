@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAppColors } from '../hooks/useAppColors';
 import { useApp } from '../contexts/AppContext';
+import { LoaderContent } from './FullPageLoader';
 import { supabase } from '../lib/supabase';
 import type { MessageTemplate } from '../types';
 
@@ -153,8 +154,8 @@ export default function MessageTemplateEditor({ onSave, onCancel }: MessageTempl
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c2886d]"></div>
+      <div className="flex flex-col items-center justify-center gap-4 h-64">
+        <LoaderContent />
       </div>
     );
   }

@@ -8,11 +8,11 @@ import {
   Calendar,
   Plus,
   Save,
-  ChevronLeft,
   Check,
   AlertCircle,
   Info,
 } from 'lucide-react';
+import PageHeader from './PageHeader';
 import { useAppColors } from '../hooks/useAppColors';
 import { useToast } from '../hooks/useToast';
 import { useApp } from '../contexts/AppContext';
@@ -279,38 +279,13 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
 
   return (
     <div className="min-h-screen" style={{ backgroundColor }}>
-      {/* Header navigazione: Indietro | Scheda Cliente (stile ClientList) */}
-      <header
-        className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header"
-        style={{ borderColor: accentSofter }}
-      >
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex items-center gap-1.5 font-medium transition-opacity hover:opacity-90"
-          style={{ color: accentColor }}
-          aria-label="Indietro"
-        >
-          <ChevronLeft className="h-6 w-6" />
-          <span>Indietro</span>
-        </button>
-        <h1
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold dark:text-white truncate max-w-[60%]"
-          style={{ color: textPrimaryColor }}
-        >
-          {client.nome} {client.cognome}
-        </h1>
-        <button
-          type="submit"
-          form="client-profile-form"
-          disabled={isLoading}
-          className="font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
-          style={{ color: accentColor }}
-          aria-label="Salva"
-        >
-          Salva
-        </button>
-      </header>
+      <PageHeader
+        title={`${client.nome} ${client.cognome}`}
+        showBack
+        onBack={onCancel}
+        backLabel="Indietro"
+        rightAction={{ type: 'label', label: 'Salva', formId: 'client-profile-form', disabled: isLoading }}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Progress */}

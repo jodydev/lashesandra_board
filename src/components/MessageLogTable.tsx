@@ -130,8 +130,8 @@ export default function MessageLogTable({ onRefresh }: MessageLogTableProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c2886d]"></div>
+      <div className="flex flex-col items-center justify-center gap-4 min-h-[16rem]">
+        <LoaderContent />
       </div>
     );
   }
@@ -200,7 +200,6 @@ export default function MessageLogTable({ onRefresh }: MessageLogTableProps) {
 
           {/* Status Filter */}
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-400" />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
