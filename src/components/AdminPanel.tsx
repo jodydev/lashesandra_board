@@ -359,7 +359,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
               setSelectedDate(e.target.value);
               loadAppointments();
             }}
-            className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 transition-all duration-200 text-gray-900 dark:text-white"
+            className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-[#c2886d]/20 focus:border-[#c2886d] transition-all duration-200 text-gray-900 dark:text-white"
           />
         </div>
       </div>

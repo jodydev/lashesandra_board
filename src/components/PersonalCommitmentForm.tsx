@@ -78,7 +78,7 @@ export default function PersonalCommitmentForm({
   return (
     <div
       className="w-full h-full min-h-screen flex flex-col bg-white relative"
-      style={{ backgroundColor: appType === 'isabellenails' ? '#F7F3FA' : '#ffffff' }}
+      style={{ backgroundColor: appType === 'isabellenails' ? '#F7F3FA' : '#faede0' }}
     >
       <header className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3 pt-14 border-b border-gray-100 flex-shrink-0 bg-white">
         <button

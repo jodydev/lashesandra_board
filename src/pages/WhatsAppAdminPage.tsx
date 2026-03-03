@@ -15,7 +15,7 @@ export default function WhatsAppAdminPage() {
   const { appType } = useApp();
   const navigate = useNavigate();
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#ffffff';
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
   const accentGradient = colors.cssGradient;
   const accentSofter = `${colors.primary}14`;
 

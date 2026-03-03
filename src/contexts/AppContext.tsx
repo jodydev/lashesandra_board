@@ -21,7 +21,7 @@ export function AppProvider({ children, appType }: AppProviderProps) {
     appType,
     tablePrefix: appType === 'isabellenails' ? 'isabelle_' : '',
     appName: appType === 'isabellenails' ? 'Isabelle Nails' : 'LashesAndra',
-    appColor: appType === 'isabellenails' ? '#9C27B0' : '#E91E63', // Purple for Isabelle, Pink for LashesAndra
+    appColor: appType === 'isabellenails' ? '#9C27B0' : '#c2886d', // Purple for Isabelle, Terracotta for LashesAndra
   };
 
   return (

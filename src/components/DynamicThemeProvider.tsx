@@ -16,9 +16,9 @@ export default function DynamicThemeProvider({ children }: DynamicThemeProviderP
     palette: {
       mode: 'light',
       primary: {
-        main: isIsabelle ? '#9C27B0' : '#E91E63', // Purple for Isabelle, Pink for LashesAndra
-        light: isIsabelle ? '#BA68C8' : '#F8BBD9',
-        dark: isIsabelle ? '#7B1FA2' : '#C2185B',
+        main: isIsabelle ? '#9C27B0' : '#c2886d', // Purple for Isabelle, Terracotta for LashesAndra
+        light: isIsabelle ? '#BA68C8' : '#e8c4b8',
+        dark: isIsabelle ? '#7B1FA2' : '#a06d52',
         contrastText: '#FFFFFF',
       },
       secondary: {
@@ -28,7 +28,7 @@ export default function DynamicThemeProvider({ children }: DynamicThemeProviderP
         contrastText: '#FFFFFF',
       },
       background: {
-        default: '#FAFAFA', // Soft white
+        default: '#faede0', // Crema
         paper: '#FFFFFF',
       },
       text: {
@@ -139,17 +139,17 @@ export default function DynamicThemeProvider({ children }: DynamicThemeProviderP
             '&:hover': {
               boxShadow: isIsabelle 
                 ? '0px 4px 12px rgba(156, 39, 176, 0.3)'
-                : '0px 4px 12px rgba(233, 30, 99, 0.3)',
+                : '0px 4px 12px rgba(194, 136, 109, 0.3)',
             },
           },
           contained: {
             background: isIsabelle 
               ? 'linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)'
-              : 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)',
+              : 'linear-gradient(135deg, #c2886d 0%, #a06d52 100%)',
             '&:hover': {
               background: isIsabelle 
                 ? 'linear-gradient(135deg, #7B1FA2 0%, #6A1B9A 100%)'
-                : 'linear-gradient(135deg, #C2185B 0%, #AD1457 100%)',
+                : 'linear-gradient(135deg, #a06d52 0%, #8b5a3c 100%)',
             },
           },
         },

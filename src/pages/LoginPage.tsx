@@ -11,8 +11,8 @@ const APP_VERSION = '2.4.0';
 const DEBUG = true;
 const log = (...args: unknown[]) => DEBUG && console.log('[LoginPage]', ...args);
 
-const accentColor = '#E91E63';
-const accentGradient = 'linear-gradient(135deg, #E91E63 0%, #C2185B 50%, #AD1457 100%)';
+const accentColor = '#c2886d';
+const accentGradient = 'linear-gradient(135deg, #c2886d 0%, #a06d52 50%, #8b5a3c 100%)';
 const textSecondary = '#6b7280';
 const inputBg = '#f3f4f6';
 const borderColor = '#e5e7eb';
@@ -114,14 +114,32 @@ export default function LoginPage() {
     return (
       <div className="min-h-[100dvh] bg-white flex items-center justify-center">
         <div
-          className="animate-spin rounded-full h-12 w-12 border-2 border-gray-200 border-t-[#E91E63]"
+          className="animate-spin rounded-full h-12 w-12 border-2 border-gray-200 border-t-[#c2886d]"
         />
       </div>
     );
   }
 
   return (
-    <div className="min-h-[100dvh] bg-white flex flex-col text-[#1a1a1a] pt-20">
+    <div className="min-h-[100dvh] flex flex-col text-[#1a1a1a] relative overflow-hidden">
+      {/* Background image: peach/beige beauty theme */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: 'url(/login.png)',
+          backgroundColor: '#f5ebe6',
+        }}
+        aria-hidden
+      />
+      {/* Overlay leggero per leggibilità form */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(180deg, rgba(255,252,250,0.72) 0%, rgba(245,235,230,0.80) 50%, rgba(250,248,246,0.78) 100%)',
+        }}
+        aria-hidden
+      />
+      <div className="relative flex flex-col flex-1 min-h-0 pt-20">
       <main className="flex-1 overflow-y-auto px-6 pt-8 pb-6 flex flex-col items-center">
         {/* Logo + branding */}
         <div className="flex flex-col items-center mb-10">
@@ -161,7 +179,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                   placeholder="nome@esempio.it"
-                  className="w-full min-h-[52px] rounded-xl border-0 pl-4 pr-12 py-3 text-base text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-[#E91E63]/30 touch-manipulation"
+                  className="w-full min-h-[52px] rounded-xl border-0 pl-4 pr-12 py-3 text-base text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-[#c2886d]/30 touch-manipulation"
                   style={{ backgroundColor: inputBg }}
                 />
                 <span className="absolute right-3 w-8 h-8 rounded-full flex items-center justify-center text-gray-400" style={{ backgroundColor: 'rgba(0,0,0,0.06)' }}>
@@ -183,7 +201,7 @@ export default function LoginPage() {
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                   placeholder="********"
                   enterKeyHint="go"
-                  className="w-full min-h-[52px] rounded-xl border-0 pl-4 pr-12 py-3 text-base text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-[#E91E63]/30 touch-manipulation"
+                  className="w-full min-h-[52px] rounded-xl border-0 pl-4 pr-12 py-3 text-base text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-[#c2886d]/30 touch-manipulation"
                   style={{ backgroundColor: inputBg }}
                 />
                 <button
@@ -236,7 +254,7 @@ export default function LoginPage() {
                 className="w-full min-h-[52px] rounded-xl border py-3.5 font-medium flex items-center justify-center gap-2 bg-white text-black hover:bg-gray-50 active:opacity-90 disabled:opacity-70 touch-manipulation"
                 style={{ borderColor }}
               >
-                <span className="w-8 h-8 rounded-full flex items-center justify-center bg-pink-100 text-[#E91E63]">
+                <span className="w-8 h-8 rounded-full flex items-center justify-center bg-[#faede0] text-[#c2886d]">
                   <ScanFace className="w-4 h-4" strokeWidth={2} />
                 </span>
                 {faceIdSubmitting ? 'Verifica...' : 'Accedi con FaceID'}
@@ -251,6 +269,7 @@ export default function LoginPage() {
       <footer className="flex-shrink-0 py-4 text-center text-[10px] uppercase tracking-wider" style={{ color: '#9ca3af' }}>
         Sviluppata con tanto ❤️ dal tuo Jody.
       </footer>
+      </div>
     </div>
   );
 }

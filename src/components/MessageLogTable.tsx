@@ -131,7 +131,7 @@ export default function MessageLogTable({ onRefresh }: MessageLogTableProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c2886d]"></div>
       </div>
     );
   }
@@ -194,7 +194,7 @@ export default function MessageLogTable({ onRefresh }: MessageLogTableProps) {
               placeholder="Cerca per cliente, telefono o servizio..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 transition-all duration-200 text-gray-900 dark:text-white"
+              className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-[#c2886d]/20 focus:border-[#c2886d] transition-all duration-200 text-gray-900 dark:text-white"
             />
           </div>
 
@@ -204,7 +204,7 @@ export default function MessageLogTable({ onRefresh }: MessageLogTableProps) {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-              className="px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 transition-all duration-200 text-gray-900 dark:text-white"
+              className="px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-[#c2886d]/20 focus:border-[#c2886d] transition-all duration-200 text-gray-900 dark:text-white"
             >
               <option value="all">Tutti gli stati</option>
               <option value="pending">In attesa</option>

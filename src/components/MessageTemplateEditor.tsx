@@ -154,7 +154,7 @@ export default function MessageTemplateEditor({ onSave, onCancel }: MessageTempl
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c2886d]"></div>
       </div>
     );
   }
@@ -274,7 +274,7 @@ export default function MessageTemplateEditor({ onSave, onCancel }: MessageTempl
                 type="text"
                 value={template.name}
                 onChange={(e) => setTemplate(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 transition-all duration-200 text-gray-900 dark:text-white"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-[#c2886d]/20 focus:border-[#c2886d] transition-all duration-200 text-gray-900 dark:text-white"
                 placeholder="Nome del template"
               />
             </div>
@@ -310,7 +310,7 @@ export default function MessageTemplateEditor({ onSave, onCancel }: MessageTempl
                 value={template.content}
                 onChange={(e) => setTemplate(prev => ({ ...prev, content: e.target.value }))}
                 rows={8}
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 transition-all duration-200 text-gray-900 dark:text-white resize-none"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-[#c2886d]/20 focus:border-[#c2886d] transition-all duration-200 text-gray-900 dark:text-white resize-none"
                 placeholder="Inserisci il contenuto del messaggio..."
               />
             </div>
@@ -330,7 +330,7 @@ export default function MessageTemplateEditor({ onSave, onCancel }: MessageTempl
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => insertPlaceholder(placeholder.key)}
-                    className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-pink-500 hover:shadow-lg transition-all duration-200 text-left"
+                    className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-[#c2886d] hover:shadow-lg transition-all duration-200 text-left"
                   >
                     <div className={`w-8 h-8 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl flex items-center justify-center flex-shrink-0`}>
                       <placeholder.icon className={`w-4 h-4 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} />

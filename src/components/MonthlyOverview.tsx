@@ -215,7 +215,7 @@ export default function MonthlyOverview() {
   const { statsService } = useSupabaseServices();
   const colors = useAppColors();
   const { appType } = useApp();
-  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#F8F8F8';
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
   const accentColor = colors.primary;
 
   const [period, setPeriod] = useState<Period>('month');

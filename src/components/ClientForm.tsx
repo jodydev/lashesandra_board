@@ -23,7 +23,7 @@ export default function ClientForm({ clientId, onSuccess, onCancel, onRequestDel
   const { clientService } = useSupabaseServices();
   const { appType } = useApp();
   const colors = useAppColors();
-  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#ffffff';
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
   const accentColor = colors.primary;
   const accentGradient = colors.cssGradient;
   const accentSoft = `${colors.primary}29`;

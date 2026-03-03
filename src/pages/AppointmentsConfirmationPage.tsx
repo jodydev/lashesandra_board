@@ -71,7 +71,7 @@ export default function AppointmentsConfirmationPage() {
   const { appointmentService, clientService } = useSupabaseServices();
   const colors = useAppColors();
   const { appType } = useApp();
-  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#ffffff';
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
   const accentColor = colors.primary;
   const accentGradient = colors.cssGradient;
   const accentSoft = `${colors.primary}29`;

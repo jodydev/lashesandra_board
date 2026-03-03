@@ -13,14 +13,14 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ScrollToTop from './components/ScrollToTop';
 
 
-// Modern Design System with Pink/Black/White palette inspired by Material Design 3
+// Design System: palette #faede0 (crema), #c2886d (terracotta)
 const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#E91E63', // Vibrant pink
-      light: '#F8BBD9',
-      dark: '#C2185B',
+      main: '#c2886d', // Terracotta
+      light: '#e8c4b8',
+      dark: '#a06d52',
       contrastText: '#FFFFFF',
     },
     secondary: {
@@ -30,7 +30,7 @@ const theme = createTheme({
       contrastText: '#FFFFFF',
     },
     background: {
-      default: '#FAFAFA', // Soft white
+      default: '#faede0', // Crema
       paper: '#FFFFFF',
     },
     text: {
@@ -139,13 +139,13 @@ const theme = createTheme({
           textTransform: 'none',
           boxShadow: 'none',
           '&:hover': {
-            boxShadow: '0px 4px 12px rgba(233, 30, 99, 0.3)',
+            boxShadow: '0px 4px 12px rgba(194, 136, 109, 0.3)',
           },
         },
         contained: {
-          background: 'linear-gradient(135deg, #E91E63 0%, #C2185B 100%)',
+          background: 'linear-gradient(135deg, #c2886d 0%, #a06d52 100%)',
           '&:hover': {
-            background: 'linear-gradient(135deg, #C2185B 0%, #AD1457 100%)',
+            background: 'linear-gradient(135deg, #a06d52 0%, #8b5a3c 100%)',
           },
         },
       },

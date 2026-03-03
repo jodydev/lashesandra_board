@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import ClientForm from '../components/ClientForm';
 
-const backgroundColor = (appType: string) => (appType === 'isabellenails' ? '#F7F3FA' : '#ffffff');
+const backgroundColor = (appType: string) => (appType === 'isabellenails' ? '#F7F3FA' : '#faede0');
 
 export default function ClientFormPage() {
   const { id } = useParams<{ id: string }>();

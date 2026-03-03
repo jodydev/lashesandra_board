@@ -68,7 +68,7 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
 
   const textPrimaryColor = '#2C2C2C';
   const textSecondaryColor = '#7A7A7A';
-  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#FFF6FA';
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
   const surfaceColor = '#FFFFFF';
   const accentDark = colors.primaryDark;
   const accentGradient = colors.cssGradient;
@@ -595,7 +595,7 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                                   value={option}
                                   checked={formData.caratteristiche_occhi[key as keyof EyeCharacteristics] === option}
                                   onChange={(e) => handleEyeCharacteristicsChange(key as keyof EyeCharacteristics, e.target.value)}
-                                  className="w-4 h-4 accent-pink-500 bg-gray-100 border-gray-300 focus:ring-2 focus:ring-offset-0 dark:bg-gray-700 dark:border-gray-600"
+                                  className="w-4 h-4 accent-[#c2886d] bg-gray-100 border-gray-300 focus:ring-2 focus:ring-offset-0 dark:bg-gray-700 dark:border-gray-600"
                                 />
                                 <span className="ml-3 text-sm font-medium capitalize">
                                   {option.replace('_', ' ')}
@@ -662,7 +662,7 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
                                 type="checkbox"
                                 checked={formData.profilo_cliente[key as keyof ClientProfile] as boolean}
                                 onChange={(e) => handleProfileChange(key as keyof ClientProfile, e.target.checked)}
-                                className="w-5 h-5 accent-pink-500 dark:accent-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-2 focus:ring-offset-0 dark:bg-gray-700 dark:border-gray-600"
+                                className="w-5 h-5 accent-[#c2886d] dark:accent-[#a06d52] bg-gray-100 border-gray-300 rounded focus:ring-2 focus:ring-offset-0 dark:bg-gray-700 dark:border-gray-600"
                               />
                             </div>
                             <div className="ml-4 flex-1">
@@ -819,7 +819,7 @@ const ClientProfileForm: React.FC<ClientProfileFormProps> = ({
             }}
           >
             <div className="flex items-center text-sm" style={{ color: textSecondaryColor }}>
-              <span>Grado completamento profilo: <span className="font-bold text-pink-500">{progress}%</span></span>
+              <span>Grado completamento profilo: <span className="font-bold text-[#c2886d]">{progress}%</span></span>
             </div>
 
             <div className="flex gap-4">

@@ -141,7 +141,7 @@ export default function AppointmentForm({
   const colors = useAppColors();
   const textPrimaryColor = '#2C2C2C';
   const textSecondaryColor = '#7A7A7A';
-  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#ffffff';
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
   const surfaceColor = '#FFFFFF';
   const accentColor = colors.primary;
   const accentDark = colors.primaryDark;
@@ -528,8 +528,8 @@ export default function AppointmentForm({
                               >
                                 {/* Outer Ring */}
                                 <div className={`absolute inset-0 rounded-3xl transition-all duration-500 ${formData.client_id === client.id
-                                    ? 'bg-gradient-to-br from-pink-500/20 to-pink-600/20 scale-110'
-                                    : 'bg-gradient-to-br from-gray-300/20 to-gray-400/20 scale-100 group-hover:from-pink-400/20 group-hover:to-pink-500/20 group-hover:scale-105'
+                                    ? 'bg-gradient-to-br from-[#c2886d]/20 to-[#a06d52]/20 scale-110'
+                                    : 'bg-gradient-to-br from-gray-300/20 to-gray-400/20 scale-100 group-hover:from-[#c2886d]/20 group-hover:to-[#a06d52]/20 group-hover:scale-105'
                                   }`} />
 
                                 {/* Main Avatar */}
@@ -570,7 +570,7 @@ export default function AppointmentForm({
                                       animate={{ opacity: 1, x: 0 }}
                                       transition={{ delay: index * 0.1 + 0.3 }}
                                     >
-                                      <div className="w-5 h-5 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover/contact:bg-pink-100 dark:group-hover/contact:bg-pink-900/30 transition-colors duration-200">
+                                      <div className="w-5 h-5 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover/contact:bg-[#faede0] dark:group-hover/contact:bg-[#c2886d]/30 transition-colors duration-200">
                                         <Mail className="w-3 h-3" strokeWidth={2.5} />
                                       </div>
                                       <span className="text-sm font-medium truncate max-w-[140px] group-hover/contact:text-gray-700 dark:group-hover/contact:text-gray-300 transition-colors duration-200">
@@ -586,7 +586,7 @@ export default function AppointmentForm({
                                       animate={{ opacity: 1, x: 0 }}
                                       transition={{ delay: index * 0.1 + 0.4 }}
                                     >
-                                      <div className="w-5 h-5 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover/contact:bg-pink-100 dark:group-hover/contact:bg-pink-900/30 transition-colors duration-200">
+                                      <div className="w-5 h-5 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover/contact:bg-[#faede0] dark:group-hover/contact:bg-[#c2886d]/30 transition-colors duration-200">
                                         <Phone className="w-3 h-3" strokeWidth={2.5} />
                                       </div>
                                       <span className="text-sm font-medium group-hover/contact:text-gray-700 dark:group-hover/contact:text-gray-300 transition-colors duration-200">
@@ -598,7 +598,7 @@ export default function AppointmentForm({
                               </div>
                             </div>
 
-                            <div className="absolute bottom-0 left-0 h-full bg-gradient-to-r from-pink-400 to-pink-500" />
+                            <div className="absolute bottom-0 left-0 h-full bg-gradient-to-r from-[#c2886d] to-[#a06d52]" />
                           </motion.button>
                         </motion.div>
                       ))}
@@ -906,7 +906,7 @@ export default function AppointmentForm({
                   <div className="space-y-2 sm:space-y-3">
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
                       Importo in Euro
-                      <span className="text-pink-500 ml-1">*</span>
+                      <span className="text-[#c2886d] ml-1">*</span>
                     </label>
                     <div className="relative group">
                       <input
@@ -1241,7 +1241,7 @@ export default function AppointmentForm({
           {steps.map((_, index) => (
             <div
               key={steps[index].id}
-              className={`h-1.5 flex-1 max-w-12 rounded-full transition-colors ${index <= activeStep ? 'bg-pink-500' : 'bg-gray-200'
+              className={`h-1.5 flex-1 max-w-12 rounded-full transition-colors ${index <= activeStep ? 'bg-[#c2886d]' : 'bg-gray-200'
                 }`}
             />
           ))}
@@ -1279,7 +1279,7 @@ export default function AppointmentForm({
                   key={item.label}
                   type="button"
                   onClick={() => item.onClick?.()}
-                  className="px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-left transition-colors hover:border-pink-300 focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none"
+                  className="px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-left transition-colors hover:border-[#c2886d] focus:ring-2 focus:ring-[#c2886d] focus:border-transparent outline-none"
                 >
                   <span className="text-xs font-medium text-gray-500 block mb-0.5">{item.label}</span>
                   <span className="text-sm font-semibold text-gray-900 line-clamp-2">{item.value}</span>

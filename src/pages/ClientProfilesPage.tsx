@@ -25,7 +25,7 @@ const ClientProfilesPage: React.FC = () => {
   const colors = useAppColors();
   const { appType } = useApp();
   const { showSuccess, showError } = useToast();
-  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#ffffff';
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
   const accentColor = colors.primary;
   const accentGradient = colors.cssGradient;
   const accentSofter = `${colors.primary}14`;

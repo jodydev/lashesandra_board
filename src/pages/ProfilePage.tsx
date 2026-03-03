@@ -48,7 +48,7 @@ export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const { appType } = useApp();
   const colors = useAppColors();
-  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#ffffff';
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
   const accentColor = colors.primary;
   const accentGradient = colors.cssGradient;
   const accentSofter = `${colors.primary}14`;

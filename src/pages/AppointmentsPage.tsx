@@ -39,7 +39,7 @@ export default function AppointmentsPage() {
 
   const textPrimaryColor = '#2C2C2C';
   const textSecondaryColor = '#7A7A7A';
-  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#ffffff';
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
   const surfaceColor = '#FFFFFF';
   const accentColor = colors.primary;
   const accentDark = colors.primaryDark;

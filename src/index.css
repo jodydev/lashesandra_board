@@ -65,18 +65,18 @@ html, body {
 
 /* Selection styles */
 ::selection {
-  background: rgba(233, 30, 99, 0.2);
+  background: rgba(194, 136, 109, 0.2);
   color: #212121;
 }
 
 ::-moz-selection {
-  background: rgba(233, 30, 99, 0.2);
+  background: rgba(194, 136, 109, 0.2);
   color: #212121;
 }
 
 /* Focus styles */
 *:focus-visible {
-  outline: 2px solid #E91E63;
+  outline: 2px solid #c2886d;
   outline-offset: 2px;
 }
 
@@ -93,7 +93,7 @@ html, body {
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #E91E63 0%, #C2185B 100%);
+  background: linear-gradient(135deg, #c2886d 0%, #a06d52 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

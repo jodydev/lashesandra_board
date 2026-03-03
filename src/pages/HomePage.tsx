@@ -30,7 +30,7 @@ export default function HomePage() {
   const { clientService, appointmentService } = useSupabaseServices();
   const { appType, appName } = useApp();
   const colors = useAppColors();
-  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#ffffff';
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
   const accentColor = colors.primary;
   const accentDark = colors.primaryDark;
   const accentGradient = colors.cssGradient;

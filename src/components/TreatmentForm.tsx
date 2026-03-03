@@ -427,7 +427,7 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
                     value="si"
                     checked={treatment.refill === 'si'}
                     onChange={(e) => handleFieldChange('refill', e.target.value)}
-                    className="w-5 h-5 accent-pink-600 bg-gray-100 border-gray-300 rounded-full focus:ring-2 focus:ring-pink-500 dark:focus:ring-pink-600 dark:ring-offset-gray-800"
+                    className="w-5 h-5 accent-[#c2886d] bg-gray-100 border-gray-300 rounded-full focus:ring-2 focus:ring-[#c2886d] dark:focus:ring-[#a06d52] dark:ring-offset-gray-800"
                   />
                   <span className="text-sm" style={{ color: textPrimary }}>Sì</span>
                 </label>
@@ -438,7 +438,7 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
                     value="no"
                     checked={treatment.refill === 'no'}
                     onChange={(e) => handleFieldChange('refill', e.target.value)}
-                    className="w-5 h-5 accent-pink-600 bg-gray-100 border-gray-300 rounded-full focus:ring-2 focus:ring-pink-500 dark:focus:ring-pink-600 dark:ring-offset-gray-800"
+                    className="w-5 h-5 accent-[#c2886d] bg-gray-100 border-gray-300 rounded-full focus:ring-2 focus:ring-[#c2886d] dark:focus:ring-[#a06d52] dark:ring-offset-gray-800"
                   />
                   <span className="text-sm" style={{ color: textPrimary }}>No</span>
                 </label>
@@ -457,7 +457,7 @@ const TreatmentForm: React.FC<TreatmentFormProps> = ({
                       type="checkbox"
                       checked={treatment.bigodini?.includes(bigodino) || false}
                       onChange={(e) => handleBigodiniChange(bigodino, e.target.checked)}
-                      className="w-5 h-5 accent-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-2 focus:ring-pink-500 dark:focus:ring-pink-600 dark:ring-offset-gray-800"
+                      className="w-5 h-5 accent-[#c2886d] bg-gray-100 border-gray-300 rounded focus:ring-2 focus:ring-[#c2886d] dark:focus:ring-[#a06d52] dark:ring-offset-gray-800"
                     />
                     <span className="text-sm" style={{ color: textPrimary }}>{bigodino}</span>
                   </label>

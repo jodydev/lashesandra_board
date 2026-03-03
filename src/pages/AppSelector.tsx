@@ -14,7 +14,7 @@ export default function AppSelector() {
   const colors = useAppColors();
   const accentGradient = colors.cssGradient;
   const accentSofter = `${colors.primary}14`;
-  const backgroundColor = '#F7F3FA';
+  const backgroundColor = '#faede0';
 
   const handleLogout = async () => {
     await signOut();
@@ -26,7 +26,7 @@ export default function AppSelector() {
       id: 'lashesandra',
       name: 'LashesAndra',
       description: 'Gestione clienti e appuntamenti per LashesAndra',
-      color: 'from-pink-500 to-pink-600',
+      color: 'from-[#c2886d] to-[#a06d52]',
       icon: Heart,
       route: '/lashesandra'
     },
