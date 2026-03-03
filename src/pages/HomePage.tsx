@@ -77,13 +77,15 @@ export default function HomePage() {
   const { stats, nextAppointment } = useMemo(() => {
     const now = dayjs();
     const currentMonth = now;
-    const currentMonthAppointments = appointments.filter((apt: Appointment) =>
-      dayjs(apt.data).isSame(currentMonth, 'month')
-    );
     const previousMonth = currentMonth.subtract(1, 'month');
-    const previousMonthAppointments = appointments.filter((apt: Appointment) =>
-      dayjs(apt.data).isSame(previousMonth, 'month')
-    );
+    // Solo appuntamenti confermati (completati) dalla pagina di conferma contano per entrate e conteggi
+    const completedOnly = (apt: Appointment) => apt.status === 'completed';
+    const currentMonthAppointments = appointments
+      .filter(completedOnly)
+      .filter((apt: Appointment) => dayjs(apt.data).isSame(currentMonth, 'month'));
+    const previousMonthAppointments = appointments
+      .filter(completedOnly)
+      .filter((apt: Appointment) => dayjs(apt.data).isSame(previousMonth, 'month'));
     const previousMonthRevenue = previousMonthAppointments.reduce(
       (sum: number, apt: Appointment) => sum + apt.importo,
       0
