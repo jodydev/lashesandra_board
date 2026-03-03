@@ -121,7 +121,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col text-[#1a1a1a] relative overflow-hidden pt-32">
+    <div className="min-h-[100dvh] flex flex-col text-[#1a1a1a] relative overflow-hidden pt-16">
       {/* Background image: peach/beige beauty theme */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
