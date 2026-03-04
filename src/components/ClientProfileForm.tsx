@@ -42,7 +42,7 @@ function FieldLabel({ children, required, hint }: { children: React.ReactNode; r
 }
 
 const inputStyle: React.CSSProperties = {
-  width: '100%', boxSizing: 'border-box',
+  width: '90%', boxSizing: 'border-box',
   height: 50, padding: '0 16px',
   borderRadius: 14, border: `1.5px solid ${C.border}`,
   background: '#FAFAFA', fontSize: 15, color: C.text,

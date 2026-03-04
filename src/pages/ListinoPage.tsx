@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Trash2, Sparkles, AlertCircle,
   X, Euro, Clock,
@@ -66,12 +65,7 @@ function EntryCard(props: Readonly<{
 }>) {
   const { entry, index, total, onEdit, onDelete, onMoveUp, onMoveDown } = props;
   return (
-    <motion.li
-      layout
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.97, y: -8 }}
-      transition={{ duration: 0.22 }}
+    <li
       style={{
         background: C.surface,
         border: `1.5px solid ${C.border}`,
@@ -168,7 +162,7 @@ function EntryCard(props: Readonly<{
           </button>
         </div>
       </div>
-    </motion.li>
+    </li>
   );
 }
 
@@ -240,8 +234,7 @@ function EntrySheet(props: Readonly<{
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+    <div
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
         background: 'rgba(44,28,20,0.5)',
@@ -249,9 +242,7 @@ function EntrySheet(props: Readonly<{
       }}
       onClick={onCancel}
     >
-      <motion.div
-        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-        transition={{ type: 'spring', stiffness: 380, damping: 38 }}
+      <div
         onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 540, margin: '0 auto',
@@ -514,10 +505,9 @@ function EntrySheet(props: Readonly<{
             >
               Annulla
             </button>
-            <motion.button
+            <button
               type="submit"
               disabled={saving}
-              whileTap={{ scale: 0.97 }}
               style={{
                 flex: 2, height: 52, borderRadius: 17, border: 'none',
                 background: saving ? C.border : GRAD,
@@ -529,18 +519,24 @@ function EntrySheet(props: Readonly<{
               }}
             >
               {saving
-                ? <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 0.8, ease: 'linear' }}
-                    style={{ width: 20, height: 20, border: '3px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: 10 }}
+                ? (
+                  <div
+                    style={{
+                      width: 20,
+                      height: 20,
+                      border: '3px solid rgba(255,255,255,0.3)',
+                      borderTopColor: '#fff',
+                      borderRadius: 10,
+                    }}
                   />
+                )
                 : <> {entry ? 'Aggiorna' : 'Aggiungi'}</>
               }
-            </motion.button>
+            </button>
           </div>
         </form>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }
 
@@ -551,8 +547,7 @@ function DeleteSheet({
   entry: TreatmentCatalogEntry; onConfirm: () => void; onCancel: () => void;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+    <div
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
         background: 'rgba(44,28,20,0.5)',
@@ -560,9 +555,7 @@ function DeleteSheet({
       }}
       onClick={onCancel}
     >
-      <motion.div
-        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-        transition={{ type: 'spring', stiffness: 380, damping: 38 }}
+      <div
         onClick={e => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 540, margin: '0 auto',
@@ -601,9 +594,8 @@ function DeleteSheet({
           >
             Annulla
           </button>
-          <motion.button
+          <button
             type="button" onClick={onConfirm}
-            whileTap={{ scale: 0.97 }}
             style={{
               flex: 1, height: 52, borderRadius: 17, border: 'none',
               background: C.red, fontWeight: 800, fontSize: 15, color: '#FFF',
@@ -612,10 +604,10 @@ function DeleteSheet({
             }}
           >
             Elimina
-          </motion.button>
+          </button>
         </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }
 
@@ -745,25 +737,22 @@ export default function ListinoPage() {
       <main style={{ maxWidth: 540, margin: '0 auto', padding: '20px 16px 100px' }} className="safe-area-content-below-header">
 
         {/* Error */}
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                marginBottom: 16, padding: '12px 16px', borderRadius: 16,
-                background: C.redBg, border: `1.5px solid rgba(239,68,68,0.3)`,
-                fontSize: 14, color: C.red, fontWeight: 600,
-              }}
-            >
-              <AlertCircle size={16} />
-              <span style={{ flex: 1 }}>{error}</span>
-              <button type="button" onClick={() => setError(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4 }}>
-                <X size={14} color={C.red} />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {error && (
+          <div
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              marginBottom: 16, padding: '12px 16px', borderRadius: 16,
+              background: C.redBg, border: `1.5px solid rgba(239,68,68,0.3)`,
+              fontSize: 14, color: C.red, fontWeight: 600,
+            }}
+          >
+            <AlertCircle size={16} />
+            <span style={{ flex: 1 }}>{error}</span>
+            <button type="button" onClick={() => setError(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4 }}>
+              <X size={14} color={C.red} />
+            </button>
+          </div>
+        )}
 
         {/* Summary stats */}
         {entries.length > 0 && (
@@ -836,8 +825,7 @@ export default function ListinoPage() {
 
         {/* Empty state */}
         {entries.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          <div
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               padding: '52px 24px',
@@ -856,9 +844,8 @@ export default function ListinoPage() {
             <p style={{ fontSize: 14, color: C.muted, marginTop: 8, maxWidth: 260, lineHeight: 1.6 }}>
               Aggiungi i tuoi trattamenti con prezzi e durate per velocizzare la creazione degli appuntamenti.
             </p>
-            <motion.button
+            <button
               type="button"
-              whileTap={{ scale: 0.97 }}
               onClick={() => { setEditTarget(null); setShowSheet(true); }}
               style={{
                 marginTop: 24, height: 52, padding: '0 28px',
@@ -870,16 +857,12 @@ export default function ListinoPage() {
               }}
             >
               <Plus size={18} /> Aggiungi trattamento
-            </motion.button>
-          </motion.div>
+            </button>
+          </div>
         ) : (
-          <motion.ul
-            layout
-            style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}
-          >
-            <AnimatePresence initial={false}>
-              {entries.map((entry, i) => (
-                <EntryCard
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {entries.map((entry, i) => (
+              <EntryCard
                   key={entry.id}
                   entry={entry}
                   index={i}
@@ -905,70 +888,59 @@ export default function ListinoPage() {
                   onMoveDown={e => handleMove(e, 'down')}
                 />
               ))}
-            </AnimatePresence>
-          </motion.ul>
+          </ul>
         )}
       </main>
 
       {/* Fullscreen white success overlay instead of toast */}
-      <AnimatePresence>
-        {successMsg && (
-          <motion.div
-            initial={{ opacity: 0, scale: 1.03 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
+      {successMsg && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            background: '#FFF',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Check size={54} color={C.ok} strokeWidth={3} style={{ marginBottom: 24 }} />
+          <span
             style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 99999,
-              background: '#FFF',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'background 0.2s',
+              fontSize: 22,
+              fontWeight: 800,
+              color: C.text,
+              textAlign: 'center',
+              whiteSpace: 'pre-line',
+              maxWidth: 400,
+              letterSpacing: 0.01,
             }}
           >
-            <Check size={54} color={C.ok} strokeWidth={3} style={{ marginBottom: 24 }} />
-            <span
-              style={{
-                fontSize: 22,
-                fontWeight: 800,
-                color: C.text,
-                textAlign: 'center',
-                whiteSpace: 'pre-line',
-                maxWidth: 400,
-                letterSpacing: 0.01,
-              }}
-            >
-              {successMsg}
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {successMsg}
+          </span>
+        </div>
+      )}
 
       {/* Sheets */}
-      <AnimatePresence>
-        {showSheet && (
-          <EntrySheet
+      {showSheet && (
+        <EntrySheet
             entry={editTarget}
             materials={materials}
             initialMaterialsConfig={editTarget ? editMaterialsConfig : []}
             onSave={handleSave}
             onCancel={() => { setShowSheet(false); setEditTarget(null); setEditMaterialsConfig([]); }}
           />
-        )}
-      </AnimatePresence>
+      )}
 
-      <AnimatePresence>
-        {deleteTarget && (
-          <DeleteSheet
-            entry={deleteTarget}
-            onConfirm={handleConfirmDelete}
-            onCancel={() => setDeleteTarget(null)}
-          />
-        )}
-      </AnimatePresence>
+      {deleteTarget && (
+        <DeleteSheet
+          entry={deleteTarget}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
     </div>
   );
 }

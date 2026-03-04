@@ -1149,7 +1149,7 @@ export default function AppointmentForm({
             exit={{ opacity: 0 }}
             style={{
               position: 'fixed', inset: 0, zIndex: 100,
-              background: 'rgba(250,240,232,0.95)',
+              background: '#ffffff',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >
