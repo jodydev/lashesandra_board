@@ -297,7 +297,7 @@ export default function AppointmentsPage() {
   if (loading) {
     return (
       <div className="min-h-screen" style={{ backgroundColor }}>
-        <PageHeader title="Gestione Appuntamenti" showBack backLabel="Indietro" />
+        <PageHeader title="Appuntamenti" showBack backLabel="Indietro" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
             {[...Array(4)].map((_, i) => (
@@ -334,7 +334,7 @@ export default function AppointmentsPage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor }}>
       <PageHeader
-        title="Gestione Appuntamenti"
+        title="Appuntamenti"
         showBack
         backLabel="Indietro"
         rightAction={{ type: 'icon', icon: Plus, ariaLabel: 'Nuovo appuntamento', onClick: handleAddAppointment }}
