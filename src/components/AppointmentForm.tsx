@@ -134,7 +134,8 @@ function Chip({ active, onClick, children, disabled }: {
 }
 
 /** Large selectable card row */
-function SelectRow({ selected, onClick, left, title, subtitle, right }: {
+function SelectRow({ noPhoneIcon, selected, onClick, left, title, subtitle, right }: {
+  noPhoneIcon?: boolean;
   selected: boolean; onClick: () => void;
   left?: React.ReactNode; title: string; subtitle?: string; right?: React.ReactNode;
 }) {
@@ -158,9 +159,9 @@ function SelectRow({ selected, onClick, left, title, subtitle, right }: {
       {left}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontWeight: 700, fontSize: 15, color: '#2C2C2C', marginBottom: 2 }}>{title}</p>
-        {subtitle && (
+        {subtitle &&  (
           <p style={{ fontSize: 13, color: '#9A8880', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Phone size={12} color="#B09080" />
+            {!noPhoneIcon && <Phone size={12} color="#B09080" />}
             {subtitle}
           </p>
         )}
@@ -329,7 +330,7 @@ function StepDateTime({ formData, setFormData }: { formData: any; setFormData: (
             value={formData.data.format('YYYY-MM-DD')}
             onChange={e => setFormData((p: any) => ({ ...p, data: dayjs(e.target.value) }))}
             style={{
-              width: '100%', boxSizing: 'border-box',
+              width: '80%', boxSizing: 'border-box',
               height: 52, padding: '0 16px',
               borderRadius: 14, border: '1.5px solid #EDE0D8',
               background: '#FAFAFA', fontSize: 16, color: '#2C2C2C',
@@ -360,7 +361,7 @@ function StepDateTime({ formData, setFormData }: { formData: any; setFormData: (
             value={formData.ora}
             onChange={e => setFormData((p: any) => ({ ...p, ora: e.target.value }))}
             style={{
-              width: '100%', boxSizing: 'border-box',
+              width: '80%', boxSizing: 'border-box',
               height: 52, padding: '0 16px',
               borderRadius: 14, border: '1.5px solid #EDE0D8',
               background: '#FAFAFA', fontSize: 20, fontWeight: 700, color: '#C07850',
@@ -423,19 +424,6 @@ function StepTreatment({
             />
           </div>
 
-          {/* Generic option */}
-          <SelectRow
-            selected={formData.tipo_trattamento === ''}
-            onClick={() => { hapticSelection(); setFormData((p: any) => ({ ...p, treatment_catalog_id: null, tipo_trattamento: '', duration_minutes: DEFAULT_APPOINTMENT_DURATION_MINUTES })); }}
-            left={
-              <div style={{ width: 44, height: 44, borderRadius: 14, background: '#F5EAE4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Sparkles size={20} color="#C07850" />
-              </div>
-            }
-            title="Appuntamento generico"
-            subtitle="Senza trattamento specificato"
-          />
-
           <div style={{ height: 1, background: '#F5EAE4' }} />
 
           {/* List */}
@@ -458,6 +446,7 @@ function StepTreatment({
                         }));
                       }}
                       title={entry.name}
+                      noPhoneIcon
                       subtitle={`€${entry.base_price} · ${entry.duration_minutes} min`}
                     />
                   );
@@ -945,7 +934,7 @@ export default function AppointmentForm({
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', background: '#FAF0E8', display: 'flex', flexDirection: 'column' }}>
+    <div className="safe-area-content-below-header" style={{ minHeight: '100vh', background: '#FAF0E8', display: 'flex', flexDirection: 'column' }}>
 
       {/* ── Header ── */}
       <PageHeader
