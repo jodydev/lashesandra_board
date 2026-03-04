@@ -934,7 +934,7 @@ export default function AppointmentForm({
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen" style={{ minHeight: '100vh', background: '#FAF0E8', display: 'flex', flexDirection: 'column' }}>
+    <div className="min-h-screen pt-14" style={{ minHeight: '100vh', background: '#FAF0E8', display: 'flex', flexDirection: 'column' }}>
 
       {/* ── Header ── */}
       <PageHeader

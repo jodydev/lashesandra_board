@@ -3,9 +3,12 @@
  * Rigenera le splash screen iOS e Android da public/logo.png
  * Richiede sips (macOS).
  */
-const { execSync } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+import { execSync } from 'child_process';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const root = path.resolve(__dirname, '..');
 const logo = path.join(root, 'public', 'logo.png');

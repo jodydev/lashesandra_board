@@ -210,6 +210,7 @@ export default function ClientList() {
       <PageHeader
         title="Lista Clienti"
         showBack
+        backLabel="Indietro"
         rightAction={{ type: 'icon', icon: Plus, ariaLabel: 'Aggiungi cliente', onClick: handleAddClient }}
       />
 

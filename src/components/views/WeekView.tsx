@@ -302,12 +302,6 @@ export default function WeekView({
                               : {}),
                           }}
                         >
-                          <div
-                            className="absolute inset-0 rounded-xl"
-                            style={{
-                              backgroundColor: isPast ? 'rgba(0,0,0,0.03)' : accentSofter,
-                            }}
-                          />
                           <div className="relative z-10">
                             <WeekViewEventCard
                               appointment={appointment}
