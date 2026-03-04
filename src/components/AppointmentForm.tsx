@@ -933,10 +933,15 @@ export default function AppointmentForm({
   const stepTitles = ['Seleziona cliente', 'Seleziona data e ora', 'Servizio e importo', 'Riepilogo'];
 
   // ── Render ─────────────────────────────────────────────────────────────────
+  // Wrapper con safe-area-top: il form può essere mostrato in overlay fixed (es. da AppointmentsPage)
+  // dove non si eredita il padding di #root; così l’header rispetta notch/safe area come nelle altre pagine.
   return (
     <div
-      className="min-h-screen"
-      style={{ backgroundColor }}
+      className="min-h-screen flex flex-col min-h-0 flex-1"
+      style={{
+        backgroundColor,
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+      }}
     >
 
       {/* ── Header ── */}
@@ -944,8 +949,8 @@ export default function AppointmentForm({
         title={stepTitles[activeStep]}
         showBack
         onBack={goBack}
+        skipSafeAreaTop
       />
-      <main style={{ maxWidth: 540, margin: '0 auto', padding: '20px 16px 100px' }} className="safe-area-content-below-header">
 
       {/* ── Overlap warning ── */}
       <AnimatePresence>
@@ -1171,7 +1176,6 @@ export default function AppointmentForm({
           </motion.div>
         )}
       </AnimatePresence>
-      </main>
     </div>
   );
 }

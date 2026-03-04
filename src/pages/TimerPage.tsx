@@ -219,7 +219,7 @@ export default function TimerPage() {
 
   // ── render ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: "100vh", background: BG, fontFamily: "'SF Pro Display', 'Helvetica Neue', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: BG, fontFamily: "'Raleway', 'Helvetica Neue', sans-serif" }}>
       <style>{`
         @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
         @keyframes slideUp { from { transform:translateY(100%) } to { transform:translateY(0) } }
