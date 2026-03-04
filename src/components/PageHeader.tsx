@@ -56,12 +56,11 @@ export default function PageHeader({
 
   useEffect(() => {
     document.documentElement.classList.add(ROOT_CLASS_PAGE_HEADER);
-    return () => document.documentElement.classList.remove(ROOT_CLASS_PAGE_HEADER);
   }, []);
 
   const baseClasses =
     'relative flex h-14 min-h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800' +
-    (skipSafeAreaTop ? '' : ' safe-area-header');
+    (skipSafeAreaTop ? 'h-32' : ' safe-area-header');
   const variantClasses =
     variant === 'fixed'
       ? 'fixed top-0 left-0 right-0 z-10 flex-shrink-0'

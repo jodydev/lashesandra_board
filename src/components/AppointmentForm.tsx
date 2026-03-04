@@ -944,6 +944,7 @@ export default function AppointmentForm({
         title={stepTitles[activeStep]}
         showBack
         onBack={goBack}
+        skipSafeAreaTop
       />
 
       {/* ── Overlap warning ── */}
