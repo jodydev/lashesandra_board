@@ -929,12 +929,12 @@ export default function AppointmentForm({
 
   const selectedClient = clients.find(c => c.id === formData.client_id);
   const direction = activeStep > prevStep ? 1 : -1;
-
+  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
   const stepTitles = ['Seleziona cliente', 'Seleziona data e ora', 'Servizio e importo', 'Riepilogo'];
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen pt-14" style={{ minHeight: '100vh', background: '#FAF0E8', display: 'flex', flexDirection: 'column' }}>
+    <div className="min-h-screen" style={{ backgroundColor }}>
 
       {/* ── Header ── */}
       <PageHeader
