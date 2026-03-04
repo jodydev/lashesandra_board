@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   CheckCircle2,
   XCircle,
   Filter,
   Search,
   X,
-  Activity,
   Timer,
   Banknote,
-  Calendar,
 } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
-import type { Appointment, Client } from '../types';
+import type { Appointment, Client, TreatmentMaterialLink, Material } from '../types';
 import { useSupabaseServices } from '../lib/supabaseService';
 import { useAppColors } from '../hooks/useAppColors';
 import { useApp } from '../contexts/AppContext';
@@ -67,8 +64,13 @@ function StatCard({
 }
 
 export default function AppointmentsConfirmationPage() {
-  const navigate = useNavigate();
-  const { appointmentService, clientService } = useSupabaseServices();
+  const {
+    appointmentService,
+    clientService,
+    materialService,
+    treatmentMaterialsService,
+    appointmentMaterialsUsageService,
+  } = useSupabaseServices();
   const colors = useAppColors();
   const { appType } = useApp();
   const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
@@ -84,6 +86,7 @@ export default function AppointmentsConfirmationPage() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [updating, setUpdating] = useState<string | null>(null);
+  const [showFiltersOptions, setShowFiltersOptions] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -111,12 +114,54 @@ export default function AppointmentsConfirmationPage() {
   const handleStatusUpdate = async (appointmentId: string, newStatus: 'completed' | 'cancelled') => {
     try {
       setUpdating(appointmentId);
+      const current = appointments.find(apt => apt.id === appointmentId);
+      const previousStatus = current?.status;
+
       await appointmentService.update(appointmentId, { status: newStatus });
       const { cancelAppointmentReminder } = await import(
         '../lib/localNotifications'
       );
       await cancelAppointmentReminder(appointmentId);
-      // Update local state
+
+      // Se l'appuntamento viene segnato come "completato" per la prima volta,
+      // scarichiamo l'inventario in base alla configurazione del trattamento.
+      if (newStatus === 'completed' && previousStatus !== 'completed' && current?.treatment_catalog_id) {
+        try {
+          // Evita doppi scarichi: se esiste già un log di consumo per questo appuntamento, esci.
+          const existingUsage = await appointmentMaterialsUsageService.getByAppointmentId(appointmentId);
+          if (existingUsage.length === 0) {
+            const links: TreatmentMaterialLink[] =
+              await treatmentMaterialsService.getByTreatmentCatalogId(current.treatment_catalog_id);
+
+            if (links.length > 0) {
+              // Aggiorna quantità materiali e registra log consumo.
+              const usages: { appointment_id: string; material_id: string; quantity_used: number }[] = [];
+
+              await Promise.all(
+                links.map(async link => {
+                  if (!link.material_id || !link.quantity_per_session || link.quantity_per_session <= 0) return;
+                  const material: Material | null = await materialService.getById(link.material_id);
+                  if (!material || material.quantity === null) return;
+
+                  const newQty = Math.max(0, material.quantity - link.quantity_per_session);
+                  await materialService.update(material.id, { quantity: newQty });
+                  usages.push({
+                    appointment_id: appointmentId,
+                    material_id: material.id,
+                    quantity_used: link.quantity_per_session,
+                  });
+                }),
+              );
+
+              if (usages.length > 0) {
+                await appointmentMaterialsUsageService.insertMany(usages);
+              }
+            }
+          }
+        } catch {
+          // In caso di errore inventario, non blocchiamo l'aggiornamento stato appuntamento.
+        }
+      }
       setAppointments(prev => 
         prev.map(apt => 
           apt.id === appointmentId 
@@ -198,7 +243,7 @@ export default function AppointmentsConfirmationPage() {
   if (loading) {
     return (
       <div className="min-h-screen" style={{ backgroundColor }}>
-        <PageHeader title="Conferma Appuntamenti" showBack />
+        <PageHeader title="Conferma Appuntamenti" showBack backLabel="Indietro" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           {/* Skeleton carosello statistiche */}
           <div className="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
@@ -237,7 +282,7 @@ export default function AppointmentsConfirmationPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor }}>
-      <PageHeader title="Conferma Appuntamenti" showBack />
+      <PageHeader title="Conferma Appuntamenti" showBack backLabel="Indietro" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-6 sm:space-y-8">
         {/* Error (stile ClientList) */}
@@ -248,7 +293,7 @@ export default function AppointmentsConfirmationPage() {
         )}
 
         {/* Carosello statistiche scrollabile */}
-        <div className="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+        <div className="-mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
           <div
             className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory"
           >
@@ -267,40 +312,94 @@ export default function AppointmentsConfirmationPage() {
           </div>
         </div>
 
-        {/* Barra ricerca e filtri (stile ClientList) */}
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-          <div className="relative flex-1 min-w-0 sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Cerca cliente, trattamento..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-white"
-              style={{ borderColor: accentSoft }}
-            />
+        {/* Barra ricerca + pannello opzioni (filtri) */}
+        <div className="flex flex-col gap-3">
+          {/* Search + options toggle */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Cerca cliente, trattamento..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-xl border bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-white"
+                style={{ borderColor: accentSoft }}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowFiltersOptions((prev) => !prev)}
+              className="inline-flex items-center gap-1.5 rounded-full border p-3 text-xs sm:text-sm font-semibold bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200"
+              style={{ borderColor: accentSofter }}
+            >
+              <Filter className="h-4 w-4" />
+              <span className="hidden sm:inline">Opzioni</span>
+            </button>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {[
-              { key: 'all' as StatusFilter, label: 'Tutti', count: appointments.length },
-              { key: 'pending' as StatusFilter, label: 'In Attesa', count: pendingCount },
-              { key: 'completed' as StatusFilter, label: 'Completati', count: completedCount },
-              { key: 'cancelled' as StatusFilter, label: 'Cancellati', count: cancelledCount },
-            ].map((f) => {
-              const isActive = statusFilter === f.key;
-              return (
-                <button
-                  key={f.key}
-                  type="button"
-                  onClick={() => setStatusFilter(f.key)}
-                  className={`whitespace-nowrap rounded-2xl px-3 py-1.5 text-xs font-medium sm:text-sm ${isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400'}`}
-                  style={isActive ? { background: accentGradient } : { backgroundColor: surfaceColor, border: `1px solid ${accentSofter}` }}
-                >
-                  {f.label} ({f.count})
-                </button>
-              );
-            })}
-          </div>
+
+          {/* Filters panel: status + date */}
+          {showFiltersOptions && (
+            <div
+              className="rounded-2xl border px-3 py-3 sm:px-4 sm:py-3 space-y-3 bg-white/80 dark:bg-gray-900/80"
+              style={{ borderColor: accentSofter }}
+            >
+              {/* Status filter */}
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  { key: 'all' as StatusFilter, label: 'Tutti', count: appointments.length },
+                  { key: 'pending' as StatusFilter, label: 'In Attesa', count: pendingCount },
+                  { key: 'completed' as StatusFilter, label: 'Completati', count: completedCount },
+                  { key: 'cancelled' as StatusFilter, label: 'Cancellati', count: cancelledCount },
+                ].map((f) => {
+                  const isActive = statusFilter === f.key;
+                  return (
+                    <button
+                      key={f.key}
+                      type="button"
+                      onClick={() => setStatusFilter(f.key)}
+                      className={`whitespace-nowrap rounded-2xl px-3 py-1.5 text-xs font-medium sm:text-sm ${isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400'}`}
+                      style={
+                        isActive
+                          ? { background: accentGradient }
+                          : { backgroundColor: surfaceColor, border: `1px solid ${accentSofter}` }
+                      }
+                    >
+                      {f.label} ({f.count})
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Date filter */}
+              <div className="h-px w-full bg-gray-100 dark:bg-gray-800" />
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  { key: 'all' as DateFilter, label: 'Tutte le date', count: appointments.length },
+                  { key: 'today' as DateFilter, label: 'Oggi', count: todayCount },
+                  { key: 'tomorrow' as DateFilter, label: 'Domani', count: tomorrowCount },
+                  { key: 'nextWeek' as DateFilter, label: 'Prossima settimana', count: nextWeekCount },
+                ].map((f) => {
+                  const isActive = dateFilter === f.key;
+                  return (
+                    <button
+                      key={f.key}
+                      type="button"
+                      onClick={() => setDateFilter(f.key)}
+                      className={`whitespace-nowrap rounded-2xl px-3 py-1.5 text-xs font-medium sm:text-sm ${isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400'}`}
+                      style={
+                        isActive
+                          ? { background: accentGradient }
+                          : { backgroundColor: surfaceColor, border: `1px solid ${accentSofter}` }
+                      }
+                    >
+                      {f.label} ({f.count})
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
 
@@ -329,13 +428,23 @@ export default function AppointmentsConfirmationPage() {
                 >
                   <div className="flex items-center justify-between p-3 sm:p-4">
                     <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
-                      <div
-                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-white font-semibold text-xs sm:text-sm shadow-lg"
-                        style={{ background: accentGradient }}
-                      >
-                        {client.nome.charAt(0)}
-                        {client.cognome.charAt(0)}
-                      </div>
+                    <div
+                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-white font-semibold text-xs sm:text-sm shadow-lg"
+                      style={{ background: accentGradient }}
+                    >
+                      {client.foto_url ? (
+                        <img
+                          src={client.foto_url}
+                          alt={`${client.nome} ${client.cognome}`}
+                          className="h-full w-full rounded-xl object-cover"
+                        />
+                      ) : (
+                        <>
+                          {client.nome.charAt(0)}
+                          {client.cognome.charAt(0)}
+                        </>
+                      )}
+                    </div>
                       <div className="min-w-0 flex-1">
                         <div className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
                           {client.nome} {client.cognome}
@@ -393,8 +502,7 @@ export default function AppointmentsConfirmationPage() {
 
             {filteredAppointments.length === 0 && (
               <div className="text-center py-8 sm:py-12 text-gray-500 dark:text-gray-400">
-                <Activity size={32} className="sm:w-12 sm:h-12 mx-auto mb-4 opacity-50" />
-                <p className="text-sm sm:text-base">
+                <p className="text-sm sm:text-base mx-10">
                   {(searchQuery || statusFilter !== 'all' || dateFilter !== 'all')
                     ? 'Nessun appuntamento trovato con i filtri selezionati'
                     : 'Nessun appuntamento disponibile al momento'}

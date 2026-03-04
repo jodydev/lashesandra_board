@@ -1,615 +1,796 @@
 import { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Plus,
-  Edit3,
-  Trash2,
-  Package,
-  AlertTriangle,
-  X,
-  CheckCircle2,
-  Layers,
+  Plus, Edit3, Trash2, Package, AlertTriangle,
+  X, CheckCircle2, Layers, ChevronRight, Search,
 } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import FullPageLoader from '../components/FullPageLoader';
 import { useSupabaseServices } from '../lib/supabaseService';
-import { useAppColors } from '../hooks/useAppColors';
 import { useApp } from '../contexts/AppContext';
 import type { Material } from '../types';
 
-const textPrimaryColor = '#2C2C2C';
-const textSecondaryColor = '#7A7A7A';
+// ─── Palette ──────────────────────────────────────────────────────────────────
+const C = {
+  bg:        '#FAF0E8',
+  surface:   '#FFFFFF',
+  accent:    '#C07850',
+  accentDk:  '#A05830',
+  accentSft: 'rgba(192,120,80,0.10)',
+  accentMid: 'rgba(192,120,80,0.20)',
+  border:    '#EDE0D8',
+  text:      '#2C2C2C',
+  muted:     '#9A8880',
+  warn:      '#F59E0B',
+  warnBg:    '#FFFBEB',
+  warnBdr:   'rgba(245,158,11,0.35)',
+  ok:        '#22C55E',
+  okBg:      '#F0FDF4',
+  red:       '#EF4444',
+  redBg:     '#FEF2F2',
+} as const;
 
+const GRAD = `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function isBelowThreshold(m: Material) {
+  return m.quantity !== null && m.threshold !== null && m.quantity < m.threshold;
+}
+
+function StockBar(props: Readonly<{ ratio: number; below: boolean }>) {
+  const { ratio, below } = props;
+  return (
+    <div style={{ height: 5, borderRadius: 100, background: '#F0E8E0', overflow: 'hidden', marginTop: 8 }}>
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: `${Math.min(100, ratio * 100)}%` }}
+        transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
+        style={{ height: '100%', borderRadius: 100, background: below ? C.warn : C.ok }}
+      />
+    </div>
+  );
+}
+
+// ─── Stat card ────────────────────────────────────────────────────────────────
+function StatCard(props: Readonly<{
+  label: string;
+  value: number;
+  icon: React.ElementType;
+  warn?: boolean;
+  ok?: boolean;
+}>) {
+  const { label, value, icon: Icon, warn, ok } = props;
+  const bg     = warn ? C.warnBg  : ok ? C.okBg  : C.surface;
+  const border = warn ? C.warnBdr : ok ? 'rgba(34,197,94,0.25)' : C.border;
+  const iconBg = warn ? 'rgba(245,158,11,0.18)' : ok ? 'rgba(34,197,94,0.15)' : C.accentSft;
+  const iconCl = warn ? C.warn    : ok ? C.ok    : C.accent;
+  const valCl  = warn ? '#B45309' : ok ? '#15803D' : C.text;
+
+  return (
+    <motion.div
+      whileTap={{ scale: 0.97 }}
+      style={{
+        background: bg, border: `1.5px solid ${border}`,
+        borderRadius: 20, padding: '14px 14px 12px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        position: 'relative', overflow: 'hidden',
+      }}
+    >
+      <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.muted }}>
+        {label}
+      </p>
+      <p style={{ fontSize: 28, fontWeight: 900, color: valCl, lineHeight: 1.1, marginTop: 4 }}>{value}</p>
+      <div style={{
+        position: 'absolute', right: 10, bottom: 10,
+        width: 34, height: 34, borderRadius: 11,
+        background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <Icon size={17} color={iconCl} strokeWidth={2} />
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Material card ────────────────────────────────────────────────────────────
+function MaterialCard(props: Readonly<{
+  m: Material;
+  sessionsLeft?: number | null;
+  onEdit: (m: Material) => void;
+  onDelete: (m: Material) => void;
+}>) {
+  const { m, sessionsLeft, onEdit, onDelete } = props;
+  const below = isBelowThreshold(m);
+  const hasBar = m.quantity !== null && m.threshold !== null && m.threshold > 0;
+  const ratio = hasBar ? m.quantity! / m.threshold! : 1;
+
+  return (
+    <motion.li
+      layout
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10, scale: 0.97 }}
+      transition={{ duration: 0.25 }}
+      style={{
+        background: C.surface,
+        border: `1.5px solid ${below ? C.warnBdr : C.border}`,
+        borderRadius: 22,
+        overflow: 'hidden',
+        boxShadow: below
+          ? '0 2px 16px rgba(245,158,11,0.10)'
+          : '0 1px 6px rgba(0,0,0,0.04)',
+      }}
+    >
+      {/* Left accent stripe for below-threshold */}
+      {below && (
+        <div style={{ height: 3, background: `linear-gradient(90deg, ${C.warn}, transparent)` }} />
+      )}
+
+      <div style={{ padding: '14px 14px 14px 16px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+        {/* Avatar */}
+        <div style={{
+          width: 46, height: 46, borderRadius: 15, flexShrink: 0,
+          background: below ? 'rgba(245,158,11,0.12)' : C.accentSft,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontWeight: 800, fontSize: 18,
+          color: below ? '#B45309' : C.accent,
+        }}>
+          {m.name.charAt(0).toUpperCase()}
+        </div>
+
+        {/* Content */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <p style={{ fontWeight: 700, fontSize: 15, color: C.text }}>{m.name}</p>
+            {below && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                background: 'rgba(245,158,11,0.15)', borderRadius: 100,
+                padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#B45309',
+              }}>
+                <AlertTriangle size={10} /> Sotto soglia
+              </span>
+            )}
+          </div>
+
+          {/* Qty / threshold */}
+          <div style={{ display: 'flex', gap: 16, marginTop: 5, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, color: C.muted }}>
+              Quantità:{' '}
+              {m.quantity !== null
+                ? <strong style={{ color: C.text, fontWeight: 700 }}>{m.quantity}</strong>
+                : <em style={{ color: C.muted }}>—</em>
+              }
+            </span>
+            {m.threshold != null && (
+              <span style={{ fontSize: 13, color: C.muted }}>
+                Soglia:{' '}
+                <strong style={{ color: C.text, fontWeight: 700 }}>{m.threshold}</strong>
+              </span>
+            )}
+            {sessionsLeft != null && (
+              <span style={{ fontSize: 13, color: C.muted }}>
+                Sedute possibili:{' '}
+                <strong style={{ color: C.text, fontWeight: 700 }}>{sessionsLeft}</strong>
+              </span>
+            )}
+          </div>
+
+          {/* Progress bar */}
+          {hasBar && <StockBar ratio={ratio} below={below} />}
+
+          {/* Notes */}
+          {m.notes && (
+            <p style={{ fontSize: 12, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>{m.notes}</p>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={() => onEdit(m)}
+            aria-label="Modifica"
+            style={{
+              width: 36, height: 36, borderRadius: 12,
+              background: C.accentSft, border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <Edit3 size={16} color={C.accent} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(m)}
+            aria-label="Elimina"
+            style={{
+              width: 36, height: 36, borderRadius: 12,
+              background: C.redBg, border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <Trash2 size={16} color={C.red} />
+          </button>
+        </div>
+      </div>
+    </motion.li>
+  );
+}
+
+// ─── Form bottom sheet ────────────────────────────────────────────────────────
+function MaterialSheet(props: Readonly<{
+  material: Material | null;
+  onSave: (payload: { name: string; quantity: number | null; threshold: number | null; notes: string | null }) => Promise<void>;
+  onCancel: () => void;
+}>) {
+  const { material, onSave, onCancel } = props;
+  const [name, setName] = useState(material?.name ?? '');
+  const [qtyStr, setQtyStr] = useState(material?.quantity != null ? String(material.quantity) : '');
+  const [thrStr, setThrStr] = useState(material?.threshold != null ? String(material.threshold) : '');
+  const [notes, setNotes] = useState(material?.notes ?? '');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', boxSizing: 'border-box',
+    height: 52, padding: '0 16px',
+    borderRadius: 16, border: `1.5px solid ${C.border}`,
+    background: '#FAFAFA', fontSize: 15, color: C.text,
+    fontFamily: 'inherit', outline: 'none',
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const n = name.trim();
+    if (!n) { setErr('Il nome è obbligatorio.'); return; }
+    const q = qtyStr.trim() === '' ? null : Number.parseInt(qtyStr, 10);
+    const t = thrStr.trim() === '' ? null : Number.parseInt(thrStr, 10);
+    if (qtyStr.trim() !== '' && (Number.isNaN(q!) || q! < 0)) { setErr('Quantità non valida.'); return; }
+    if (thrStr.trim() !== '' && (Number.isNaN(t!) || t! < 0)) { setErr('Soglia non valida.'); return; }
+    setErr(null); setSaving(true);
+    try { await onSave({ name: n, quantity: q, threshold: t, notes: notes.trim() || null }); }
+    catch { setErr('Errore nel salvataggio.'); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(44,28,20,0.5)',
+        display: 'flex', alignItems: 'flex-end',
+      }}
+      onClick={onCancel}
+    >
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', stiffness: 380, damping: 38 }}
+        onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 540, margin: '0 auto',
+          background: C.surface,
+          borderRadius: '28px 28px 0 0',
+          paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Handle */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
+          <div style={{ width: 36, height: 4, borderRadius: 100, background: C.border }} />
+        </div>
+
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '12px 20px 16px',
+          borderBottom: `1px solid ${C.border}`,
+        }}>
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.accent }}>
+              Inventario
+            </p>
+            <p style={{ fontSize: 18, fontWeight: 800, color: C.text, marginTop: 1 }}>
+              {material ? 'Modifica materiale' : 'Nuovo materiale'}
+            </p>
+          </div>
+          <button
+            type="button" onClick={onCancel}
+            style={{
+              width: 36, height: 36, borderRadius: 12,
+              background: C.accentSft, border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            }}
+          >
+            <X size={16} color={C.muted} />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} style={{ padding: '20px 20px 0', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {err && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 14px', borderRadius: 14,
+              background: C.redBg, border: `1.5px solid rgba(239,68,68,0.3)`,
+              fontSize: 13, color: C.red, fontWeight: 600,
+            }}>
+              <AlertTriangle size={14} /> {err}
+            </div>
+          )}
+
+          {/* Name */}
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.muted, marginBottom: 8 }}>
+              Nome *
+            </p>
+            <input
+              type="text"
+              value={name}
+              autoFocus
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+              placeholder="es. Ciglia C-curl 0.10, Colla Strong…"
+              style={inputStyle}
+            />
+          </div>
+
+          {/* Qty + Threshold */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.muted, marginBottom: 8 }}>
+                Quantità
+              </p>
+              <input
+                type="number" min={0}
+                value={qtyStr}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQtyStr(e.target.value)}
+                placeholder="—"
+                style={inputStyle}
+              />
+              <p style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>Vuoto = In stock</p>
+            </div>
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.muted, marginBottom: 8 }}>
+                Soglia alert
+              </p>
+              <input
+                type="number" min={0}
+                value={thrStr}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setThrStr(e.target.value)}
+                placeholder="—"
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.muted, marginBottom: 8 }}>
+              Note
+            </p>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Fornitore, codice prodotto, etc."
+              rows={2}
+              style={{
+                ...inputStyle, height: 'auto',
+                padding: '12px 16px', resize: 'none', lineHeight: 1.5,
+              }}
+            />
+          </div>
+
+          {/* Actions */}
+          <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+            <button
+              type="button" onClick={onCancel}
+              style={{
+                flex: 1, height: 52, borderRadius: 17,
+                border: `1.5px solid ${C.border}`, background: C.surface,
+                fontWeight: 700, fontSize: 15, color: C.text,
+                cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              Annulla
+            </button>
+            <motion.button
+              type="submit"
+              disabled={saving}
+              whileTap={{ scale: 0.97 }}
+              style={{
+                flex: 2, height: 52, borderRadius: 17,
+                border: 'none',
+                background: saving ? C.border : GRAD,
+                fontWeight: 800, fontSize: 15, color: saving ? C.muted : '#FFF',
+                cursor: saving ? 'wait' : 'pointer',
+                fontFamily: 'inherit',
+                boxShadow: saving ? 'none' : '0 4px 18px rgba(192,120,80,0.38)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              {saving
+                ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: 'linear' }}
+                    style={{ width: 20, height: 20, border: '3px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: 10 }}
+                  />
+                : (material ? 'Aggiorna' : 'Aggiungi')
+              }
+            </motion.button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ─── Delete confirm sheet ─────────────────────────────────────────────────────
+function DeleteSheet({
+  material, onConfirm, onCancel,
+}: {
+  material: Material; onConfirm: () => void; onCancel: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(44,28,20,0.5)',
+        display: 'flex', alignItems: 'flex-end',
+      }}
+      onClick={onCancel}
+    >
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', stiffness: 380, damping: 38 }}
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 540, margin: '0 auto',
+          background: C.surface, borderRadius: '28px 28px 0 0',
+          padding: '0 20px calc(32px + env(safe-area-inset-bottom, 0px))',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 8px' }}>
+          <div style={{ width: 36, height: 4, borderRadius: 100, background: C.border }} />
+        </div>
+
+        {/* Icon */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16, marginTop: 8 }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: 22,
+            background: C.redBg, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Trash2 size={28} color={C.red} />
+          </div>
+        </div>
+
+        <p style={{ textAlign: 'center', fontWeight: 800, fontSize: 18, color: C.text }}>
+          Elimina materiale
+        </p>
+        <p style={{ textAlign: 'center', fontSize: 14, color: C.muted, marginTop: 8, lineHeight: 1.5 }}>
+          Vuoi eliminare <strong style={{ color: C.text }}>{material.name}</strong>?<br />
+          Questa azione non può essere annullata.
+        </p>
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+          <button
+            type="button" onClick={onCancel}
+            style={{
+              flex: 1, height: 52, borderRadius: 17,
+              border: `1.5px solid ${C.border}`, background: C.surface,
+              fontWeight: 700, fontSize: 15, color: C.text,
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            Annulla
+          </button>
+          <motion.button
+            type="button" onClick={onConfirm}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              flex: 1, height: 52, borderRadius: 17,
+              border: 'none', background: C.red,
+              fontWeight: 800, fontSize: 15, color: '#FFF',
+              cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 4px 18px rgba(239,68,68,0.3)',
+            }}
+          >
+            Elimina
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 export default function InventarioPage() {
-  const { materialService } = useSupabaseServices();
-  const colors = useAppColors();
-  const { appType } = useApp();
+  const { materialService, treatmentMaterialsService } = useSupabaseServices();
+
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [materialToDelete, setMaterialToDelete] = useState<Material | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Material | null>(null);
+  const [search, setSearch] = useState('');
+  const [avgPerSessionByMaterial, setAvgPerSessionByMaterial] = useState<Record<string, number>>({});
 
-  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
-  const surfaceColor = '#FFFFFF';
-  const accentColor = colors.primary;
-  const accentGradient = colors.cssGradient;
-  const accentSofter = `${colors.primary}14`;
-  const accentSoft = `${colors.primary}29`;
+  const { belowCount, okCount } = useMemo(() => ({
+    belowCount: materials.filter(isBelowThreshold).length,
+    okCount:    materials.filter(m => !isBelowThreshold(m)).length,
+  }), [materials]);
 
-  const { belowThresholdCount, okCount } = useMemo(() => {
-    const below = materials.filter(
-      (m) => m.quantity !== null && m.threshold !== null && m.quantity < m.threshold
-    ).length;
-    const ok = materials.length - below;
-    return { belowThresholdCount: below, okCount: ok };
-  }, [materials]);
+  const filtered = useMemo(() =>
+    materials.filter(m => m.name.toLowerCase().includes(search.toLowerCase())),
+    [materials, search]
+  );
+
+  // Sort: below threshold first
+  const sorted = useMemo(() =>
+    [...filtered].sort((a, b) => (isBelowThreshold(b) ? 1 : 0) - (isBelowThreshold(a) ? 1 : 0)),
+    [filtered]
+  );
 
   const loadMaterials = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      const data = await materialService.getAll();
-      setMaterials(data);
-    } catch (err) {
+      setLoading(true); setError(null);
+      const [materialsData, links] = await Promise.all([
+        materialService.getAll(),
+        treatmentMaterialsService.getAll(),
+      ]);
+      setMaterials(materialsData);
+
+      // Calcola consumo medio per seduta per ogni materiale in base alla configurazione dei trattamenti
+      const map: Record<string, { total: number; count: number }> = {};
+      links.forEach(link => {
+        if (!link.material_id || !link.quantity_per_session || link.quantity_per_session <= 0) return;
+        const entry = map[link.material_id] ?? { total: 0, count: 0 };
+        entry.total += link.quantity_per_session;
+        entry.count += 1;
+        map[link.material_id] = entry;
+      });
+      const avgMap: Record<string, number> = {};
+      Object.entries(map).forEach(([materialId, stats]) => {
+        if (stats.count > 0) {
+          avgMap[materialId] = stats.total / stats.count;
+        }
+      });
+      setAvgPerSessionByMaterial(avgMap);
+    } catch {
       setError('Errore nel caricamento dell\'inventario.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadMaterials();
-  }, []);
+  useEffect(() => { loadMaterials(); }, []);
 
-  const handleAdd = () => {
-    setEditingMaterial(null);
-    setShowForm(true);
-  };
-
-  const handleEdit = (m: Material) => {
-    setEditingMaterial(m);
-    setShowForm(true);
-  };
-
-  const handleCloseForm = () => {
+  const handleSave = async (payload: { name: string; quantity: number | null; threshold: number | null; notes: string | null }) => {
+    if (editingMaterial) {
+      await materialService.update(editingMaterial.id, payload);
+    } else {
+      await materialService.create({ name: payload.name, quantity: payload.quantity, threshold: payload.threshold, notes: payload.notes });
+    }
+    await loadMaterials();
     setShowForm(false);
     setEditingMaterial(null);
   };
 
-  const handleDelete = (m: Material) => {
-    setMaterialToDelete(m);
-    setShowDeleteDialog(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!materialToDelete) return;
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await materialService.delete(materialToDelete.id);
+      await materialService.delete(deleteTarget.id);
       await loadMaterials();
-      setShowDeleteDialog(false);
-      setMaterialToDelete(null);
     } catch {
       setError('Errore nell\'eliminazione.');
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
-  const isBelowThreshold = (m: Material) =>
-    m.quantity !== null && m.threshold !== null && m.quantity < m.threshold;
-
-  if (loading) {
-    return <FullPageLoader message="Caricamento inventario..." />;
-  }
+  if (loading) return <FullPageLoader message="Caricamento inventario..." />;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor }}>
+    <div style={{ minHeight: '100vh', background: C.bg }}>
       <PageHeader
         title="Inventario"
         showBack
         backLabel="Indietro"
-        rightAction={{
-          type: 'icon',
-          icon: Plus,
-          ariaLabel: 'Aggiungi materiale',
-          onClick: handleAdd,
-        }}
+        rightAction={{ type: 'icon', icon: Plus, ariaLabel: 'Aggiungi', onClick: () => { setEditingMaterial(null); setShowForm(true); } }}
       />
 
-      <main className="mx-auto max-w-lg px-4 pb-8 safe-area-content-below-header">
-        {error && (
-          <div
-            className="mb-4 flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm"
-            role="alert"
-          >
-            <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-            {error}
-          </div>
-        )}
+      <main style={{ maxWidth: 540, margin: '0 auto', padding: '20px 16px 100px' }} className="safe-area-content-below-header">
 
-        {/* Widgets: riepilogo */}
-        <section className="mb-6">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-bold" style={{ color: textPrimaryColor }}>
-              Riepilogo
-            </h2>
-            <span
-              className="rounded-xl px-3 py-1.5 text-xs font-semibold uppercase tracking-wide"
-              style={{ backgroundColor: accentSofter, color: accentColor }}
-            >
-              Inventario
-            </span>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div
-              className="relative overflow-hidden rounded-2xl border p-4 shadow-md transition"
-              style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
-            >
-              <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: textSecondaryColor }}>
-                Totali
-              </span>
-              <p className="mt-1 text-xl font-bold" style={{ color: textPrimaryColor }}>
-                {materials.length}
-              </p>
-              <div
-                className="absolute right-2 bottom-2 flex h-10 w-10 items-center justify-center rounded-xl"
-                style={{ backgroundColor: accentSofter }}
-              >
-                <Layers className="h-5 w-5" style={{ color: accentColor }} />
-              </div>
-            </div>
-            <div
-              className="relative overflow-hidden rounded-2xl border p-4 shadow-md transition"
+        {/* Error */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               style={{
-                backgroundColor: belowThresholdCount > 0 ? '#fffbeb' : surfaceColor,
-                borderColor: belowThresholdCount > 0 ? '#f59e0b' : accentSofter,
+                display: 'flex', alignItems: 'center', gap: 10,
+                marginBottom: 16, padding: '12px 16px', borderRadius: 16,
+                background: C.redBg, border: `1.5px solid rgba(239,68,68,0.3)`,
+                fontSize: 14, color: C.red, fontWeight: 600,
               }}
             >
-              <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: textSecondaryColor }}>
-                Sotto soglia
-              </span>
-              <p
-                className="mt-1 text-xl font-bold"
-                style={{ color: belowThresholdCount > 0 ? '#b45309' : textPrimaryColor }}
-              >
-                {belowThresholdCount}
-              </p>
-              <div
-                className="absolute right-2 bottom-2 flex h-10 w-10 items-center justify-center rounded-xl"
-                style={{ backgroundColor: belowThresholdCount > 0 ? 'rgba(245,158,11,0.25)' : accentSofter }}
-              >
-                <AlertTriangle
-                  className="h-5 w-5"
-                  style={{ color: belowThresholdCount > 0 ? '#d97706' : accentColor }}
-                />
-              </div>
-            </div>
-            <div
-              className="relative overflow-hidden rounded-2xl border p-4 shadow-md transition"
-              style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
-            >
-              <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: textSecondaryColor }}>
-                A posto
-              </span>
-              <p className="mt-1 text-xl font-bold" style={{ color: textPrimaryColor }}>
-                {okCount}
-              </p>
-              <div
-                className="absolute right-2 bottom-2 flex h-10 w-10 items-center justify-center rounded-xl"
-                style={{ backgroundColor: '#dcfce7' }}
-              >
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              </div>
-            </div>
-          </div>
-        </section>
+              <AlertTriangle size={16} /> {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {belowThresholdCount > 0 && (
-          <div
-            className="mb-5 flex items-center gap-3 rounded-2xl border border-amber-300/80 bg-gradient-to-r from-amber-50 to-amber-100/50 p-4 shadow-sm"
-            style={{ borderColor: '#f59e0b' }}
-          >
-            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-amber-200/80">
-              <AlertTriangle className="h-6 w-6 text-amber-800" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-amber-900">
-                {belowThresholdCount} materiale/materiali sotto soglia
-              </p>
-              <p className="text-xs text-amber-800/90">Controlla le scorte e ordina in tempo.</p>
-            </div>
+        {/* Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 20 }}>
+          <StatCard label="Totali"      value={materials.length} icon={Layers}        />
+          <StatCard label="Sotto soglia" value={belowCount}       icon={AlertTriangle} warn={belowCount > 0} />
+          <StatCard label="OK"           value={okCount}          icon={CheckCircle2}  ok={okCount > 0 && belowCount === 0} />
+        </div>
+
+        {/* Warning banner */}
+        <AnimatePresence>
+          {belowCount > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+              style={{ overflow: 'hidden', marginBottom: 20 }}
+            >
+              <div style={{
+                display: 'flex', alignItems: 'flex-start', gap: 12,
+                padding: '14px 16px', borderRadius: 18,
+                background: C.warnBg, border: `1.5px solid ${C.warnBdr}`,
+              }}>
+                <div style={{
+                  width: 38, height: 38, borderRadius: 12, flexShrink: 0,
+                  background: 'rgba(245,158,11,0.18)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <AlertTriangle size={18} color={C.warn} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 700, fontSize: 14, color: '#78350F' }}>
+                    {belowCount} {belowCount === 1 ? 'materiale sotto soglia' : 'materiali sotto soglia'}
+                  </p>
+                  <p style={{ fontSize: 12, color: '#92400E', marginTop: 2 }}>
+                    Controlla le scorte e ordina prima di esaurire le forniture.
+                  </p>
+                </div>
+                <ChevronRight size={16} color="#B45309" style={{ marginTop: 2, flexShrink: 0 }} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Search */}
+        {materials.length > 4 && (
+          <div style={{ position: 'relative', marginBottom: 16 }}>
+            <Search size={16} color={C.muted} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Cerca materiale…"
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                height: 48, paddingLeft: 44, paddingRight: 16,
+                borderRadius: 16, border: `1.5px solid ${C.border}`,
+                background: C.surface, fontSize: 15, color: C.text,
+                fontFamily: 'inherit', outline: 'none',
+              }}
+            />
           </div>
         )}
 
-        {/* Elenco materiali */}
-        <section>
-          <h2 className="mb-3 text-base font-bold" style={{ color: textPrimaryColor }}>
-            Elenco materiali
-          </h2>
-
-          {materials.length === 0 ? (
-            <div
-              className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed py-16 px-6 text-center"
-              style={{ borderColor: accentSoft, backgroundColor: surfaceColor }}
-            >
-              <div
-                className="mb-5 flex h-20 w-20 items-center justify-center rounded-2xl"
-                style={{ backgroundColor: accentSofter }}
-              >
-                <Package className="h-10 w-10" style={{ color: accentColor }} />
-              </div>
-              <h3 className="text-lg font-semibold" style={{ color: textPrimaryColor }}>
-                Nessun materiale
-              </h3>
-              <p className="mt-2 max-w-xs text-sm leading-relaxed" style={{ color: textSecondaryColor }}>
-                Aggiungi ciglia, colla, bigodini, rimuovente e altri materiali per tenere sotto controllo le scorte.
-              </p>
-              <button
-                type="button"
-                onClick={handleAdd}
-                className="mt-6 rounded-2xl px-6 py-3.5 text-sm font-semibold text-white shadow-lg transition active:scale-[0.98]"
-                style={{ background: accentGradient }}
-              >
-                Aggiungi materiale
-              </button>
-            </div>
-          ) : (
-            <ul className="space-y-3">
-              {materials.map((m) => {
-                const below = isBelowThreshold(m);
-                const hasThreshold = m.threshold != null && m.quantity != null;
-                const ratio = hasThreshold && m.threshold! > 0 ? m.quantity! / m.threshold! : 1;
-                return (
-                  <li
-                    key={m.id}
-                    className="overflow-hidden rounded-2xl border shadow-sm transition hover:shadow-md"
-                    style={{
-                      backgroundColor: surfaceColor,
-                      borderColor: below ? 'rgba(245,158,11,0.5)' : accentSofter,
-                      borderLeftWidth: below ? 4 : 1,
-                      borderLeftColor: below ? '#f59e0b' : undefined,
-                    }}
-                  >
-                    <div className="p-4">
-                      <div className="flex items-start gap-3">
-                        <div
-                          className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl text-lg font-bold"
-                          style={{
-                            backgroundColor: below ? 'rgba(245,158,11,0.15)' : accentSofter,
-                            color: below ? '#b45309' : accentColor,
-                          }}
-                        >
-                          {m.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="font-semibold" style={{ color: textPrimaryColor }}>
-                              {m.name}
-                            </h3>
-                            {below && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-                                <AlertTriangle className="h-3.5 w-3.5" />
-                                Sotto soglia
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm" style={{ color: textSecondaryColor }}>
-                            <span>
-                              Quantità:{' '}
-                              {m.quantity !== null ? (
-                                <strong style={{ color: textPrimaryColor }}>{m.quantity}</strong>
-                              ) : (
-                                <em>In stock / Da ordinare</em>
-                              )}
-                            </span>
-                            {m.threshold != null && (
-                              <span>
-                                Soglia: <strong style={{ color: textPrimaryColor }}>{m.threshold}</strong>
-                              </span>
-                            )}
-                          </div>
-                          {hasThreshold && (
-                            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                              <div
-                                className="h-full rounded-full transition-all"
-                                style={{
-                                  width: `${Math.min(100, ratio * 100)}%`,
-                                  backgroundColor: below ? '#f59e0b' : '#22c55e',
-                                }}
-                              />
-                            </div>
-                          )}
-                          {m.notes && (
-                            <p className="mt-2 text-xs leading-relaxed" style={{ color: textSecondaryColor }}>
-                              {m.notes}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex flex-shrink-0 gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleEdit(m)}
-                            className="rounded-xl p-2.5 transition hover:opacity-80"
-                            style={{ color: accentColor, backgroundColor: accentSofter }}
-                            aria-label="Modifica"
-                          >
-                            <Edit3 className="h-5 w-5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(m)}
-                            className="rounded-xl p-2.5 text-red-500 transition hover:bg-red-50"
-                            aria-label="Elimina"
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+        {/* Section header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <p style={{ fontWeight: 800, fontSize: 16, color: C.text }}>
+            {search ? `Risultati (${sorted.length})` : 'Elenco materiali'}
+          </p>
+          {materials.length > 0 && (
+            <span style={{
+              fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
+              padding: '4px 10px', borderRadius: 100,
+              background: C.accentSft, color: C.accent,
+            }}>
+              {materials.length} totali
+            </span>
           )}
-        </section>
+        </div>
+
+        {/* Empty state */}
+        {materials.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              padding: '52px 24px',
+              borderRadius: 28, border: `2px dashed ${C.border}`,
+              background: C.surface, textAlign: 'center',
+            }}
+          >
+            <div style={{
+              width: 72, height: 72, borderRadius: 24,
+              background: C.accentSft, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginBottom: 16,
+            }}>
+              <Package size={32} color={C.accent} />
+            </div>
+            <p style={{ fontWeight: 800, fontSize: 18, color: C.text }}>Inventario vuoto</p>
+            <p style={{ fontSize: 14, color: C.muted, marginTop: 8, maxWidth: 260, lineHeight: 1.6 }}>
+              Aggiungi ciglia, colla, bigodini e tutti i materiali che usi durante le sedute.
+            </p>
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.97 }}
+              onClick={() => { setEditingMaterial(null); setShowForm(true); }}
+              style={{
+                marginTop: 24, height: 52, padding: '0 28px',
+                borderRadius: 17, border: 'none', background: GRAD,
+                fontWeight: 800, fontSize: 15, color: '#FFF',
+                cursor: 'pointer', fontFamily: 'inherit',
+                boxShadow: '0 6px 20px rgba(192,120,80,0.35)',
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}
+            >
+              <Plus size={18} />
+              Aggiungi materiale
+            </motion.button>
+          </motion.div>
+        ) : sorted.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: C.muted }}>
+            <Search size={28} color={C.border} style={{ marginBottom: 8 }} />
+            <p style={{ fontWeight: 600, fontSize: 14 }}>Nessun risultato per "{search}"</p>
+          </div>
+        ) : (
+          <motion.ul
+            layout
+            style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}
+          >
+            <AnimatePresence initial={false}>
+        {sorted.map(m => {
+              const avg = avgPerSessionByMaterial[m.id];
+              const sessionsLeft =
+                avg && m.quantity != null && avg > 0 ? Math.floor(m.quantity / avg) : null;
+              return (
+                <MaterialCard
+                  key={m.id}
+                  m={m}
+                  sessionsLeft={sessionsLeft ?? undefined}
+                  onEdit={mat => { setEditingMaterial(mat); setShowForm(true); }}
+                  onDelete={setDeleteTarget}
+                />
+              );
+            })}
+            </AnimatePresence>
+          </motion.ul>
+        )}
       </main>
 
-      {/* Form modal (Add / Edit) */}
-      {showForm && (
-        <MaterialFormModal
-          material={editingMaterial}
-          onSave={async (payload) => {
-            if (editingMaterial) {
-              await materialService.update(editingMaterial.id, payload);
-            } else {
-              await materialService.create({
-                name: payload.name,
-                quantity: payload.quantity,
-                threshold: payload.threshold,
-                notes: payload.notes,
-              });
-            }
-            await loadMaterials();
-            handleCloseForm();
-          }}
-          onCancel={handleCloseForm}
-          accentGradient={accentGradient}
-          accentSofter={accentSofter}
-          textPrimaryColor={textPrimaryColor}
-          textSecondaryColor={textSecondaryColor}
-          surfaceColor={surfaceColor}
-        />
-      )}
+      {/* Sheets */}
+      <AnimatePresence>
+        {showForm && (
+          <MaterialSheet
+            material={editingMaterial}
+            onSave={handleSave}
+            onCancel={() => { setShowForm(false); setEditingMaterial(null); }}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Delete confirmation */}
-      {showDeleteDialog && materialToDelete && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
-          onClick={() => setShowDeleteDialog(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-dialog-title"
-        >
-          <div
-            className="w-full max-w-sm overflow-hidden rounded-2xl shadow-xl"
-            style={{ backgroundColor: surfaceColor }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6">
-              <h3 id="delete-dialog-title" className="text-lg font-semibold" style={{ color: textPrimaryColor }}>
-                Elimina materiale
-              </h3>
-              <p className="mt-2 text-sm" style={{ color: textSecondaryColor }}>
-                Vuoi eliminare &quot;{materialToDelete.name}&quot; dall&apos;inventario?
-              </p>
-              <div className="mt-6 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteDialog(false)}
-                  className="flex-1 rounded-xl border px-4 py-3 text-sm font-semibold"
-                  style={{ borderColor: accentSofter, color: textPrimaryColor }}
-                >
-                  Annulla
-                </button>
-                <button
-                  type="button"
-                  onClick={confirmDelete}
-                  className="flex-1 rounded-xl bg-red-500 px-4 py-3 text-sm font-semibold text-white hover:bg-red-600"
-                >
-                  Elimina
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-interface MaterialFormModalProps {
-  material: Material | null;
-  onSave: (payload: { name: string; quantity: number | null; threshold: number | null; notes: string | null }) => Promise<void>;
-  onCancel: () => void;
-  accentGradient: string;
-  accentSofter: string;
-  textPrimaryColor: string;
-  textSecondaryColor: string;
-  surfaceColor: string;
-}
-
-function MaterialFormModal({
-  material,
-  onSave,
-  onCancel,
-  accentGradient,
-  accentSofter,
-  textPrimaryColor,
-  textSecondaryColor,
-  surfaceColor,
-}: MaterialFormModalProps) {
-  const [name, setName] = useState(material?.name ?? '');
-  const [quantityStr, setQuantityStr] = useState(
-    material?.quantity != null ? String(material.quantity) : ''
-  );
-  const [thresholdStr, setThresholdStr] = useState(
-    material?.threshold != null ? String(material.threshold) : ''
-  );
-  const [notes, setNotes] = useState(material?.notes ?? '');
-  const [saving, setSaving] = useState(false);
-  const [validationError, setValidationError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmedName = name.trim();
-    if (!trimmedName) {
-      setValidationError('Inserisci il nome del materiale.');
-      return;
-    }
-    const q = quantityStr.trim() === '' ? null : Number.parseInt(quantityStr, 10);
-    const t = thresholdStr.trim() === '' ? null : Number.parseInt(thresholdStr, 10);
-    if (quantityStr.trim() !== '' && (Number.isNaN(q!) || q! < 0)) {
-      setValidationError('Quantità non valida.');
-      return;
-    }
-    if (thresholdStr.trim() !== '' && (Number.isNaN(t!) || t! < 0)) {
-      setValidationError('Soglia non valida.');
-      return;
-    }
-    setValidationError(null);
-    setSaving(true);
-    try {
-      await onSave({
-        name: trimmedName,
-        quantity: q,
-        threshold: t,
-        notes: notes.trim() || null,
-      });
-    } catch {
-      setValidationError('Errore nel salvataggio.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
-      onClick={onCancel}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="material-form-title"
-    >
-      <div
-        className="w-full max-w-sm overflow-hidden rounded-2xl shadow-xl"
-        style={{ backgroundColor: surfaceColor }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b p-4" style={{ borderColor: accentSofter }}>
-          <h2 id="material-form-title" className="text-lg font-semibold" style={{ color: textPrimaryColor }}>
-            {material ? 'Modifica materiale' : 'Nuovo materiale'}
-          </h2>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-lg p-2 transition hover:opacity-80"
-            style={{ color: textSecondaryColor }}
-            aria-label="Chiudi"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          {validationError && (
-            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-              <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-              {validationError}
-            </div>
-          )}
-          <div>
-            <label htmlFor="material-name" className="block text-sm font-medium mb-1" style={{ color: textPrimaryColor }}>
-              Nome *
-            </label>
-            <input
-              id="material-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="es. Ciglia, Colla, Bigodini..."
-              className="w-full rounded-xl border px-4 py-3 text-sm focus:outline-none focus:ring-2"
-              style={{ borderColor: accentSofter }}
-              autoFocus
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="material-quantity" className="block text-sm font-medium mb-1" style={{ color: textPrimaryColor }}>
-                Quantità
-              </label>
-              <input
-                id="material-quantity"
-                type="number"
-                min={0}
-                value={quantityStr}
-                onChange={(e) => setQuantityStr(e.target.value)}
-                placeholder="—"
-                className="w-full rounded-xl border px-4 py-3 text-sm focus:outline-none focus:ring-2"
-                style={{ borderColor: accentSofter }}
-              />
-              <p className="mt-1 text-xs" style={{ color: textSecondaryColor }}>
-                Lascia vuoto per &quot;In stock / Da ordinare&quot;
-              </p>
-            </div>
-            <div>
-              <label htmlFor="material-threshold" className="block text-sm font-medium mb-1" style={{ color: textPrimaryColor }}>
-                Soglia alert
-              </label>
-              <input
-                id="material-threshold"
-                type="number"
-                min={0}
-                value={thresholdStr}
-                onChange={(e) => setThresholdStr(e.target.value)}
-                placeholder="—"
-                className="w-full rounded-xl border px-4 py-3 text-sm focus:outline-none focus:ring-2"
-                style={{ borderColor: accentSofter }}
-              />
-            </div>
-          </div>
-          <div>
-            <label htmlFor="material-notes" className="block text-sm font-medium mb-1" style={{ color: textPrimaryColor }}>
-              Note
-            </label>
-            <textarea
-              id="material-notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Opzionale"
-              rows={2}
-              className="w-full rounded-xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 resize-none"
-              style={{ borderColor: accentSofter }}
-            />
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="flex-1 rounded-xl border px-4 py-3 text-sm font-semibold"
-              style={{ borderColor: accentSofter, color: textPrimaryColor }}
-            >
-              Annulla
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-white disabled:opacity-70"
-              style={{ background: accentGradient }}
-            >
-              {saving ? 'Salvataggio...' : 'Salva'}
-            </button>
-          </div>
-        </form>
-      </div>
+      <AnimatePresence>
+        {deleteTarget && (
+          <DeleteSheet
+            material={deleteTarget}
+            onConfirm={handleConfirmDelete}
+            onCancel={() => setDeleteTarget(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

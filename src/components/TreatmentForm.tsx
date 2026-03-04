@@ -1,531 +1,372 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Treatment, EyeLengthMap, TreatmentCatalogEntry } from '../types';
 import EyeSchemaCanvas from './EyeSchemaCanvas';
 import {
-  Trash2,
-  Calendar,
-  ChevronDown,
-  ChevronUp,
-  Settings,
-  Check,
-  AlertCircle,
-  Target,
-  Zap,
+  Trash2, Calendar, ChevronDown, ChevronUp,
+  Check, AlertCircle, Euro, Clock, Zap, Target, X,
 } from 'lucide-react';
-import { useAppColors } from '../hooks/useAppColors';
 
+// ─── Palette ──────────────────────────────────────────────────────────────────
+const C = {
+  surface:  '#FFFFFF',
+  accent:   '#C07850',
+  accentDk: '#A05830',
+  accentSft:'rgba(192,120,80,0.10)',
+  accentMid:'rgba(192,120,80,0.20)',
+  border:   '#EDE0D8',
+  text:     '#2C2C2C',
+  muted:    '#9A8880',
+  red:      '#EF4444',
+  redBg:    '#FEF2F2',
+  ok:       '#22C55E',
+} as const;
+
+const GRAD = `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`;
+
+// ─── Micro components ──────────────────────────────────────────────────────────
+function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
+  return (
+    <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.muted, marginBottom: 8 }}>
+      {children}{required && <span style={{ color: C.red, marginLeft: 3 }}>*</span>}
+    </p>
+  );
+}
+
+function SectionDivider({ title, icon: Icon }: { title: string; icon: React.ElementType }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '8px 0 4px' }}>
+      <div style={{ width: 28, height: 28, borderRadius: 9, background: C.accentSft, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Icon size={13} color={C.accent} />
+      </div>
+      <p style={{ fontWeight: 700, fontSize: 12, color: C.text, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</p>
+      <div style={{ flex: 1, height: 1, background: C.border }} />
+    </div>
+  );
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', boxSizing: 'border-box',
+  height: 50, padding: '0 16px',
+  borderRadius: 14, border: `1.5px solid ${C.border}`,
+  background: '#FAFAFA', fontSize: 15, color: C.text,
+  fontFamily: 'inherit', outline: 'none',
+};
+
+function Chip({ active, onClick, children }: {
+  active?: boolean; onClick: (e: React.MouseEvent) => void; children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button" onClick={e => { e.preventDefault(); e.stopPropagation(); onClick(e); }}
+      style={{
+        padding: '8px 14px', borderRadius: 100,
+        border: `1.5px solid ${active ? C.accent : C.border}`,
+        background: active ? C.accent : C.surface,
+        color: active ? '#FFF' : C.muted,
+        fontSize: 13, fontWeight: 700, cursor: 'pointer',
+        transition: 'all 0.12s ease',
+        display: 'flex', alignItems: 'center', gap: 5,
+      }}
+    >
+      {active && <Check size={11} strokeWidth={3} />}
+      {children}
+    </button>
+  );
+}
+
+// ─── Options ──────────────────────────────────────────────────────────────────
+const CURVATURE_OPTS = ['A', 'B', 'C', 'D', 'L', 'L+', 'M', 'M+'];
+const BIGODINI_OPTS  = ['S', 'M', 'L', 'S1', 'M1', 'L1', 'XL', 'XL1'];
+const THICKNESS_OPTS = [0.05, 0.07, 0.10, 0.12, 0.15, 0.20];
+
+// ─── Props ────────────────────────────────────────────────────────────────────
 interface TreatmentFormProps {
   treatment: Treatment;
   index: number;
-  onChange: (treatment: Treatment) => void;
+  onChange: (t: Treatment) => void;
   onRemove: () => void;
   isLast: boolean;
-  /** Listino tipi di trattamento: se fornito, mostra selezione tipo e prefill prezzo. */
   catalogEntries?: TreatmentCatalogEntry[];
 }
 
+// ─── Component ────────────────────────────────────────────────────────────────
 const TreatmentForm: React.FC<TreatmentFormProps> = ({
-  treatment,
-  index,
-  onChange,
-  onRemove,
-  isLast,
-  catalogEntries = [],
+  treatment, index, onChange, onRemove, isLast, catalogEntries = [],
 }) => {
-  const [isExpanded, setIsExpanded] = useState(isLast);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [completionPercentage, setCompletionPercentage] = useState(0);
+  const [expanded,  setExpanded]  = useState(isLast);
+  const [valErrors, setValErrors] = useState<Record<string, string>>({});
+  const [pct,       setPct]       = useState(0);
 
-  const colors = useAppColors();
-  const textPrimary = '#2C2C2C';
-  const textSecondary = '#7A7A7A';
-  const accentSofter = `${colors.primary}14`;
-
-  // Calcola il progresso di completamento del trattamento
-  React.useEffect(() => {
-    let completedFields = 0;
-    let totalFields = 0;
-
-    const requiredFields = ['data', 'curvatura', 'spessore', 'lunghezze', 'colla', 'tenuta', 'colore_ciglia', 'tempo_applicazione', 'refill', 'prezzo'];
-    
-    requiredFields.forEach(field => {
-      totalFields += 1;
-      const value = treatment[field as keyof Treatment];
-      if (value !== undefined && value !== null && value !== '') {
-        completedFields += 1;
-      }
-    });
-
-    // Bigodini contano come un campo
-    totalFields += 1;
-    if (treatment.bigodini && treatment.bigodini.length > 0) {
-      completedFields += 1;
-    }
-
-    setCompletionPercentage(Math.round((completedFields / totalFields) * 100));
+  // ── Progress ───────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const req = ['data', 'curvatura', 'spessore', 'lunghezze', 'colla', 'tenuta', 'colore_ciglia', 'tempo_applicazione', 'refill', 'prezzo'];
+    let done = req.filter(f => { const v = treatment[f as keyof Treatment]; return v !== undefined && v !== null && v !== ''; }).length;
+    if (treatment.bigodini?.length) done++;
+    setPct(Math.round((done / (req.length + 1)) * 100));
   }, [treatment]);
 
-  // Validazione dei campi
-  const validateField = (field: string, value: any): string => {
-    switch (field) {
-      case 'data':
-        if (value) {
-          const treatmentDate = new Date(value);
-          const today = new Date();
-          if (treatmentDate > today) return 'La data non può essere futura';
-        }
-        return '';
-      case 'spessore':
-        if (value && (value < 0.05 || value > 0.20)) {
-          return 'Lo spessore deve essere tra 0.05 e 0.20 mm';
-        }
-        return '';
-      case 'prezzo':
-        if (value && value < 0) return 'Il prezzo non può essere negativo';
-        return '';
-      case 'tempo_applicazione':
-        if (value && !/^\d+[hm]?$/.test(value)) {
-          return 'Formato non valido (es. 2h, 120m)';
-        }
-        return '';
-      default:
-        return '';
-    }
+  // ── Validation ─────────────────────────────────────────────────────────────
+  const validate = (field: string, val: any): string => {
+    if (field === 'data' && val && new Date(val) > new Date()) return 'La data non può essere futura';
+    if (field === 'spessore' && val && (val < 0.05 || val > 0.20)) return 'Spessore: 0.05–0.20 mm';
+    if (field === 'prezzo' && val < 0) return 'Prezzo non valido';
+    return '';
   };
 
-  const handleFieldChange = (field: keyof Treatment, value: any) => {
-    onChange({ ...treatment, [field]: value });
-    
-    // Validazione in tempo reale
-    const error = validateField(field, value);
-    setValidationErrors(prev => ({
-      ...prev,
-      [field]: error
-    }));
+  const set = (field: keyof Treatment, val: any) => {
+    onChange({ ...treatment, [field]: val });
+    setValErrors(prev => ({ ...prev, [field]: validate(field, val) }));
   };
 
-  const handleSchemaChange = (schema: EyeLengthMap) => {
-    onChange({ ...treatment, schema_occhio: schema });
-  };
+  const pctColor = pct >= 80 ? C.ok : pct >= 40 ? C.accent : C.muted;
 
-  const handleBigodiniChange = (bigodino: string, checked: boolean) => {
-    const currentBigodini = treatment.bigodini || [];
-    const newBigodini = checked
-      ? [...currentBigodini, bigodino]
-      : currentBigodini.filter(b => b !== bigodino);
-    
-    onChange({ ...treatment, bigodini: newBigodini });
-  };
-
-  const bigodiniOptions = ['S', 'M', 'L', 'S1', 'M1', 'L1', 'XL', 'XL1'];
-  const curvaturaOptions = ['A', 'B', 'C', 'D', 'L', 'L+', 'M', 'M+'];
-
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <div
       role="group"
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => e.stopPropagation()}
-      className="relative overflow-hidden"
+      onClick={e => e.stopPropagation()}
+      onKeyDown={e => e.stopPropagation()}
+      style={{
+        background: C.surface,
+        border: `1.5px solid ${C.border}`,
+        borderRadius: 22, overflow: 'hidden',
+        boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
+      }}
     >
-      {/* Header con progresso — più padding e touch target 44px+ */}
-      <div className="relative px-5 sm:px-6 lg:px-8 py-5 sm:py-6 border-b" style={{ borderColor: accentSofter }}>
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
-              style={{ background: colors.cssGradient }}
-            >
-              <span className="text-lg font-bold text-white">{index + 1}</span>
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-lg sm:text-xl font-bold truncate" style={{ color: textPrimary }}>
-                Trattamento #{index + 1}
-              </h3>
-              <p className="text-sm truncate" style={{ color: textSecondary }}>
-                {isExpanded ? 'Modifica i dettagli' : 'Clicca per espandere'}
-              </p>
-            </div>
-          </div>
+      {/* ── Header ── */}
+      <div style={{
+        padding: '14px 16px',
+        borderBottom: expanded ? `1px solid ${C.border}` : 'none',
+        display: 'flex', alignItems: 'center', gap: 12,
+      }}>
+        {/* Index */}
+        <div style={{
+          width: 42, height: 42, borderRadius: 14, flexShrink: 0,
+          background: GRAD, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontWeight: 900, fontSize: 16, color: '#FFF',
+        }}>
+          {index + 1}
+        </div>
 
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="hidden sm:flex items-center gap-2">
-              <div className="text-right">
-                <div className="text-xs" style={{ color: textSecondary }}>Completamento</div>
-                <div className="text-lg font-bold" style={{ color: textPrimary }}>{completionPercentage}%</div>
-              </div>
-              <div className="w-10 h-10 relative flex-shrink-0">
-                <svg className="w-10 h-10 transform -rotate-90" viewBox="0 0 36 36">
-                  <path
-                    className="text-gray-200 dark:text-gray-700"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    fill="none"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                  <path
-                    stroke={colors.primary}
-                    strokeWidth="3"
-                    fill="none"
-                    strokeLinecap="round"
-                    pathLength={1}
-                    strokeDasharray="1"
-                    strokeDashoffset={1 - completionPercentage / 100}
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                </svg>
-              </div>
+        {/* Title + bar */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontWeight: 700, fontSize: 15, color: C.text }}>
+            Trattamento #{index + 1}
+            {treatment.data && (
+              <span style={{ fontWeight: 500, fontSize: 13, color: C.muted, marginLeft: 8 }}>
+                {new Date(treatment.data).toLocaleDateString('it-IT')}
+              </span>
+            )}
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+            <div style={{ flex: 1, height: 4, borderRadius: 100, background: C.border, overflow: 'hidden' }}>
+              <div style={{ height: '100%', borderRadius: 100, width: `${pct}%`, background: pctColor, transition: 'width 0.4s ease' }} />
             </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsExpanded(!isExpanded);
-                }}
-                className={`min-w-[44px] min-h-[44px] flex items-center justify-center p-3 rounded-xl transition-opacity hover:opacity-90 ${
-                  isExpanded ? 'opacity-100' : 'opacity-80'
-                }`}
-                style={
-                  isExpanded
-                    ? { background: colors.cssGradient, color: '#fff' }
-                    : { color: textSecondary, backgroundColor: accentSofter }
-                }
-                aria-label={isExpanded ? 'Comprimi' : 'Espandi'}
-              >
-                {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onRemove();
-                }}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center p-3 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
-                aria-label="Rimuovi trattamento"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
-            </div>
+            <span style={{ fontSize: 11, fontWeight: 700, color: pctColor, whiteSpace: 'nowrap' }}>{pct}%</span>
           </div>
         </div>
 
-        <div className="mt-4 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-          <div
-            className="h-full rounded-full transition-[width] duration-300"
-            style={{ width: `${completionPercentage}%`, background: colors.cssGradient }}
-          />
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={e => { e.preventDefault(); e.stopPropagation(); setExpanded(v => !v); }}
+            style={{
+              width: 40, height: 40, borderRadius: 13, border: 'none',
+              background: expanded ? C.accent : C.accentSft,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            }}
+          >
+            {expanded
+              ? <ChevronUp  size={17} color="#FFF" />
+              : <ChevronDown size={17} color={C.accent} />
+            }
+          </button>
+          <button
+            type="button"
+            onClick={e => { e.preventDefault(); e.stopPropagation(); onRemove(); }}
+            style={{
+              width: 40, height: 40, borderRadius: 13, border: 'none', background: C.redBg,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            }}
+          >
+            <Trash2 size={15} color={C.red} />
+          </button>
         </div>
       </div>
 
-      {isExpanded && (
-          <div className="px-5 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-10"
-          >
-            {/* Informazioni Base — più spazio e campi più grandi */}
-            <div className="" >
-              <div className="flex items-center gap-4 mb-8">
-                <div>
-                  <h4 className="text-lg font-semibold" style={{ color: textPrimary }}>
-                    Informazioni Base
-                  </h4>
-                  <p className="text-sm" style={{ color: textSecondary }}>
-                    Dettagli principali del trattamento
-                  </p>
-                </div>
-              </div>
+      {/* ── Body ── */}
+      {expanded && (
+        <div style={{ padding: '20px 16px 24px', display: 'flex', flexDirection: 'column', gap: 22 }}>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold" style={{ color: textPrimary }}>
-                    <Calendar className="w-4 h-4" />
-                    Data Trattamento
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      value={treatment.data}
-                      onChange={(e) => handleFieldChange('data', e.target.value)}
-                      className={`w-full min-h-[44px] px-4 py-3 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors ${
-                        validationErrors.data
-                          ? 'border-red-300 dark:border-red-600 focus:ring-2 focus:ring-red-500 focus:border-red-500'
-                          : 'border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-offset-0 focus:border-transparent'
-                      }`}
-                      aria-describedby={validationErrors.data ? 'data-error' : undefined}
-                    />
-                    {treatment.data && !validationErrors.data && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <Check className="w-5 h-5 text-green-500" />
-                      </div>
-                    )}
-                    {validationErrors.data && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <AlertCircle className="w-5 h-5 text-red-500" />
-                      </div>
-                    )}
-                  </div>
-                  {validationErrors.data && (
-                    <p id="data-error" className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                      {validationErrors.data}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold" style={{ color: textPrimary }}>
-                    <Target className="w-4 h-4" />
-                    Curvatura
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={treatment.curvatura}
-                    onChange={(e) => handleFieldChange('curvatura', e.target.value)}
-                    className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
-                  >
-                    <option value="">Seleziona curvatura</option>
-                    {curvaturaOptions.map(option => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </select>
-                  {treatment.curvatura && (
-                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                      <Check className="w-4 h-4 flex-shrink-0" />
-                      <span>Curvatura selezionata</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold" style={{ color: textPrimary }}>
-                    <Zap className="w-4 h-4" />
-                    Spessore (mm)
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.05"
-                      max="0.20"
-                      value={treatment.spessore}
-                      onChange={(e) => handleFieldChange('spessore', parseFloat(e.target.value))}
-                      placeholder="0.07"
-                      className={`w-full min-h-[44px] px-4 py-3 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors ${
-                        validationErrors.spessore
-                          ? 'border-red-300 dark:border-red-600 focus:ring-2 focus:ring-red-500 focus:border-red-500'
-                          : 'border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-offset-0 focus:border-transparent'
-                      }`}
-                      aria-describedby={validationErrors.spessore ? 'spessore-error' : 'spessore-help'}
-                    />
-                    {treatment.spessore && !validationErrors.spessore && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <Check className="w-5 h-5 text-green-500" />
-                      </div>
-                    )}
-                    {validationErrors.spessore && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <AlertCircle className="w-5 h-5 text-red-500" />
-                      </div>
-                    )}
-                  </div>
-                  {validationErrors.spessore && (
-                    <p id="spessore-error" className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                      {validationErrors.spessore}
-                    </p>
-                  )}
-                  <p id="spessore-help" className="text-xs" style={{ color: textSecondary }}>
-                    Range: 0.05 - 0.20 mm
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Lunghezze e schema occhio */}
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="block text-sm font-medium" style={{ color: textPrimary }}>
-                  Lunghezze (es. 7-13 mm)
-                </label>
-                <input
-                  type="text"
-                  value={treatment.lunghezze}
-                  onChange={(e) => handleFieldChange('lunghezze', e.target.value)}
-                  placeholder="es. 7-13 mm"
-                  className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
-                />
-              </div>
-
-              <EyeSchemaCanvas
-                value={treatment.schema_occhio || {}}
-                onChange={handleSchemaChange}
-              />
-            </div>
-
-            {/* Dettagli trattamento — grid con gap maggiore */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-              <div className="space-y-2">
-                <label className="block text-sm font-medium" style={{ color: textPrimary }}>
-                  Colla
-                </label>
-                <input
-                  type="text"
-                  value={treatment.colla}
-                  onChange={(e) => handleFieldChange('colla', e.target.value)}
-                  placeholder="Nome prodotto"
-                  className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium" style={{ color: textPrimary }}>
-                  Tenuta
-                </label>
-                <input
-                  type="text"
-                  value={treatment.tenuta}
-                  onChange={(e) => handleFieldChange('tenuta', e.target.value)}
-                  placeholder="es. 4 settimane"
-                  className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium" style={{ color: textPrimary }}>
-                  Colore ciglia
-                </label>
-                <input
-                  type="text"
-                  value={treatment.colore_ciglia}
-                  onChange={(e) => handleFieldChange('colore_ciglia', e.target.value)}
-                  placeholder="es. nere"
-                  className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium" style={{ color: textPrimary }}>
-                  Tempo applicazione
-                </label>
-                <input
-                  type="text"
-                  value={treatment.tempo_applicazione}
-                  onChange={(e) => handleFieldChange('tempo_applicazione', e.target.value)}
-                  placeholder="es. 2h"
-                  className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
-                />
-              </div>
-            </div>
-
-            {/* Refill — touch target più grandi */}
-            <div className="space-y-4">
-              <label className="block text-sm font-medium" style={{ color: textPrimary }}>
-                Refill
-              </label>
-              <div className="flex flex-wrap gap-6">
-                <label className="flex items-center gap-3 min-h-[44px] cursor-pointer">
-                  <input
-                    type="radio"
-                    name={`refill-${index}`}
-                    value="si"
-                    checked={treatment.refill === 'si'}
-                    onChange={(e) => handleFieldChange('refill', e.target.value)}
-                    className="w-5 h-5 accent-[#c2886d] bg-gray-100 border-gray-300 rounded-full focus:ring-2 focus:ring-[#c2886d] dark:focus:ring-[#a06d52] dark:ring-offset-gray-800"
-                  />
-                  <span className="text-sm" style={{ color: textPrimary }}>Sì</span>
-                </label>
-                <label className="flex items-center gap-3 min-h-[44px] cursor-pointer">
-                  <input
-                    type="radio"
-                    name={`refill-${index}`}
-                    value="no"
-                    checked={treatment.refill === 'no'}
-                    onChange={(e) => handleFieldChange('refill', e.target.value)}
-                    className="w-5 h-5 accent-[#c2886d] bg-gray-100 border-gray-300 rounded-full focus:ring-2 focus:ring-[#c2886d] dark:focus:ring-[#a06d52] dark:ring-offset-gray-800"
-                  />
-                  <span className="text-sm" style={{ color: textPrimary }}>No</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Bigodini — griglia più ariosa */}
-            <div className="space-y-4">
-              <label className="block text-sm font-medium" style={{ color: textPrimary }}>
-                Bigodini
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {bigodiniOptions.map(bigodino => (
-                  <label key={bigodino} className="flex items-center gap-3 min-h-[44px] cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={treatment.bigodini?.includes(bigodino) || false}
-                      onChange={(e) => handleBigodiniChange(bigodino, e.target.checked)}
-                      className="w-5 h-5 accent-[#c2886d] bg-gray-100 border-gray-300 rounded focus:ring-2 focus:ring-[#c2886d] dark:focus:ring-[#a06d52] dark:ring-offset-gray-800"
-                    />
-                    <span className="text-sm" style={{ color: textPrimary }}>{bigodino}</span>
-                  </label>
+          {/* Tipo da listino */}
+          {catalogEntries.length > 0 && (
+            <div>
+              <Label>Tipo da listino</Label>
+              <select
+                value={treatment.treatment_catalog_id ?? ''}
+                onChange={e => {
+                  const id    = e.target.value || null;
+                  const entry = id ? catalogEntries.find(c => c.id === id) : null;
+                  onChange({ ...treatment, treatment_catalog_id: id || undefined, prezzo: entry ? entry.base_price : treatment.prezzo });
+                }}
+                style={{ ...inputStyle, paddingRight: 36 }}
+              >
+                <option value="">— Nessuno / personalizzato —</option>
+                {catalogEntries.map(e => (
+                  <option key={e.id} value={e.id}>{e.name} — €{e.base_price} · {e.duration_minutes}min</option>
                 ))}
+              </select>
+            </div>
+          )}
+
+          {/* ── Base ── */}
+          <SectionDivider title="Informazioni base" icon={Calendar} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {/* Data */}
+            <div>
+              <Label required>Data</Label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="date" value={treatment.data}
+                  onChange={e => set('data', e.target.value)}
+                  style={{ ...inputStyle, borderColor: valErrors.data ? C.red : C.border }}
+                />
+                {treatment.data && !valErrors.data && (
+                  <Check size={13} color={C.ok} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                )}
               </div>
+              {valErrors.data && <p style={{ fontSize: 11, color: C.red, marginTop: 4 }}>{valErrors.data}</p>}
             </div>
 
-            {/* Tipo da listino (opzionale) */}
-            {catalogEntries.length > 0 && (
-              <div className="space-y-2">
-                <label className="block text-sm font-medium" style={{ color: textPrimary }}>
-                  Tipo trattamento (da listino)
-                </label>
-                <select
-                  value={treatment.treatment_catalog_id ?? ''}
-                  onChange={(e) => {
-                    const id = e.target.value || null;
-                    const entry = id ? catalogEntries.find((c) => c.id === id) : null;
-                    onChange({
-                      ...treatment,
-                      treatment_catalog_id: id || undefined,
-                      prezzo: entry ? entry.base_price : treatment.prezzo,
-                    });
-                  }}
-                  className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
-                >
-                  <option value="">— Nessuno / personalizzato —</option>
-                  {catalogEntries.map((entry) => (
-                    <option key={entry.id} value={entry.id}>
-                      {entry.name} — €{entry.base_price} · {entry.duration_minutes} min
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Colore e prezzo */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-              <div className="space-y-2">
-                <label className="block text-sm font-medium" style={{ color: textPrimary }}>
-                  Colore
-                </label>
-                <input
-                  type="text"
-                  value={treatment.colore}
-                  onChange={(e) => handleFieldChange('colore', e.target.value)}
-                  placeholder="Colore"
-                  className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium" style={{ color: textPrimary }}>
-                  Prezzo (€)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={treatment.prezzo}
-                  onChange={(e) => handleFieldChange('prezzo', parseFloat(e.target.value))}
-                  className="w-full min-h-[44px] px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-offset-0 focus:border-transparent transition-colors"
-                />
+            {/* Refill */}
+            <div>
+              <Label>Refill</Label>
+              <div style={{ display: 'flex', gap: 8, paddingTop: 4 }}>
+                <Chip active={treatment.refill === 'si'} onClick={() => set('refill', 'si')}>Sì</Chip>
+                <Chip active={treatment.refill === 'no'} onClick={() => set('refill', 'no')}>No</Chip>
               </div>
             </div>
           </div>
+
+          {/* ── Curvatura ── */}
+          <SectionDivider title="Curvatura e spessore" icon={Target} />
+          <div>
+            <Label required>Curvatura</Label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {CURVATURE_OPTS.map(o => (
+                <Chip key={o} active={treatment.curvatura === o} onClick={() => set('curvatura', o)}>{o}</Chip>
+              ))}
+            </div>
+          </div>
+
+          {/* Spessore */}
+          <div>
+            <Label required>Spessore (mm)</Label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+              {THICKNESS_OPTS.map(t => (
+                <Chip key={t} active={treatment.spessore === t} onClick={() => set('spessore', t)}>{t}</Chip>
+              ))}
+            </div>
+            <input
+              type="number" step="0.01" min="0.05" max="0.20"
+              value={treatment.spessore} onChange={e => set('spessore', parseFloat(e.target.value))}
+              placeholder="0.07"
+              style={{ ...inputStyle, borderColor: valErrors.spessore ? C.red : C.border }}
+            />
+            {valErrors.spessore && <p style={{ fontSize: 11, color: C.red, marginTop: 4 }}>{valErrors.spessore}</p>}
+          </div>
+
+          {/* Bigodini */}
+          <div>
+            <Label>Bigodini</Label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {BIGODINI_OPTS.map(b => (
+                <Chip
+                  key={b}
+                  active={treatment.bigodini?.includes(b) ?? false}
+                  onClick={() => {
+                    const cur = treatment.bigodini || [];
+                    const checked = cur.includes(b);
+                    set('bigodini', checked ? cur.filter(x => x !== b) : [...cur, b]);
+                  }}
+                >
+                  {b}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Schema ── */}
+          <SectionDivider title="Lunghezze e schema" icon={Zap} />
+          <div>
+            <Label>Lunghezze (es. 8–13 mm)</Label>
+            <input
+              type="text" value={treatment.lunghezze}
+              onChange={e => set('lunghezze', e.target.value)}
+              placeholder="es. 8-13 mm" style={inputStyle}
+            />
+          </div>
+          <EyeSchemaCanvas
+            value={treatment.schema_occhio || {}}
+            onChange={schema => onChange({ ...treatment, schema_occhio: schema })}
+          />
+
+          {/* ── Prodotti ── */}
+          <SectionDivider title="Prodotti e tempi" icon={Clock} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {([
+              ['colla',              'Colla',              'Nome prodotto'],
+              ['tenuta',             'Tenuta',             'es. 4 settimane'],
+              ['colore_ciglia',      'Colore ciglia',      'es. nere'],
+              ['colore',             'Colore',             'es. castano'],
+            ] as [keyof Treatment, string, string][]).map(([key, label, placeholder]) => (
+              <div key={key}>
+                <Label>{label}</Label>
+                <input
+                  type="text"
+                  value={(treatment[key] as string) || ''}
+                  onChange={e => set(key, e.target.value)}
+                  placeholder={placeholder} style={inputStyle}
+                />
+              </div>
+            ))}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <Label>Tempo applicazione</Label>
+              <input
+                type="text"
+                value={treatment.tempo_applicazione || ''}
+                onChange={e => set('tempo_applicazione', e.target.value)}
+                placeholder="es. 2h 30min" style={inputStyle}
+              />
+            </div>
+          </div>
+
+          {/* ── Prezzo ── */}
+          <SectionDivider title="Prezzo" icon={Euro} />
+          <div>
+            <Label required>Importo (€)</Label>
+            <div style={{ position: 'relative' }}>
+              <span style={{
+                position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+                fontWeight: 900, fontSize: 20, color: C.accent, pointerEvents: 'none',
+              }}>€</span>
+              <input
+                type="number" step="0.5" min="0"
+                value={treatment.prezzo || ''}
+                onChange={e => set('prezzo', parseFloat(e.target.value))}
+                placeholder="0"
+                style={{
+                  ...inputStyle,
+                  paddingLeft: 34, fontSize: 22, fontWeight: 800,
+                  borderColor: valErrors.prezzo ? C.red : C.border,
+                }}
+              />
+            </div>
+            {valErrors.prezzo && <p style={{ fontSize: 11, color: C.red, marginTop: 4 }}>{valErrors.prezzo}</p>}
+          </div>
+
+        </div>
       )}
     </div>
   );

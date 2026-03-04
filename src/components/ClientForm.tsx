@@ -8,11 +8,10 @@ import { User, Phone, Mail, Camera, Bell, Check, Trash2 } from 'lucide-react';
 import PageHeader from './PageHeader';
 import { LoaderContent } from './FullPageLoader';
 import dayjs from 'dayjs';
+import { useNavigate } from 'react-router-dom';
 
 interface ClientFormProps {
   readonly clientId?: string;
-  readonly onSuccess: () => void;
-  readonly onCancel: () => void;
   readonly onRequestDelete?: () => void;
 }
 
@@ -20,8 +19,11 @@ const textPrimaryColor = '#2C2C2C';
 const textSecondaryColor = '#7A7A7A';
 const surfaceColor = '#FFFFFF';
 
-export default function ClientForm({ clientId, onSuccess, onCancel, onRequestDelete }: ClientFormProps) {
-  const { clientService } = useSupabaseServices();
+const AVATAR_MAX_SIZE_MB = 2;
+const AVATAR_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif';
+
+export default function ClientForm({ clientId, onRequestDelete }: ClientFormProps) {
+  const { clientService, storageService } = useSupabaseServices();
   const { appType } = useApp();
   const colors = useAppColors();
   const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
@@ -30,6 +32,7 @@ export default function ClientForm({ clientId, onSuccess, onCancel, onRequestDel
   const accentSoft = `${colors.primary}29`;
   const accentSofter = `${colors.primary}14`;
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -40,12 +43,15 @@ export default function ClientForm({ clientId, onSuccess, onCancel, onRequestDel
     data_ultimo_appuntamento: null as dayjs.Dayjs | null,
     importo: '',
     tipo_cliente: 'nuovo' as 'nuovo' | 'abituale',
+    foto_url: null as string | null,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [promemoriaAppuntamenti, setPromemoriaAppuntamenti] = useState(true);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  /** File selezionato da caricare al prossimo salvataggio (non ancora su Storage). */
+  const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (clientId) {
@@ -67,7 +73,10 @@ export default function ClientForm({ clientId, onSuccess, onCancel, onRequestDel
           data_ultimo_appuntamento: parseDateFromDatabase(client.data_ultimo_appuntamento || null),
           importo: client.importo?.toString() || '',
           tipo_cliente: client.tipo_cliente,
+          foto_url: client.foto_url ?? null,
         });
+        setPhotoPreview(client.foto_url ?? null);
+        setPendingPhotoFile(null);
         setIsEditing(true);
       }
     } catch (err) {
@@ -95,15 +104,24 @@ export default function ClientForm({ clientId, onSuccess, onCancel, onRequestDel
         ...formData,
         data_ultimo_appuntamento: formatDateForDatabase(formData.data_ultimo_appuntamento) || undefined,
         importo: formData.importo ? Number(formData.importo) : undefined,
+        foto_url: formData.foto_url || undefined,
       };
+      let savedId: string;
       if (isEditing && clientId) {
         await clientService.update(clientId, clientData);
+        savedId = clientId;
       } else {
-        await clientService.create(clientData);
+        const created = await clientService.create(clientData);
+        savedId = created.id;
       }
-      onSuccess();
+      if (pendingPhotoFile) {
+        const publicUrl = await storageService.uploadClientAvatar(savedId, pendingPhotoFile);
+        await clientService.update(savedId, { foto_url: publicUrl });
+        setPendingPhotoFile(null);
+      }
+      navigate(-1);
     } catch (err) {
-      setError('Errore nel salvataggio del cliente');
+      setError(err instanceof Error ? err.message : 'Errore nel salvataggio del cliente');
       console.error('handleSubmit', err);
     } finally {
       setLoading(false);
@@ -116,10 +134,21 @@ export default function ClientForm({ clientId, onSuccess, onCancel, onRequestDel
 
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setPhotoPreview(url);
+    if (!file) return;
+    const sizeMB = file.size / (1024 * 1024);
+    if (sizeMB > AVATAR_MAX_SIZE_MB) {
+      setError(`L'immagine non deve superare ${AVATAR_MAX_SIZE_MB} MB`);
+      return;
     }
+    const allowed = new Set(AVATAR_ACCEPT.split(',').map((m) => m.trim()));
+    if (!allowed.has(file.type)) {
+      setError('Formato non supportato. Usa JPG, PNG, WebP o GIF.');
+      return;
+    }
+    setError(null);
+    if (photoPreview && photoPreview.startsWith('blob:')) URL.revokeObjectURL(photoPreview);
+    setPhotoPreview(URL.createObjectURL(file));
+    setPendingPhotoFile(file);
   };
 
   if (loading && !isEditing) {
@@ -137,7 +166,7 @@ export default function ClientForm({ clientId, onSuccess, onCancel, onRequestDel
       <PageHeader
         title={isEditing ? 'Modifica Cliente' : 'Nuovo Cliente'}
         showBack
-        onBack={onCancel}
+        onBack={() => navigate(-1)}
         backLabel="Annulla"
         rightAction={{ type: 'label', label: 'Salva', onClick: () => handleSubmit(), disabled: loading }}
         variant="static"
@@ -166,7 +195,7 @@ export default function ClientForm({ clientId, onSuccess, onCancel, onRequestDel
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept={AVATAR_ACCEPT}
                 className="hidden"
                 onChange={handlePhotoChange}
               />

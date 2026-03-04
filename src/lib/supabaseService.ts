@@ -1,11 +1,22 @@
-import { createClient } from '@supabase/supabase-js';
-import type { Client, Appointment, ClientWithAppointments, MonthlyStats, ClientProfileData, Material, TreatmentCatalogEntry } from '../types';
+import type {
+  Client,
+  Appointment,
+  ClientWithAppointments,
+  MonthlyStats,
+  ClientProfileData,
+  Material,
+  TreatmentCatalogEntry,
+  TreatmentMaterialLink,
+  AppointmentMaterialUsage,
+  RetentionStats,
+  RetentionBucket,
+  NoShowCancellationStats,
+  RiskyClient,
+  TreatmentMarginStats,
+} from '../types';
 import { useApp } from '../contexts/AppContext';
-
-const supabaseUrl = 'https://ufondjehytekkbrgrjgd.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmb25kamVoeXRla2ticmdyamdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwODkxOTAsImV4cCI6MjA3MzY2NTE5MH0.6hLsH3Z1rur1crqt4DKQ-3s4JMxD7kuFceroMVlYkd8';
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from './supabase';
+import dayjs from 'dayjs';
 
 // Servizio semplificato per l'uso diretto
 export const supabaseService = {
@@ -53,6 +64,8 @@ export function useSupabaseServices() {
   const appointmentsTable = `${tablePrefix}appointments`;
   const clientProfilesTable = `${tablePrefix}client_profiles`;
   const materialsTable = `${tablePrefix}materials`;
+  const treatmentMaterialsTable = `${tablePrefix}treatment_materials`;
+  const appointmentMaterialsUsageTable = `${tablePrefix}appointment_materials_usage`;
 
   // Client operations
   const clientService = {
@@ -175,7 +188,12 @@ export function useSupabaseServices() {
         .insert([appointment])
         .select()
         .single();
-      
+      if (error?.code === 'PGRST204' && (error?.message?.includes('checklist') || error?.message?.includes('note'))) {
+        const { note: _n, checklist: _c, ...payload } = appointment;
+        const retry = await supabase.from(appointmentsTable).insert([payload]).select().single();
+        if (retry.error) throw retry.error;
+        return retry.data;
+      }
       if (error) throw error;
       return data;
     },
@@ -187,7 +205,12 @@ export function useSupabaseServices() {
         .eq('id', id)
         .select()
         .single();
-      
+      if (error?.code === 'PGRST204' && (error?.message?.includes('checklist') || error?.message?.includes('note'))) {
+        const { note: _n, checklist: _c, ...payload } = updates;
+        const retry = await supabase.from(appointmentsTable).update(payload).eq('id', id).select().single();
+        if (retry.error) throw retry.error;
+        return retry.data;
+      }
       if (error) throw error;
       return data;
     },
@@ -390,7 +413,279 @@ export function useSupabaseServices() {
         count: treatment.count,
         color: colors[index % colors.length]
       }));
-    }
+    },
+
+    async getRetentionStats(periodStart: string, periodEnd: string): Promise<RetentionStats> {
+      const windowStart = dayjs(periodStart).subtract(5, 'week').format('YYYY-MM-DD');
+      const windowEnd = dayjs(periodEnd).add(5, 'week').format('YYYY-MM-DD');
+
+      const { data: appointments, error } = await supabase
+        .from(appointmentsTable)
+        .select('client_id, data, status')
+        .gte('data', windowStart)
+        .lte('data', windowEnd)
+        .eq('status', 'completed');
+
+      if (error) throw error;
+
+      const byClient = new Map<string, string[]>();
+      (appointments || []).forEach((apt) => {
+        if (!apt.client_id || !apt.data) return;
+        const list = byClient.get(apt.client_id) || [];
+        list.push(apt.data);
+        byClient.set(apt.client_id, list);
+      });
+
+      byClient.forEach((dates, clientId) => {
+        const sorted = [...dates].sort((a, b) => {
+          if (a < b) return -1;
+          if (a > b) return 1;
+          return 0;
+        });
+        byClient.set(clientId, sorted);
+      });
+
+      const start = dayjs(periodStart);
+      const end = dayjs(periodEnd);
+      const clientsInPeriod = new Set<string>();
+      const lastInPeriod = new Map<string, dayjs.Dayjs>();
+
+      byClient.forEach((dates, clientId) => {
+        const inPeriodDates = dates.filter((d) => {
+          const dd = dayjs(d);
+          return (dd.isSame(start) || dd.isAfter(start)) && (dd.isSame(end) || dd.isBefore(end));
+        });
+        if (!inPeriodDates.length) return;
+        clientsInPeriod.add(clientId);
+        const lastDateString = inPeriodDates.at(-1) as string;
+        lastInPeriod.set(clientId, dayjs(lastDateString));
+      });
+
+      const buckets: RetentionBucket[] = [3, 4, 5].map((weeks) => {
+        let retained = 0;
+        clientsInPeriod.forEach((clientId) => {
+          const lastDate = lastInPeriod.get(clientId);
+          if (!lastDate) return;
+          const maxReturnDate = lastDate.add(weeks, 'week');
+          const allDates = byClient.get(clientId) || [];
+          const hasReturn = allDates.some((d) => {
+            const dd = dayjs(d);
+            return dd.isAfter(lastDate) && (dd.isSame(maxReturnDate) || dd.isBefore(maxReturnDate));
+          });
+          if (hasReturn) retained += 1;
+        });
+
+        const total = clientsInPeriod.size;
+        const percentage = total > 0 ? (retained / total) * 100 : 0;
+
+        return {
+          weeks: weeks as RetentionBucket['weeks'],
+          totalClients: total,
+          retainedClients: retained,
+          percentage: Math.round(percentage),
+        };
+      });
+
+      return {
+        periodStart,
+        periodEnd,
+        buckets,
+      };
+    },
+
+    async getNoShowCancellationStats(periodStart: string, periodEnd: string): Promise<NoShowCancellationStats> {
+      const { data: appointments, error: appointmentsError } = await supabase
+        .from(appointmentsTable)
+        .select('id, client_id, data, status, importo')
+        .gte('data', periodStart)
+        .lte('data', periodEnd);
+
+      if (appointmentsError) throw appointmentsError;
+
+      const allAppointments = appointments || [];
+      const totalAppointments = allAppointments.length;
+
+      // Assunzione attuale: un appuntamento cancellato con importo 0 è un no-show.
+      let noShowCount = 0;
+      let cancellationCount = 0;
+
+      allAppointments.forEach((apt) => {
+        if (apt.status === 'cancelled') {
+          const amount = apt.importo || 0;
+          if (amount === 0) {
+            noShowCount += 1;
+          } else {
+            cancellationCount += 1;
+          }
+        }
+      });
+
+      const noShowPercentage =
+        totalAppointments > 0 ? (noShowCount / totalAppointments) * 100 : 0;
+      const cancellationPercentage =
+        totalAppointments > 0 ? (cancellationCount / totalAppointments) * 100 : 0;
+
+      // Clienti a rischio: conteggio no-show/cancellazioni negli ultimi 90 giorni
+      const riskWindowStart = dayjs(periodEnd).subtract(90, 'day').format('YYYY-MM-DD');
+      const { data: riskAppointments, error: riskError } = await supabase
+        .from(appointmentsTable)
+        .select('id, client_id, data, status, importo')
+        .gte('data', riskWindowStart)
+        .lte('data', periodEnd);
+
+      if (riskError) throw riskError;
+
+      const riskMap = new Map<
+        string,
+        { noShow: number; cancelled: number; lastIssueDate: string }
+      >();
+
+      (riskAppointments || []).forEach((apt) => {
+        if (apt.status !== 'cancelled') return;
+        const amount = apt.importo || 0;
+        const isNoShow = amount === 0;
+        const clientId = apt.client_id;
+        if (!clientId || !apt.data) return;
+        const current = riskMap.get(clientId) || {
+          noShow: 0,
+          cancelled: 0,
+          lastIssueDate: apt.data,
+        };
+        if (isNoShow) {
+          current.noShow += 1;
+        } else {
+          current.cancelled += 1;
+        }
+        if (dayjs(apt.data).isAfter(dayjs(current.lastIssueDate))) {
+          current.lastIssueDate = apt.data;
+        }
+        riskMap.set(clientId, current);
+      });
+
+      const clientIds = Array.from(riskMap.keys());
+      let clientsById = new Map<string, Client>();
+      if (clientIds.length > 0) {
+        const { data: clients, error: clientsError } = await supabase
+          .from(clientsTable)
+          .select('*')
+          .in('id', clientIds);
+        if (clientsError) throw clientsError;
+        (clients || []).forEach((c) => {
+          clientsById.set(c.id, c as Client);
+        });
+      }
+
+      const thirtyDaysAgo = dayjs(periodEnd).subtract(30, 'day');
+      const riskyClients: RiskyClient[] = [];
+
+      riskMap.forEach((value, clientId) => {
+        const totalIssues = value.noShow + value.cancelled;
+        const lastIssue = dayjs(value.lastIssueDate);
+        const hasRecentNoShow = value.noShow > 0 && lastIssue.isAfter(thirtyDaysAgo);
+
+        if (totalIssues < 2 && !hasRecentNoShow) {
+          return;
+        }
+
+        const client = clientsById.get(clientId);
+        if (!client) return;
+
+        riskyClients.push({
+          client,
+          noShowCount: value.noShow,
+          cancellationCount: value.cancelled,
+          lastIssueDate: value.lastIssueDate,
+        });
+      });
+
+      riskyClients.sort((a, b) => {
+        if (a.lastIssueDate < b.lastIssueDate) return 1;
+        if (a.lastIssueDate > b.lastIssueDate) return -1;
+        return 0;
+      });
+
+      return {
+        periodStart,
+        periodEnd,
+        totalAppointments,
+        noShowCount,
+        cancellationCount,
+        noShowPercentage: Math.round(noShowPercentage),
+        cancellationPercentage: Math.round(cancellationPercentage),
+        riskyClients,
+      };
+    },
+
+    async getTreatmentMarginStats(
+      periodStart: string,
+      periodEnd: string,
+      appType: 'lashesandra' | 'isabellenails',
+    ): Promise<TreatmentMarginStats> {
+      const { data: catalog, error: catalogError } = await supabase
+        .from('treatments_catalog')
+        .select('*')
+        .eq('app_type', appType);
+
+      if (catalogError) throw catalogError;
+
+      const catalogById = new Map<string, TreatmentCatalogEntry>();
+      (catalog || []).forEach((entry) => {
+        if (!entry.id) return;
+        catalogById.set(entry.id, entry as TreatmentCatalogEntry);
+      });
+
+      const { data: appointments, error: appointmentsError } = await supabase
+        .from(appointmentsTable)
+        .select('treatment_catalog_id, tipo_trattamento, importo')
+        .gte('data', periodStart)
+        .lte('data', periodEnd)
+        .eq('status', 'completed');
+
+      if (appointmentsError) throw appointmentsError;
+
+      const marginMap = new Map<
+        string,
+        { name: string; count: number; marginTotal: number }
+      >();
+
+      (appointments || []).forEach((apt) => {
+        const catalogId = apt.treatment_catalog_id as string | null;
+        const catalogEntry = catalogId ? catalogById.get(catalogId) : undefined;
+        const name =
+          catalogEntry?.name || apt.tipo_trattamento || 'Altro trattamento';
+        const price = apt.importo || 0;
+        const estimatedCost =
+          (catalogEntry as TreatmentCatalogEntry | undefined)?.estimated_cost || 0;
+        const margin = price - estimatedCost;
+
+        const current = marginMap.get(name) || {
+          name,
+          count: 0,
+          marginTotal: 0,
+        };
+        current.count += 1;
+        current.marginTotal += margin;
+        marginMap.set(name, current);
+      });
+
+      const items = Array.from(marginMap.values())
+        .map((entry) => {
+          const marginAverage = entry.count > 0 ? entry.marginTotal / entry.count : 0;
+          return {
+            name: entry.name,
+            count: entry.count,
+            marginTotal: entry.marginTotal,
+            marginAverage,
+          };
+        })
+        .sort((a, b) => b.marginTotal - a.marginTotal);
+
+      return {
+        periodStart,
+        periodEnd,
+        items,
+      };
+    },
   };
 
   // Client Profile operations
@@ -493,6 +788,89 @@ export function useSupabaseServices() {
     },
   };
 
+  // Trattamenti ↔ materiali (configurazione listino)
+  const treatmentMaterialsService = {
+    async getAll(): Promise<TreatmentMaterialLink[]> {
+      const { data, error } = await supabase
+        .from(treatmentMaterialsTable)
+        .select('*')
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+
+    async getByTreatmentCatalogId(treatmentCatalogId: string): Promise<TreatmentMaterialLink[]> {
+      const { data, error } = await supabase
+        .from(treatmentMaterialsTable)
+        .select('*')
+        .eq('treatment_catalog_id', treatmentCatalogId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+
+    /**
+     * Sostituisce completamente la configurazione materiali per una voce di listino.
+     * Strategia: delete by treatment_catalog_id, poi insert batch delle nuove righe.
+     */
+    async replaceForTreatment(
+      treatmentCatalogId: string,
+      rows: { material_id: string; quantity_per_session: number }[],
+    ): Promise<void> {
+      const { error: delError } = await supabase
+        .from(treatmentMaterialsTable)
+        .delete()
+        .eq('treatment_catalog_id', treatmentCatalogId);
+      if (delError) throw delError;
+
+      if (!rows.length) return;
+
+      const payload = rows.map(r => ({
+        treatment_catalog_id: treatmentCatalogId,
+        material_id: r.material_id,
+        quantity_per_session: r.quantity_per_session,
+      }));
+
+      const { error: insError } = await supabase
+        .from(treatmentMaterialsTable)
+        .insert(payload);
+      if (insError) throw insError;
+    },
+  };
+
+  // Log consumo materiali per appuntamento (per evitare doppi scarichi)
+  const appointmentMaterialsUsageService = {
+    async getByAppointmentId(appointmentId: string): Promise<AppointmentMaterialUsage[]> {
+      const { data, error } = await supabase
+        .from(appointmentMaterialsUsageTable)
+        .select('*')
+        .eq('appointment_id', appointmentId);
+      if (error) throw error;
+      return data || [];
+    },
+
+    async insertMany(usages: { appointment_id: string; material_id: string; quantity_used: number }[]): Promise<void> {
+      if (!usages.length) return;
+      const { error } = await supabase
+        .from(appointmentMaterialsUsageTable)
+        .insert(usages);
+      if (error) throw error;
+    },
+  };
+
+  const storageService = {
+    bucketName: 'client-avatars' as const,
+    /** Carica la foto profilo e restituisce l'URL pubblico. Sovrascrive se esiste già. */
+    async uploadClientAvatar(clientId: string, file: File): Promise<string> {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const path = `${clientId}/avatar.${ext}`;
+      const { error } = await supabase.storage.from(this.bucketName).upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from(this.bucketName).getPublicUrl(path);
+      return publicUrl;
+    },
+  };
+
   return {
     clientService,
     appointmentService,
@@ -500,5 +878,8 @@ export function useSupabaseServices() {
     clientProfileService,
     materialService,
     treatmentCatalogService,
+    storageService,
+    treatmentMaterialsService,
+    appointmentMaterialsUsageService,
   };
 }

@@ -21,7 +21,7 @@ const FILTER_LABELS: Record<RecallFilter | 'all', string> = {
   all: 'Tutti',
   overdue: 'In ritardo',
   this_week: 'Questa settimana',
-  next_two_weeks: 'Prossime 2 settimane',
+  next_three_weeks: 'Prossime 3 settimane',
 };
 
 export default function RecallsPage() {
@@ -87,7 +87,7 @@ export default function RecallsPage() {
 
   return (
     <div className="min-h-screen w-full pb-6" style={{ backgroundColor }}>
-      <PageHeader title="Clienti da richiamare" showBack />
+      <PageHeader title="Clienti da richiamare" showBack backLabel="Indietro" />
 
       <div className="mx-auto max-w-lg px-4 pt-4">
         {error && (
@@ -105,7 +105,7 @@ export default function RecallsPage() {
 
         {/* Filtri */}
         <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-          {(['all', 'overdue', 'this_week', 'next_two_weeks'] as const).map((key) => (
+          {(['all', 'overdue', 'this_week', 'next_three_weeks'] as const).map((key) => (
             <button
               key={key}
               type="button"
@@ -145,7 +145,27 @@ export default function RecallsPage() {
           <ul className="space-y-3">
             {filteredList.map((entry) => (
               <li key={entry.client.id}>
-                <RecallCard entry={entry} onPrenota={() => navigate(`${appPrefix}/appointments`)} />
+                <RecallCard
+                  entry={entry}
+                  onPrenota={() => {
+                    const refillTreatment = appType === 'isabellenails' ? 'Refill Gel/Acrilico' : 'Refill One to One';
+                    const lastApt = appointments
+                      .filter((a) => a.client_id === entry.client.id && a.status === 'completed')
+                      .sort((a, b) => (b.data > a.data ? 1 : -1))[0];
+                    const lastOra = lastApt?.ora ? lastApt.ora.slice(0, 5) : undefined;
+                    navigate(`${appPrefix}/appointments`, {
+                      state: {
+                        prefillNew: {
+                          client_id: entry.client.id,
+                          tipo_trattamento: refillTreatment,
+                          importo: 20,
+                          data: entry.suggestedRefillDate,
+                          ora: lastOra,
+                        },
+                      },
+                    });
+                  }}
+                />
               </li>
             ))}
           </ul>
@@ -189,12 +209,11 @@ function RecallCard({
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs" style={{ color: textSecondaryColor }}>
             <span className="flex items-center gap-1">
-              <Calendar className="h-3.5 w-3.5" />
-              Ultimo: {dayjs(entry.lastAppointmentDate).format('D MMM YYYY')}
+              Ultimo appuntamento: <br /> {dayjs(entry.lastAppointmentDate).format('D MMM YYYY')}
               {entry.lastAppointmentTreatment && ` • ${entry.lastAppointmentTreatment}`}
             </span>
           </div>
-          <p className="mt-1 text-xs font-medium" style={{ color: colors.primary }}>
+          <p className="mt-1 text-xs font-bold" style={{ color: colors.primary }}>
             Refill consigliato: {dayjs(entry.suggestedRefillDate).format('D MMM YYYY')}
           </p>
         </div>

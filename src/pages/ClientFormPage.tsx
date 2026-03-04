@@ -10,10 +10,6 @@ export default function ClientFormPage() {
   const navigate = useNavigate();
   const { appType } = useApp();
 
-  const goBackToList = () => {
-    navigate('..', { relative: 'path' });
-  };
-
   const handleRequestDelete = () => {
     navigate('..', { relative: 'path', state: { confirmDeleteId: id } });
   };
@@ -22,8 +18,6 @@ export default function ClientFormPage() {
     <div className="h-full min-h-[100dvh] flex flex-col" style={{ backgroundColor: backgroundColor(appType) }}>
       <ClientForm
         clientId={id}
-        onSuccess={goBackToList}
-        onCancel={goBackToList}
         onRequestDelete={id ? handleRequestDelete : undefined}
       />
     </div>

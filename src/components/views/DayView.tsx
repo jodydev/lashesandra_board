@@ -1,8 +1,8 @@
 import React, { useMemo, useRef, useCallback, useState, useEffect } from 'react';
-import { Check, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Check, MoreHorizontal, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/it';
-import type { CalendarViewProps, Appointment } from '../../types';
+import type { CalendarViewProps, Appointment, Client } from '../../types';
 import { useApp } from '../../contexts/AppContext';
 import { isPersonalAppointment } from '../../lib/personalEvents';
 import { DEFAULT_APPOINTMENT_DURATION_MINUTES } from '../../lib/treatmentDurations';
@@ -12,6 +12,7 @@ dayjs.locale('it');
 interface DayViewProps extends CalendarViewProps {
   onPreviousDay: () => void;
   onNextDay: () => void;
+  onQuickAddSlot?: (date: Dayjs, time: string) => void;
 }
 
 const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 08:00 - 20:00
@@ -62,6 +63,7 @@ export default function DayView({
   onPreviousDay,
   onNextDay,
   colors,
+  onQuickAddSlot,
 }: Readonly<DayViewProps>) {
   useApp();
   const textPrimaryColor = '#2C2C2C';
@@ -72,6 +74,7 @@ export default function DayView({
   const accentSofter = `${colors.primary}14`;
 
   const touchStartX = useRef<number | null>(null);
+  const [quickAdd, setQuickAdd] = useState<{ minutes: number; timeLabel: string } | null>(null);
 
   const getAppointmentsForDate = (date: Dayjs) => {
     return appointments.filter((apt) => dayjs(apt.data).isSame(date, 'day'));
@@ -176,6 +179,29 @@ export default function DayView({
 
   const monthLabel = currentDate.format('MMMM');
 
+  const handleTimelineClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!onQuickAddSlot) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      const minutesFromStart = Math.round(((y / PIXELS_PER_HOUR) * 60) / 15) * 15;
+      let absoluteMinutes = START_HOUR * 60 + minutesFromStart;
+      if (absoluteMinutes < START_HOUR * 60) absoluteMinutes = START_HOUR * 60;
+      if (absoluteMinutes > (START_HOUR + 12) * 60) absoluteMinutes = (START_HOUR + 12) * 60;
+      const h = Math.floor(absoluteMinutes / 60);
+      const m = absoluteMinutes % 60;
+      const timeLabel = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      setQuickAdd({ minutes: absoluteMinutes, timeLabel });
+    },
+    [onQuickAddSlot]
+  );
+
+  const handleQuickAddConfirm = () => {
+    if (!onQuickAddSlot || !quickAdd) return;
+    onQuickAddSlot(currentDate, quickAdd.timeLabel);
+    setQuickAdd(null);
+  };
+
   return (
     <div
       className="relative border overflow-hidden min-h-[420px] mb-40"
@@ -232,6 +258,7 @@ export default function DayView({
         <div
           className="flex-1 min-w-0 relative pl-3 pr-2 py-2"
           style={{ minHeight: timelineHeight }}
+          onClick={handleTimelineClick}
         >
           {/* Griglia ore (stile Apple: linee orizzontali sempre visibili) */}
           {HOURS.map((h) => (
@@ -248,7 +275,7 @@ export default function DayView({
           {/* Linea ora corrente: pillola rossa con orario + barra sfumata */}
           {showNowLine && (
             <div
-              className="absolute left-0 right-0 z-10 pointer-events-none"
+              className="absolute -left-10 right-0 z-10 pointer-events-none"
               style={{ top: minutesToTop(nowMinutes) }}
             >
               <div className="flex items-center gap-2">
@@ -364,17 +391,47 @@ export default function DayView({
                     width: `${widthPercent}%`,
                   }}
                 >
-                  <DayViewCard
-                    appointment={appointment}
-                    durationMinutes={getDurationMinutes(appointment)}
-                    client={getClientById(appointment.client_id)}
-                    onClick={() => onAppointmentClick(appointment)}
-                    accentGradient={accentGradient}
-                    isPast={isPast}
+                  <div
+                    className="absolute inset-0 rounded-2xl"
+                    style={{
+                      backgroundColor: isPast ? 'rgba(0,0,0,0.03)' : accentSofter,
+                    }}
                   />
+                  <div className="relative z-10">
+                    <DayViewCard
+                      appointment={appointment}
+                      durationMinutes={getDurationMinutes(appointment)}
+                      client={getClientById(appointment.client_id)}
+                      onClick={() => onAppointmentClick(appointment)}
+                      accentGradient={accentGradient}
+                      isPast={isPast}
+                    />
+                  </div>
                 </div>
               );
             })
+          )}
+
+          {onQuickAddSlot && quickAdd && (
+            <button
+              type="button"
+              onClick={handleQuickAddConfirm}
+              className="absolute left-2 right-2 md:left-8 md:right-auto flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-white via-[#FFF5EB] to-white shadow-md transition-all border hover:shadow-lg hover:bg-gradient-to-r hover:from-[#ffeada] hover:to-[#fff7ed] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-300 active:scale-95"
+              style={{
+                top: minutesToTop(quickAdd.minutes - 20),
+                color: accentColor,
+                border: `1.5px solid ${accentSofter}`,
+                zIndex: 20,
+              }}
+              aria-label={`Aggiungi appuntamento alle ${quickAdd.timeLabel}`}
+            >
+              <span className="inline-flex items-center gap-2">
+                <Plus size={17} strokeWidth={2.5} color={accentColor} />
+                <span>
+                  Inserisci appuntamento alle <span style={{ fontWeight: 700 }}>{quickAdd.timeLabel}</span>
+                </span>
+              </span>
+            </button>
           )}
         </div>
       </div>
@@ -386,7 +443,7 @@ export default function DayView({
 interface DayViewCardProps {
   readonly appointment: Appointment;
   readonly durationMinutes: number;
-  readonly client: { nome: string; cognome: string } | undefined;
+  readonly client: Client | undefined;
   readonly onClick: () => void;
   readonly accentGradient: string;
   readonly isPast: boolean;
@@ -435,14 +492,19 @@ function DayViewCard({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
+        onClick();
+      }}
       className={`w-full h-92 text-left px-3.5 py-3.5 flex flex-col justify-between overflow-hidden rounded-2xl ${buttonClass}`}
       style={cardStyle}
     >
-      <div className="flex justify-between items-start gap-2">
-        <span className={`text-[11px] font-semibold uppercase tracking-wide truncate ${serviceClass}`}>
-          {service}
-        </span>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span className={`text-[11px] font-semibold uppercase tracking-wide truncate ${serviceClass}`}>
+            {service}
+          </span>
+        </div>
         {isCompleted ? (
           <Check className={`w-4 h-4 flex-shrink-0 ${iconClass}`} />
         ) : (
@@ -459,8 +521,27 @@ function DayViewCard({
         </p>
       )}
 
-      <div className="mt-2 flex items-end justify-end gap-2">
-        <p className={`text-xs font-bold ${timeClass}`}>
+      <div className="mt-2 flex items-center justify-between gap-2">
+      {!personal && client && (
+            <div
+              className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center text-[11px] font-semibold"
+              style={{ background: accentGradient, color: '#FFFFFF' }}
+            >
+              {client.foto_url ? (
+                <img
+                  src={client.foto_url}
+                  alt={clientName}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <>
+                  {client.nome.charAt(0).toUpperCase()}
+                  {client.cognome.charAt(0).toUpperCase()}
+                </>
+              )}
+            </div>
+          )}
+        <p className={`text-sm font-bold ${timeClass}`}>
           {startTime}
           {endTime ? ` – ${endTime}` : ''}
         </p>

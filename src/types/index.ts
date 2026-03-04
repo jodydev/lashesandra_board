@@ -9,6 +9,8 @@ export interface Client {
   spesa_totale: number;
   importo?: number;
   tipo_cliente: 'nuovo' | 'abituale';
+  /** URL pubblico della foto profilo (Supabase Storage bucket client-avatars). */
+  foto_url?: string | null;
   created_at: string;
 }
 
@@ -27,7 +29,19 @@ export interface TreatmentCatalogEntry {
   base_price: number;
   duration_minutes: number;
   sort_order: number;
+  /** Costo stimato materiali/tempo per singola seduta (opzionale, per calcolo margine). */
+  estimated_cost?: number | null;
   created_at?: string;
+}
+
+/** Link configurato tra voce di listino e materiale di inventario. */
+export interface TreatmentMaterialLink {
+  id: string;
+  treatment_catalog_id: string;
+  material_id: string;
+  /** Quantità consumata per singola seduta (stessa unità di Material.quantity). */
+  quantity_per_session: number;
+  created_at: string;
 }
 
 export interface Appointment {
@@ -67,6 +81,50 @@ export interface MonthlyStats {
     client: Client;
     revenue: number;
   }>;
+}
+
+export interface RetentionBucket {
+  weeks: 3 | 4 | 5;
+  totalClients: number;
+  retainedClients: number;
+  percentage: number;
+}
+
+export interface RetentionStats {
+  periodStart: string;
+  periodEnd: string;
+  buckets: RetentionBucket[];
+}
+
+export interface RiskyClient {
+  client: Client;
+  noShowCount: number;
+  cancellationCount: number;
+  lastIssueDate: string;
+}
+
+export interface NoShowCancellationStats {
+  periodStart: string;
+  periodEnd: string;
+  totalAppointments: number;
+  noShowCount: number;
+  cancellationCount: number;
+  noShowPercentage: number;
+  cancellationPercentage: number;
+  riskyClients: RiskyClient[];
+}
+
+export interface TreatmentMarginEntry {
+  name: string;
+  count: number;
+  marginTotal: number;
+  marginAverage: number;
+}
+
+export interface TreatmentMarginStats {
+  periodStart: string;
+  periodEnd: string;
+  items: TreatmentMarginEntry[];
 }
 
 export interface TreatmentWithCount {
@@ -231,4 +289,13 @@ export interface Material {
   notes: string | null;
   created_at: string;
   updated_at?: string;
+}
+
+/** Log di consumo materiali per singolo appuntamento (per idempotenza scarico). */
+export interface AppointmentMaterialUsage {
+  id: string;
+  appointment_id: string;
+  material_id: string;
+  quantity_used: number;
+  created_at: string;
 }

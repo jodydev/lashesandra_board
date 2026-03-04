@@ -588,7 +588,24 @@ export default function HomePage() {
                       )}
                       <button
                         type="button"
-                        onClick={() => navigate(`${appPrefix}/appointments`)}
+                        onClick={() => {
+                          const refillTreatment = appType === 'isabellenails' ? 'Refill Gel/Acrilico' : 'Refill One to One';
+                          const lastApt = appointments
+                            .filter((a) => a.client_id === entry.client.id && a.status === 'completed')
+                            .sort((a, b) => (b.data > a.data ? 1 : -1))[0];
+                          const lastOra = lastApt?.ora ? lastApt.ora.slice(0, 5) : undefined;
+                          navigate(`${appPrefix}/appointments`, {
+                            state: {
+                              prefillNew: {
+                                client_id: entry.client.id,
+                                tipo_trattamento: refillTreatment,
+                                importo: 20,
+                                data: entry.suggestedRefillDate,
+                                ora: lastOra,
+                              },
+                            },
+                          });
+                        }}
                         className="rounded-xl px-3 py-1.5 text-xs font-semibold text-white"
                         style={{ background: accentGradient }}
                       >

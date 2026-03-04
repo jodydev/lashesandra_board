@@ -1,13 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   ChevronRight,
-  Calendar,
   Activity,
   Eye,
   Palette,
   Sparkles,
   CircleDot,
+  ChevronLeft,
 } from 'lucide-react';
 import PageHeader from './PageHeader';
 import {
@@ -17,11 +16,18 @@ import {
   BarController,
   BarElement,
   Tooltip,
+  ArcElement,
+  Legend,
 } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Pie } from 'react-chartjs-2';
 import dayjs from 'dayjs';
 import 'dayjs/locale/it';
-import type { MonthlyStats } from '../types';
+import type {
+  MonthlyStats,
+  RetentionStats,
+  NoShowCancellationStats,
+  TreatmentMarginStats,
+} from '../types';
 import { useSupabaseServices } from '../lib/supabaseService';
 import { useAppColors } from '../hooks/useAppColors';
 import { useApp } from '../contexts/AppContext';
@@ -35,6 +41,8 @@ ChartJS.register(
   BarController,
   BarElement,
   Tooltip,
+  ArcElement,
+  Legend,
 );
 
 const textPrimaryColor = '#2C2C2C';
@@ -207,16 +215,85 @@ function WeeklyRevenueChart({
   );
 }
 
+function TreatmentPieChart({
+  data,
+  segmentColors,
+}: Readonly<{
+  data: Array<{ name: string; value: number; count: number; color: string }>;
+  segmentColors: string[];
+}>) {
+  const chartData = useMemo(
+    () => ({
+      labels: data.map((d) => d.name),
+      datasets: [
+        {
+          data: data.map((d) => d.value),
+          backgroundColor: data.map(
+            (_d, index) => segmentColors[index % segmentColors.length] || '#c4c4c4',
+          ),
+          borderWidth: 1,
+          borderColor: '#ffffff',
+        },
+      ],
+    }),
+    [data, segmentColors]
+  );
+
+  const options = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom' as const,
+          labels: {
+            boxWidth: 10,
+            boxHeight: 10,
+            usePointStyle: true,
+            pointStyle: 'circle',
+            padding: 14,
+          },
+        },
+        tooltip: {
+          backgroundColor: 'rgba(255,255,255,0.96)',
+          titleColor: textPrimaryColor,
+          bodyColor: textPrimaryColor,
+          borderColor: '#e5e7eb',
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 12,
+          callbacks: {
+            label: (ctx: { label: string; raw: unknown; dataIndex: number }) => {
+              const rawValue = Number(ctx.raw ?? 0);
+              const count = data[ctx.dataIndex]?.count ?? 0;
+              return `${ctx.label}: ${formatCurrency(rawValue)} · ${count} appuntamenti`;
+            },
+          },
+        },
+      },
+    }),
+    [data]
+  );
+
+  if (!data.length) return null;
+
+  return (
+    <div className="h-52 sm:h-60">
+      <Pie data={chartData} options={options} />
+    </div>
+  );
+}
+
 // Icone per tipo servizio (fallback generico)
 const SERVICE_ICONS = [Eye, Palette, Sparkles, CircleDot];
 
 export default function MonthlyOverview() {
-  const navigate = useNavigate();
   const { statsService } = useSupabaseServices();
   const colors = useAppColors();
   const { appType } = useApp();
   const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
   const accentColor = colors.primary;
+  const accentDarkColor = colors.primaryDark;
 
   const [period, setPeriod] = useState<Period>('month');
   const [currentDate, setCurrentDate] = useState(dayjs());
@@ -228,12 +305,20 @@ export default function MonthlyOverview() {
   const [treatmentDistribution, setTreatmentDistribution] = useState<
     Array<{ name: string; value: number; count: number; color: string }>
   >([]);
+  const [retentionStats, setRetentionStats] = useState<RetentionStats | null>(null);
+  const [noShowStats, setNoShowStats] = useState<NoShowCancellationStats | null>(null);
+  const [treatmentMarginStats, setTreatmentMarginStats] = useState<TreatmentMarginStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const treatmentPieColors = useMemo(
+    () => [colors.primary, colors.primaryLight, colors.primaryDark],
+    [colors.primary, colors.primaryLight, colors.primaryDark],
+  );
+
   useEffect(() => {
     loadStats();
-  }, [currentDate]);
+  }, [currentDate, appType]);
 
   const loadStats = async () => {
     try {
@@ -243,22 +328,34 @@ export default function MonthlyOverview() {
       const m = currentDate.month() + 1;
       const prev = currentDate.subtract(1, 'month');
 
+      const periodStart = currentDate.startOf('month').format('YYYY-MM-DD');
+      const periodEnd = currentDate.endOf('month').format('YYYY-MM-DD');
+
       const [
         monthlyData,
         dailyData,
         treatmentData,
         prevMonthlyData,
+        retentionData,
+        noShowData,
+        treatmentMarginData,
       ] = await Promise.all([
         statsService.getMonthlyStats(y, m),
         statsService.getDailyStats(y, m),
         statsService.getTreatmentDistribution(y, m),
         statsService.getMonthlyStats(prev.year(), prev.month() + 1),
+        statsService.getRetentionStats(periodStart, periodEnd),
+        statsService.getNoShowCancellationStats(periodStart, periodEnd),
+        statsService.getTreatmentMarginStats(periodStart, periodEnd, appType),
       ]);
 
       setStats(monthlyData);
       setPrevStats(prevMonthlyData);
       setDailyStats(dailyData);
       setTreatmentDistribution(treatmentData);
+      setRetentionStats(retentionData);
+      setNoShowStats(noShowData);
+      setTreatmentMarginStats(treatmentMarginData);
     } catch {
       setError('Errore nel caricamento delle statistiche');
     } finally {
@@ -272,7 +369,7 @@ export default function MonthlyOverview() {
       ? Math.round(
           ((stats.totalRevenue - prevStats.totalRevenue) /
             prevStats.totalRevenue) *
-            100
+            100,
         )
       : null;
   const percentChangeAppointments =
@@ -280,9 +377,70 @@ export default function MonthlyOverview() {
       ? Math.round(
           ((stats.totalAppointments - prevStats.totalAppointments) /
             prevStats.totalAppointments) *
-            100
+            100,
         )
       : null;
+
+  const displayTotals = useMemo(
+    () => {
+      if (!stats) {
+        return { revenue: 0, appointments: 0 };
+      }
+
+      if (!dailyStats.length || period === 'month') {
+        return {
+          revenue: stats.totalRevenue,
+          appointments: stats.totalAppointments,
+        };
+      }
+
+      if (period === 'day') {
+        const targetDay = currentDate.date();
+        const dayStats = dailyStats.find((d) => d.day === targetDay);
+        return {
+          revenue: dayStats?.revenue ?? 0,
+          appointments: dayStats?.appointments ?? 0,
+        };
+      }
+
+      if (period === 'week') {
+        const weekStart = currentDate.startOf('isoWeek');
+        const weekEnd = currentDate.endOf('isoWeek');
+        const monthStart = currentDate.startOf('month');
+        const monthEnd = currentDate.endOf('month');
+
+        const start = weekStart.isBefore(monthStart) ? monthStart : weekStart;
+        const end = weekEnd.isAfter(monthEnd) ? monthEnd : weekEnd;
+
+        let revenue = 0;
+        let appointments = 0;
+        for (
+          let d = start.date();
+          d <= end.date();
+          d += 1
+        ) {
+          const statsForDay = dailyStats[d - 1];
+          if (!statsForDay) continue;
+          revenue += statsForDay.revenue;
+          appointments += statsForDay.appointments;
+        }
+
+        return { revenue, appointments };
+      }
+
+      // Per "anno" usiamo per ora gli stessi totali mensili
+      return {
+        revenue: stats.totalRevenue,
+        appointments: stats.totalAppointments,
+      };
+    },
+    [stats, dailyStats, period, currentDate],
+  );
+
+  const displayPercentChangeRevenue =
+    period === 'month' ? percentChangeRevenue : null;
+  const displayPercentChangeAppointments =
+    period === 'month' ? percentChangeAppointments : null;
 
   // Ultimi 7 giorni fino a oggi (o fine mese se mese passato) per sparkline dinamica
   const last7Revenue = useMemo(() => {
@@ -344,13 +502,8 @@ export default function MonthlyOverview() {
       <div className="min-h-screen" style={{ backgroundColor }}>
         <PageHeader
           title="Statistiche"
+          backLabel="Indietro" 
           showBack
-          rightAction={{
-            type: 'icon',
-            icon: Calendar,
-            ariaLabel: 'Calendario',
-            onClick: () => navigate(appType === 'isabellenails' ? '/isabellenails/calendar' : '/lashesandra/calendar'),
-          }}
         />
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
           <div className="h-10 bg-white rounded-full border animate-pulse" style={{ borderColor: `${accentColor}20` }} />
@@ -371,12 +524,7 @@ export default function MonthlyOverview() {
       <PageHeader
         title="Statistiche"
         showBack
-        rightAction={{
-          type: 'icon',
-          icon: Calendar,
-          ariaLabel: 'Calendario',
-          onClick: () => navigate(appType === 'isabellenails' ? '/isabellenails/calendar' : '/lashesandra/calendar'),
-        }}
+        backLabel="Indietro"
       />
 
       <div className="max-w-2xl mx-auto px-4 py-5 sm:py-6 space-y-5 sm:space-y-6">
@@ -401,8 +549,8 @@ export default function MonthlyOverview() {
               style={
                 period === key
                   ? {
-                      backgroundColor: `${accentColor}18`,
-                      color: accentColor,
+                      backgroundColor: accentDarkColor,
+                      color: '#FFFFFF',
                     }
                   : { color: textSecondaryColor }
               }
@@ -424,15 +572,15 @@ export default function MonthlyOverview() {
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <KpiCard
             title="Entrate"
-            value={formatCurrency(stats?.totalRevenue ?? 0)}
-            percentChange={percentChangeRevenue}
+            value={formatCurrency(displayTotals.revenue)}
+            percentChange={displayPercentChangeRevenue}
             sparklineData={last7Revenue.length ? last7Revenue : [0]}
             accentColor={accentColor}
           />
           <KpiCard
             title="Appuntamenti"
-            value={String(stats?.totalAppointments ?? 0)}
-            percentChange={percentChangeAppointments}
+            value={String(displayTotals.appointments)}
+            percentChange={displayPercentChangeAppointments}
             sparklineData={last7Appointments.length ? last7Appointments : [0]}
             accentColor={accentColor}
           />
@@ -510,6 +658,14 @@ export default function MonthlyOverview() {
             </h2>
           </div>
           <div className="p-4 sm:p-5 space-y-3">
+            {treatmentDistribution.length > 0 && (
+              <div className="mb-3">
+                <TreatmentPieChart
+                  data={treatmentDistribution}
+                  segmentColors={treatmentPieColors}
+                />
+              </div>
+            )}
             {treatmentDistribution.length > 0 ? (
               treatmentDistribution.slice(0, 5).map((item, index) => {
                 const Icon = SERVICE_ICONS[index % SERVICE_ICONS.length];
@@ -570,6 +726,234 @@ export default function MonthlyOverview() {
             )}
           </div>
         </div>
+
+        {/* Retention clienti 3/4/5 settimane */}
+        {retentionStats && (
+          <div
+            className="rounded-2xl border overflow-hidden shadow-sm"
+            style={{ backgroundColor: surfaceColor, borderColor: `${accentColor}20` }}
+          >
+            <div
+              className="p-4 sm:p-5 border-b"
+              style={{ borderColor: `${accentColor}14` }}
+            >
+              <h2
+                className="text-base sm:text-lg font-semibold"
+                style={{ color: textPrimaryColor }}
+              >
+                Retention clienti
+              </h2>
+              <p
+                className="mt-1 text-xs sm:text-sm"
+                style={{ color: textSecondaryColor }}
+              >
+                Percentuale di clienti che tornano entro 3, 4 o 5 settimane
+              </p>
+            </div>
+            <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {retentionStats.buckets.map((bucket) => (
+                <div
+                  key={bucket.weeks}
+                  className="rounded-xl border px-4 py-3 flex flex-col gap-1"
+                  style={{
+                    backgroundColor: `${accentColor}08`,
+                    borderColor: `${accentColor}18`,
+                  }}
+                >
+                  <p
+                    className="text-xs font-semibold uppercase tracking-wide"
+                    style={{ color: textSecondaryColor }}
+                  >
+                    {bucket.weeks} settimane
+                  </p>
+                  <p
+                    className="text-xl font-bold"
+                    style={{ color: textPrimaryColor }}
+                  >
+                    {bucket.percentage}%
+                  </p>
+                  <p
+                    className="text-xs"
+                    style={{ color: textSecondaryColor }}
+                  >
+                    {bucket.retainedClients} su {bucket.totalClients} clienti
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* No-show, cancellazioni e clienti a rischio */}
+        {noShowStats && (
+          <div
+            className="rounded-2xl border overflow-hidden shadow-sm"
+            style={{ backgroundColor: surfaceColor, borderColor: `${accentColor}20` }}
+          >
+            <div
+              className="p-4 sm:p-5 border-b"
+              style={{ borderColor: `${accentColor}14` }}
+            >
+              <h2
+                className="text-base sm:text-lg font-semibold"
+                style={{ color: textPrimaryColor }}
+              >
+                No-show e cancellazioni
+              </h2>
+              <p
+                className="mt-1 text-xs sm:text-sm"
+                style={{ color: textSecondaryColor }}
+              >
+                Ultimo mese selezionato
+              </p>
+            </div>
+            <div className="p-4 sm:p-5 space-y-4">
+              <div className="flex flex-col gap-1 text-sm">
+                <p style={{ color: textPrimaryColor }}>
+                  <span className="font-semibold">Totale appuntamenti:</span>{' '}
+                  {noShowStats.totalAppointments}
+                </p>
+                <p style={{ color: textPrimaryColor }}>
+                  <span className="font-semibold">No-show:</span>{' '}
+                  {noShowStats.noShowCount} (
+                  {noShowStats.noShowPercentage}%)
+                </p>
+                <p style={{ color: textPrimaryColor }}>
+                  <span className="font-semibold">Cancellazioni:</span>{' '}
+                  {noShowStats.cancellationCount} (
+                  {noShowStats.cancellationPercentage}%)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <p
+                  className="text-xs font-semibold uppercase tracking-wide"
+                  style={{ color: textSecondaryColor }}
+                >
+                  Clienti a rischio
+                </p>
+                {noShowStats.riskyClients.length === 0 ? (
+                  <p
+                    className="text-xs"
+                    style={{ color: textSecondaryColor }}
+                  >
+                    Nessun cliente a rischio nel periodo analizzato.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {noShowStats.riskyClients.slice(0, 5).map((entry) => (
+                      <div
+                        key={entry.client.id}
+                        className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2"
+                        style={{
+                          backgroundColor: `${accentColor}08`,
+                          borderColor: `${accentColor}18`,
+                        }}
+                      >
+                        <div className="min-w-0">
+                          <p
+                            className="text-sm font-semibold truncate"
+                            style={{ color: textPrimaryColor }}
+                          >
+                            {entry.client.nome} {entry.client.cognome}
+                          </p>
+                          <p
+                            className="text-xs"
+                            style={{ color: textSecondaryColor }}
+                          >
+                            {entry.noShowCount} no-show ·{' '}
+                            {entry.cancellationCount} cancellazioni
+                          </p>
+                        </div>
+                        <p
+                          className="text-[11px]"
+                          style={{ color: textSecondaryColor }}
+                        >
+                          Ultimo: {dayjs(entry.lastIssueDate).format('D MMM')}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Trattamenti top per margine */}
+        {treatmentMarginStats && treatmentMarginStats.items.length > 0 && (
+          <div
+            className="rounded-2xl border overflow-hidden shadow-sm"
+            style={{ backgroundColor: surfaceColor, borderColor: `${accentColor}20` }}
+          >
+            <div
+              className="p-4 sm:p-5 border-b"
+              style={{ borderColor: `${accentColor}14` }}
+            >
+              <h2
+                className="text-base sm:text-lg font-semibold"
+                style={{ color: textPrimaryColor }}
+              >
+                Trattamenti top per margine
+              </h2>
+              <p
+                className="mt-1 text-xs sm:text-sm"
+                style={{ color: textSecondaryColor }}
+              >
+                Ordinati per margine totale (prezzo meno costo stimato)
+              </p>
+            </div>
+            <div className="p-4 sm:p-5 overflow-x-auto">
+              <table className="min-w-full text-xs sm:text-sm">
+                <thead>
+                  <tr
+                    className="text-left"
+                    style={{ color: textSecondaryColor }}
+                  >
+                    <th className="pb-2 pr-4 font-medium">Trattamento</th>
+                    <th className="pb-2 pr-4 font-medium text-right">
+                      Margine totale
+                    </th>
+                    <th className="pb-2 pr-4 font-medium text-right">
+                      Margine medio
+                    </th>
+                    <th className="pb-2 font-medium text-right">N°</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {treatmentMarginStats.items.slice(0, 6).map((item) => (
+                    <tr key={item.name}>
+                      <td
+                        className="py-1.5 pr-4"
+                        style={{ color: textPrimaryColor }}
+                      >
+                        {item.name}
+                      </td>
+                      <td
+                        className="py-1.5 pr-4 text-right"
+                        style={{ color: textPrimaryColor }}
+                      >
+                        {formatCurrency(item.marginTotal)}
+                      </td>
+                      <td
+                        className="py-1.5 pr-4 text-right"
+                        style={{ color: textPrimaryColor }}
+                      >
+                        {formatCurrency(item.marginAverage)}
+                      </td>
+                      <td
+                        className="py-1.5 text-right"
+                        style={{ color: textSecondaryColor }}
+                      >
+                        {item.count}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

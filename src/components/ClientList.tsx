@@ -38,6 +38,7 @@ export default function ClientList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'nuovo' | 'abituale'>('all');
   const [showTopClients, setShowTopClients] = useState(true);
+  const [showFiltersOptions, setShowFiltersOptions] = useState(false);
 
   useEffect(() => {
     loadClients();
@@ -164,7 +165,7 @@ export default function ClientList() {
         className="min-h-screen"
         style={{ backgroundColor }}
       >
-        <PageHeader title="Lista Clienti" showBack onBack={() => navigate(-1)} />
+        <PageHeader title="Lista Clienti" showBack backLabel="Indietro" onBack={() => navigate(-1)} />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
@@ -364,45 +365,66 @@ export default function ClientList() {
         })()}
         </div>
 
-        {/* Barra ricerca e filtri */}
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-          <div className="relative flex-1 min-w-0 sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Cerca clienti..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl border bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-white"
-              style={{ borderColor: accentSoft }}
-            />
-          </div>
+        {/* Barra ricerca + pannello opzioni (filtri) */}
+        <div className="mb-6 space-y-3">
+          {/* Search + options toggle */}
           <div className="flex items-center gap-2">
-            {[
-              { key: 'all', label: 'Tutti', count: clients.length },
-              { key: 'nuovo', label: 'Nuovi', count: newClients },
-              { key: 'abituale', label: 'Abituali', count: regularClients },
-            ].map((filter) => {
-              const isActive = filterType === filter.key;
-              return (
-                <button
-                  key={filter.key}
-                  type="button"
-                  onClick={() => setFilterType(filter.key as 'all' | 'nuovo' | 'abituale')}
-                  className={`whitespace-nowrap rounded-2xl px-3 py-1.5 text-xs font-medium sm:text-sm ${
-                    isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400'
-                  }`}
-                  style={
-                    isActive
-                      ? { background: accentGradient }
-                      : { backgroundColor: surfaceColor, border: `1px solid ${accentSofter}` }
-                  }
-                >
-                  {filter.label} ({filter.count})
-                </button>
-              );
-            })}
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Cerca clienti..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-xl border bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-white"
+                style={{ borderColor: accentSoft }}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowFiltersOptions((prev) => !prev)}
+              className="inline-flex items-center gap-1.5 rounded-full border p-3 text-xs sm:text-sm font-semibold bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200"
+              style={{ borderColor: accentSofter }}
+            >
+              <Filter className="h-4 w-4" />
+              <span className="hidden sm:inline">Opzioni</span>
+            </button>
           </div>
+
+          {/* Filters panel */}
+          {showFiltersOptions && (
+            <div
+              className="rounded-2xl border px-3 py-3 sm:px-4 sm:py-3 space-y-2 bg-white/80 dark:bg-gray-900/80"
+              style={{ borderColor: accentSofter }}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  { key: 'all', label: 'Tutti', count: clients.length },
+                  { key: 'nuovo', label: 'Nuovi', count: newClients },
+                  { key: 'abituale', label: 'Abituali', count: regularClients },
+                ].map((filter) => {
+                  const isActive = filterType === filter.key;
+                  return (
+                    <button
+                      key={filter.key}
+                      type="button"
+                      onClick={() => setFilterType(filter.key as 'all' | 'nuovo' | 'abituale')}
+                      className={`whitespace-nowrap rounded-2xl px-3 py-1.5 text-xs font-medium sm:text-sm ${
+                        isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400'
+                      }`}
+                      style={
+                        isActive
+                          ? { background: accentGradient }
+                          : { backgroundColor: surfaceColor, border: `1px solid ${accentSofter}` }
+                      }
+                    >
+                      {filter.label} ({filter.count})
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Error Alert */}
@@ -431,7 +453,15 @@ export default function ClientList() {
                         className={`flex h-12 w-12 items-center justify-center rounded-xl text-base font-semibold text-white shadow-lg sm:h-14 sm:w-14 sm:text-lg ${colors.shadowPrimary}`}
                         style={{ background: accentGradient }}
                       >
-                        {client.nome.charAt(0).toUpperCase()}
+                        {client.foto_url ? (
+                          <img
+                            src={client.foto_url}
+                            alt={`${client.nome} ${client.cognome}`}
+                            className="h-full w-full rounded-xl object-cover"
+                          />
+                        ) : (
+                          client.nome.charAt(0).toUpperCase()
+                        )}
                       </div>
                         {client.tipo_cliente === 'nuovo' && (
                           <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-5 sm:w-5">

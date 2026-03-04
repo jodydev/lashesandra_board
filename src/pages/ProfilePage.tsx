@@ -13,6 +13,7 @@ import {
   CheckCircle,
   Package,
   Sparkles,
+  Euro,
 } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import FullPageLoader from '../components/FullPageLoader';
@@ -213,7 +214,7 @@ export default function ProfilePage() {
     <div className="min-h-screen" style={{ backgroundColor }}>
       <PageHeader title="Profilo" showBack backLabel="Indietro" />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <main className="max-w-7xl mx-auto p-4">
         {/* Success Message (stile ClientList: no motion) */}
         {successMessage && (
           <div className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 flex items-center space-x-3">
@@ -223,17 +224,49 @@ export default function ProfilePage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+
+               {/* Sidebar Actions (stile ClientList: card con bordo accentSofter) */}
+               <div className="space-y-6">
+            {/* Quick Actions */}
+            <div className="rounded-2xl shadow-lg border p-6" style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}>
+              <h3 className="text-lg font-semibold mb-4" style={{ color: textPrimaryColor }}>
+                Azioni Rapide
+              </h3>
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => navigate(appType === 'isabellenails' ? '/isabellenails/listino' : '/lashesandra/listino')}
+                  className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors duration-200 hover:opacity-90"
+                  style={{ backgroundColor: accentSofter, color: textPrimaryColor }}
+                >
+                  <Euro className="w-5 h-5" style={{ color: accentColor }} />
+                  <span>Gestione listino prezzi</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors duration-200 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            </div>
+
+
+          </div>
+
           {/* Profile Info */}
           <div className="lg:col-span-2 space-y-6">
             {/* User Info Card */}
             <div className="rounded-2xl shadow-lg border p-6" style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}>
               <div className="flex items-center space-x-4 mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold" style={{ color: textPrimaryColor }}>
+                  <h2 className="text-lg font-semibold" style={{ color: textPrimaryColor }}>
                     Informazioni Profilo
                   </h2>
-                  <p style={{ color: textSecondaryColor }}>
-                    Gestisci i tuoi dati personali e le impostazioni account
+                  <p className="text-sm" style={{ color: textSecondaryColor }}>
+                    Dati anagrafici e informazioni di contatto
                   </p>
                 </div>
               </div>
@@ -450,45 +483,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Sidebar Actions (stile ClientList: card con bordo accentSofter) */}
-          <div className="space-y-6">
-            {/* Quick Actions */}
-            <div className="rounded-2xl shadow-lg border p-6" style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}>
-              <h3 className="text-lg font-semibold mb-4" style={{ color: textPrimaryColor }}>
-                Azioni Rapide
-              </h3>
-              <div className="space-y-3">
-                <button
-                  type="button"
-                  onClick={() => navigate(appType === 'isabellenails' ? '/isabellenails/inventario' : '/lashesandra/inventario')}
-                  className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors duration-200 hover:opacity-90"
-                  style={{ backgroundColor: accentSofter, color: textPrimaryColor }}
-                >
-                  <Package className="w-5 h-5" style={{ color: accentColor }} />
-                  <span>Inventario materiali</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate(appType === 'isabellenails' ? '/isabellenails/listino' : '/lashesandra/listino')}
-                  className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors duration-200 hover:opacity-90"
-                  style={{ backgroundColor: accentSofter, color: textPrimaryColor }}
-                >
-                  <Sparkles className="w-5 h-5" style={{ color: accentColor }} />
-                  <span>Gestione listino prezzi</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors duration-200 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30"
-                >
-                  <LogOut className="w-5 h-5" />
-                  <span>Logout</span>
-                </button>
-              </div>
-            </div>
-
-
-          </div>
+     
         </div>
       </main>
     </div>

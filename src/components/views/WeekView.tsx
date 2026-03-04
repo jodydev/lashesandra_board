@@ -302,13 +302,21 @@ export default function WeekView({
                               : {}),
                           }}
                         >
-                          <WeekViewEventCard
-                            appointment={appointment}
-                            client={getClientById(appointment.client_id)}
-                            onClick={() => onAppointmentClick(appointment)}
-                            accentGradient={accentGradient}
-                            isPast={isPast}
+                          <div
+                            className="absolute inset-0 rounded-xl"
+                            style={{
+                              backgroundColor: isPast ? 'rgba(0,0,0,0.03)' : accentSofter,
+                            }}
                           />
+                          <div className="relative z-10">
+                            <WeekViewEventCard
+                              appointment={appointment}
+                              client={getClientById(appointment.client_id)}
+                              onClick={() => onAppointmentClick(appointment)}
+                              accentGradient={accentGradient}
+                              isPast={isPast}
+                            />
+                          </div>
                         </div>
                       );
                     })}
@@ -322,7 +330,7 @@ export default function WeekView({
         {/* Linea ora corrente: pillola rossa con orario + barra (stile DayView) */}
         {showNowLine && (
           <div
-            className="absolute left-0 right-0 flex items-center z-20 pointer-events-none"
+            className="absolute -left-12 right-0 flex items-center z-20 pointer-events-none"
             style={{
               top: 72 + minutesToTop(nowMinutes),
               marginLeft: 56,

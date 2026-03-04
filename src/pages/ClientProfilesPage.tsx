@@ -1,109 +1,351 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import type React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Client, ClientProfileData, ClientWithProfile } from '../types';
 import ClientProfileForm from '../components/ClientProfileForm';
-import { supabaseService } from '../lib/supabaseService';
-import { useAppColors } from '../hooks/useAppColors';
-import { useApp } from '../contexts/AppContext';
+import { useSupabaseServices } from '../lib/supabaseService';
 import { useToast } from '../hooks/useToast';
-import { User, Eye, Calendar, Edit3, Search, Filter, Users, FileText, List } from 'lucide-react';
+import {
+  User, Eye, Calendar, Edit3, Search,
+  Users, FileText, ChevronRight, Sparkles,
+} from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 
-const textPrimaryColor = '#2C2C2C';
-const textSecondaryColor = '#7A7A7A';
-const surfaceColor = '#FFFFFF';
+// ─── Palette ──────────────────────────────────────────────────────────────────
+const C = {
+  bg:       '#FAF0E8',
+  surface:  '#FFFFFF',
+  accent:   '#C07850',
+  accentDk: '#A05830',
+  accentSft:'rgba(192,120,80,0.10)',
+  accentMid:'rgba(192,120,80,0.20)',
+  border:   '#EDE0D8',
+  text:     '#2C2C2C',
+  muted:    '#9A8880',
+  ok:       '#22C55E',
+  okBg:     '#F0FDF4',
+  okBdr:    'rgba(34,197,94,0.25)',
+} as const;
 
+const GRAD = `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function getProfileCompletion(client: ClientWithProfile): number | null {
+  if (!client.profile) return null;
+  const p = client.profile;
+  let completed = 0, total = 0;
+  total += 1; if (p.data_nascita) completed++;
+  const eyeVals = Object.values(p.caratteristiche_occhi);
+  total += eyeVals.length;
+  completed += eyeVals.filter(v => v !== undefined && v !== '').length;
+  const profVals = Object.values(p.profilo_cliente);
+  total += profVals.length;
+  completed += profVals.filter(v => v !== undefined && v !== '').length;
+  total += 1; if (p.trattamenti?.length) completed++;
+  return total > 0 ? Math.round((completed / total) * 100) : 0;
+}
+
+// ─── Skeleton card ────────────────────────────────────────────────────────────
+function SkeletonCard() {
+  return (
+    <div style={{
+      background: C.surface, border: `1.5px solid ${C.border}`,
+      borderRadius: 22, padding: '18px 16px',
+      display: 'flex', gap: 14, alignItems: 'center',
+    }}>
+      <div style={{ width: 48, height: 48, borderRadius: 16, background: C.border, flexShrink: 0 }} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ height: 14, borderRadius: 8, background: C.border, width: '60%' }} />
+        <div style={{ height: 10, borderRadius: 6, background: C.accentSft, width: '40%' }} />
+        <div style={{ height: 4, borderRadius: 100, background: C.border, width: '80%' }} />
+      </div>
+      <div style={{ width: 36, height: 36, borderRadius: 12, background: C.border, flexShrink: 0 }} />
+    </div>
+  );
+}
+
+// ─── Stat card ────────────────────────────────────────────────────────────────
+function StatCard({ label, value, icon: Icon, accent }: {
+  label: string; value: number; icon: React.ElementType; accent?: boolean;
+}) {
+  return (
+    <div style={{
+      background: C.surface, border: `1.5px solid ${C.border}`,
+      borderRadius: 20, padding: '14px 16px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+      position: 'relative', overflow: 'hidden', flexShrink: 0,
+    }}>
+      <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.muted }}>
+        {label}
+      </p>
+      <p style={{ fontSize: 28, fontWeight: 900, color: accent ? C.accent : C.text, lineHeight: 1.1, marginTop: 4 }}>
+        {value}
+      </p>
+      <div style={{
+        position: 'absolute', right: 10, bottom: 10,
+        width: 34, height: 34, borderRadius: 11,
+        background: C.accentSft,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <Icon size={16} color={C.accent} strokeWidth={2} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Progress bar ─────────────────────────────────────────────────────────────
+function ProgressBar({ pct }: { pct: number }) {
+  const color = pct >= 80 ? C.ok : pct >= 40 ? C.accent : C.muted;
+  return (
+    <div style={{ height: 5, borderRadius: 100, background: '#F0E8E0', overflow: 'hidden' }}>
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: `${pct}%` }}
+        transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
+        style={{ height: '100%', borderRadius: 100, background: color }}
+      />
+    </div>
+  );
+}
+
+// ─── Client card ─────────────────────────────────────────────────────────────
+function ClientCard({
+  client, onEdit,
+}: {
+  client: ClientWithProfile;
+  onEdit: (c: ClientWithProfile) => void;
+  key?: string;
+}) {
+  const hasProfile = !!client.profile;
+  const completion = getProfileCompletion(client);
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.97 }}
+      transition={{ duration: 0.24 }}
+      style={{
+        background: C.surface,
+        border: `1.5px solid ${hasProfile ? C.accentMid : C.border}`,
+        borderRadius: 22,
+        overflow: 'hidden',
+        boxShadow: hasProfile
+          ? '0 3px 14px rgba(192,120,80,0.12)'
+          : '0 1px 6px rgba(0,0,0,0.04)',
+      }}
+    >
+      {/* Top accent line if profile exists */}
+      {hasProfile && (
+        <div style={{ height: 3, background: GRAD }} />
+      )}
+
+      <div style={{ padding: '16px' }}>
+        {/* Header row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+          {/* Avatar */}
+          <div style={{
+            width: 48, height: 48, borderRadius: 16, flexShrink: 0,
+            background: GRAD,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            overflow: 'hidden',
+          }}>
+            {client.foto_url
+              ? <img src={client.foto_url} alt={`${client.nome} ${client.cognome}`}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <span style={{ fontWeight: 800, fontSize: 18, color: '#FFF' }}>
+                  {client.nome.charAt(0).toUpperCase()}
+                </span>
+            }
+          </div>
+
+          {/* Name + phone */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontWeight: 700, fontSize: 15, color: C.text, marginBottom: 3 }}>
+              {client.nome} {client.cognome}
+            </p>
+            <p style={{ fontSize: 13, color: C.muted }}>
+              {client.telefono || 'Nessun telefono'}
+            </p>
+          </div>
+
+          {/* Edit icon */}
+          <button
+            type="button"
+            onClick={() => onEdit(client)}
+            aria-label="Modifica profilo"
+            style={{
+              width: 38, height: 38, borderRadius: 13,
+              background: C.accentSft, border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', flexShrink: 0,
+            }}
+          >
+            <Edit3 size={15} color={C.accent} />
+          </button>
+        </div>
+
+        {/* Profile status */}
+        {!hasProfile ? (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '10px 14px', borderRadius: 14,
+            background: C.accentSft, border: `1px dashed ${C.accentMid}`,
+          }}>
+            <span style={{ fontSize: 13, color: C.muted, fontWeight: 600 }}>Profilo non ancora creato</span>
+            <ChevronRight size={14} color={C.muted} />
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {/* Completion bar */}
+            {completion !== null && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, color: C.muted, fontWeight: 600 }}>Completamento scheda</span>
+                  <span style={{
+                    fontSize: 12, fontWeight: 800,
+                    color: completion >= 80 ? C.ok : completion >= 40 ? C.accent : C.muted,
+                  }}>
+                    {completion}%
+                  </span>
+                </div>
+                <ProgressBar pct={completion} />
+              </div>
+            )}
+
+            {/* Profile pills */}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '5px 10px', borderRadius: 100,
+                background: C.accentSft, fontSize: 12, fontWeight: 700, color: C.accent,
+              }}>
+                <Eye size={11} /> Occhi
+              </span>
+              {(() => {
+                const treatmentsCount = client.profile?.trattamenti?.length ?? 0;
+                if (treatmentsCount <= 0) return null;
+                return (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  padding: '5px 10px', borderRadius: 100,
+                  background: C.okBg, fontSize: 12, fontWeight: 700, color: '#15803D',
+                }}>
+                    <Calendar size={11} /> {treatmentsCount} trattament{treatmentsCount === 1 ? 'o' : 'i'}
+                </span>
+                );
+              })()}
+              {completion !== null && completion >= 80 && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  padding: '5px 10px', borderRadius: 100,
+                  background: C.okBg, fontSize: 12, fontWeight: 700, color: '#15803D',
+                }}>
+                  <Sparkles size={11} /> Completo
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* CTA */}
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.97 }}
+          onClick={() => onEdit(client)}
+          style={{
+            width: '100%', marginTop: 14, height: 46,
+            borderRadius: 15, border: 'none',
+            background: GRAD,
+            fontWeight: 800, fontSize: 14, color: '#FFF',
+            cursor: 'pointer', fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            boxShadow: '0 4px 16px rgba(192,120,80,0.28)',
+          }}
+        >
+          <Edit3 size={15} strokeWidth={2.5} />
+          {hasProfile ? 'Modifica scheda' : 'Crea scheda'}
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 const ClientProfilesPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [clients, setClients] = useState<ClientWithProfile[]>([]);
+  const [clients,         setClients]         = useState<ClientWithProfile[]>([]);
   const [filteredClients, setFilteredClients] = useState<ClientWithProfile[]>([]);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [selectedClient,  setSelectedClient]  = useState<Client | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<ClientProfileData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [view, setView] = useState<'list' | 'form'>('list');
-  const colors = useAppColors();
-  const { appType } = useApp();
+  const [isLoading,       setIsLoading]       = useState(true);
+  const [isSaving,        setIsSaving]        = useState(false);
+  const [searchTerm,      setSearchTerm]      = useState('');
+  const [view,            setView]            = useState<'list' | 'form'>('list');
+
+  const { clientService, clientProfileService } = useSupabaseServices();
   const { showSuccess, showError } = useToast();
-  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
-  const accentColor = colors.primary;
-  const accentGradient = colors.cssGradient;
-  const accentSofter = `${colors.primary}14`;
-  const accentSoft = `${colors.primary}29`;
 
-  // Carica i clienti e i loro profili
-  useEffect(() => {
-    loadClients();
-  }, []);
+  // ── Load ───────────────────────────────────────────────────────────────────
+  useEffect(() => { loadClients(); }, []);
 
-  // Filtra i clienti in base al termine di ricerca
   useEffect(() => {
-    const filtered = clients.filter(client =>
-      `${client.nome} ${client.cognome}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.telefono?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    const q = searchTerm.toLowerCase();
+    setFilteredClients(
+      clients.filter(c => {
+        const fullName = `${c.nome} ${c.cognome}`.toLowerCase();
+        const phone = (c.telefono || '').toLowerCase();
+        const email = (c.email || '').toLowerCase();
+        return (
+          fullName.includes(q) ||
+          phone.includes(q) ||
+          email.includes(q)
+        );
+      })
     );
-    setFilteredClients(filtered);
   }, [clients, searchTerm]);
 
   const loadClients = async () => {
     try {
       setIsLoading(true);
-      
-      // Carica solo i clienti - i profili verranno caricati quando necessario
-      const clientsData = await supabaseService.getClients();
-      const clientsWithoutProfiles = clientsData.map(client => ({ ...client, profile: undefined }));
+      const baseClients = await clientService.getAll();
+      const clientsWithoutProfiles: ClientWithProfile[] = baseClients.map(c => ({
+        ...c,
+        profile: undefined,
+      }));
       setClients(clientsWithoutProfiles);
-      
-      showSuccess(`${clientsData.length} clienti caricati con successo`);
-    } catch (error) {
-      console.error('Errore nel caricamento dei clienti:', error);
+    } catch {
       showError('Errore nel caricamento dei clienti. Riprova.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  // ── Edit profile ───────────────────────────────────────────────────────────
   const handleEditProfile = async (client: ClientWithProfile) => {
     setSelectedClient(client);
-    
-    // Carica il profilo del cliente solo quando necessario
     try {
-      const profile = await supabaseService.getClientProfile(client.id);
+      const profile = await clientProfileService.getByClientId(client.id);
       setSelectedProfile(profile);
-    } catch (error) {
-      console.warn('Nessun profilo esistente per questo cliente:', error);
+    } catch {
       setSelectedProfile(null);
     }
-    
     setView('form');
   };
 
   const handleSaveProfile = async (profileData: ClientProfileData) => {
     if (!selectedClient) return;
-
     try {
       setIsSaving(true);
-      const savedProfile = await supabaseService.saveClientProfile(profileData);
-      
-      // Aggiorna solo il cliente specifico invece di ricaricare tutti i clienti
-      setClients(prevClients => 
-        prevClients.map(client => 
-          client.id === selectedClient.id 
-            ? { ...client, profile: savedProfile }
-            : client
-        )
-      );
-      
-      showSuccess(`Profilo di ${selectedClient.nome} ${selectedClient.cognome} salvato con successo!`);
-      
-      // Torna alla lista
+      const saved = await clientProfileService.save(profileData);
+      setClients(prev => prev.map(c =>
+        c.id === selectedClient.id ? { ...c, profile: saved } : c
+      ));
+      showSuccess(`Scheda di ${selectedClient.nome} ${selectedClient.cognome} salvata!`);
       setView('list');
       setSelectedClient(null);
       setSelectedProfile(null);
-    } catch (error) {
-      console.error('Errore nel salvataggio del profilo:', error);
+    } catch {
       showError('Errore nel salvataggio del profilo. Riprova.');
     } finally {
       setIsSaving(false);
@@ -116,36 +358,7 @@ const ClientProfilesPage: React.FC = () => {
     setSelectedProfile(null);
   };
 
-  const getProfileCompletion = (client: ClientWithProfile) => {
-    // Se il profilo non è caricato, restituisce null per indicare "non disponibile"
-    // Questo evita di fare chiamate API automatiche per calcolare il completamento
-    if (!client.profile) return null;
-    
-    const profile = client.profile;
-    let completed = 0;
-    let total = 0;
-
-    // Informazioni personali
-    total += 1;
-    if (profile.data_nascita) completed += 1;
-
-    // Caratteristiche occhi (9 campi)
-    total += 9;
-    const eyeFields = Object.values(profile.caratteristiche_occhi);
-    completed += eyeFields.filter(value => value !== undefined && value !== '').length;
-
-    // Profilo cliente (8 campi)
-    total += 8;
-    const profileFields = Object.values(profile.profilo_cliente);
-    completed += profileFields.filter(value => value !== undefined && value !== '').length;
-
-    // Trattamenti
-    total += 1;
-    if (profile.trattamenti && profile.trattamenti.length > 0) completed += 1;
-
-    return Math.round((completed / total) * 100);
-  };
-
+  // ── Form view ──────────────────────────────────────────────────────────────
   if (view === 'form' && selectedClient) {
     return (
       <ClientProfileForm
@@ -158,239 +371,132 @@ const ClientProfilesPage: React.FC = () => {
     );
   }
 
-  // Loading skeleton (stile ClientList)
-  if (isLoading) {
-    return (
-      <div className="min-h-screen" style={{ backgroundColor }}>
-        <PageHeader title="Schede Cliente" showBack backLabel="Indietro" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-          {/* Skeleton carosello statistiche */}
-          <div className="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
-            <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex-shrink-0 w-[min(88vw,320px)] sm:w-72 snap-center rounded-2xl border p-6 sm:p-7 bg-white dark:bg-gray-900 animate-pulse" style={{ borderColor: accentSofter }}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="space-y-2 flex-1">
-                      <div className="h-4 sm:h-5 bg-gray-200 dark:bg-gray-800 rounded w-20 sm:w-24" />
-                      <div className="h-6 sm:h-8 bg-gray-200 dark:bg-gray-800 rounded w-16 sm:w-20" />
-                    </div>
-                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-gray-200 dark:bg-gray-800 flex-shrink-0" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="mb-6">
-            <div className="relative flex-1 max-w-xs">
-              <div className="h-10 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse w-full" />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="rounded-2xl border p-6 shadow-lg" style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}>
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-xl" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32" />
-                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24" />
-                  </div>
-                </div>
-                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full w-full mb-4" />
-                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-xl w-full" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // ── Stats ──────────────────────────────────────────────────────────────────
+  const withProfileCount = clients.filter(c => c.profile).length;
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen" style={{ backgroundColor }}>
+    <div style={{ minHeight: '100vh', background: C.bg }}>
       <PageHeader title="Schede Cliente" showBack backLabel="Indietro" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        {/* Carosello statistiche scrollabile */}
-        <div className="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
-          <div
-            className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory"
-          >
-            {[
-              { title: 'Clienti totali', value: clients.length, icon: Users },
-              { title: 'In lista', value: filteredClients.length, icon: List },
-              { title: 'Con scheda', value: clients.filter((c) => c.profile).length, icon: FileText },
-            ].map((stat) => {
-              const Icon = stat.icon;
-              return (
-                <div
-                  key={stat.title}
-                  className="flex-shrink-0 w-[min(88vw,320px)] sm:w-72 snap-center group relative overflow-hidden rounded-2xl border p-6 sm:p-7"
-                  style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex-1 min-w-0 space-y-2 sm:space-y-2.5">
-                      <p className="text-xs sm:text-sm font-medium uppercase tracking-wide" style={{ color: textSecondaryColor }}>
-                        {stat.title}
-                      </p>
-                      <p className="text-2xl sm:text-3xl font-semibold dark:text-white truncate" style={{ color: textPrimaryColor }}>
-                        {stat.value}
-                      </p>
-                    </div>
-                    <span
-                      className="flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 items-center justify-center rounded-xl"
-                      style={{ background: accentGradient }}
-                      aria-hidden
-                    >
-                      <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" strokeWidth={2} aria-hidden />
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      <main style={{ maxWidth: 540, margin: '0 auto', padding: '20px 16px 80px' }}
+        className="safe-area-content-below-header">
+
+        {/* Stats row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 20 }}>
+          <StatCard label="Totali"     value={clients.length}          icon={Users}    />
+          <StatCard label="In lista"   value={filteredClients.length}  icon={FileText} />
+          <StatCard label="Con scheda" value={withProfileCount}        icon={Eye}      accent />
         </div>
 
-        {/* Barra ricerca (stile ClientList: una riga, no box) */}
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-          <div className="relative flex-1 min-w-0 sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Cerca per nome, cognome, telefono o email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl border bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-white"
-              style={{ borderColor: accentSoft }}
-            />
-          </div>
-        </div>
-
-        {/* Lista clienti in griglia (stile ClientList) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {filteredClients.map((client) => {
-            const completion = getProfileCompletion(client);
-            const hasProfile = !!client.profile;
-            return (
-              <div
-                key={client.id}
-                className="rounded-2xl border p-4 shadow-lg sm:p-6 transition-shadow hover:shadow-md"
-                style={{
-                  background: `linear-gradient(135deg, ${surfaceColor}F8, rgba(255,255,255,0.9))`,
-                  borderColor: accentSofter,
-                }}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center min-w-0 flex-1">
-                    <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-semibold text-lg shadow-lg flex-shrink-0"
-                      style={{ background: accentGradient }}
-                    >
-                      {client.nome.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="ml-3 min-w-0">
-                      <h3 className="text-base font-semibold truncate sm:text-lg" style={{ color: textPrimaryColor }}>
-                        {client.nome} {client.cognome}
-                      </h3>
-                      <p className="text-sm truncate" style={{ color: textSecondaryColor }}>
-                        {client.telefono || 'Nessun telefono'}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleEditProfile(client)}
-                    className="rounded-xl border bg-white/70 p-2 flex-shrink-0 hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
-                    style={{ borderColor: accentSofter }}
-                  >
-                    <Edit3 className="w-4 h-4" style={{ color: colors.primaryDark }} />
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium" style={{ color: textSecondaryColor }}>Profilo</span>
-                    <span
-                      className="text-sm font-medium"
-                      style={{ color: hasProfile ? '#047857' : textSecondaryColor }}
-                    >
-                      {hasProfile ? 'Completato' : 'Non creato'}
-                    </span>
-                  </div>
-
-                  {hasProfile && completion !== null && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span style={{ color: textSecondaryColor }}>Completamento</span>
-                        <span style={{ color: textPrimaryColor }}>{completion}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div
-                          className="h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${completion}%`, background: accentGradient }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {hasProfile && client.profile && (
-                    <div className="grid grid-cols-2 gap-3 pt-3 border-t" style={{ borderColor: accentSofter }}>
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 shadow-inner dark:bg-gray-800">
-                          <Eye className="h-4 w-4" style={{ color: accentColor }} />
-                        </div>
-                        <span className="text-xs" style={{ color: textSecondaryColor }}>Occhi</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 shadow-inner dark:bg-gray-800">
-                          <Calendar className="h-4 w-4 text-green-600 dark:text-green-400" />
-                        </div>
-                        <span className="text-xs" style={{ color: textSecondaryColor }}>
-                          {client.profile.trattamenti?.length || 0} Trattamenti
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-4 pt-4 border-t" style={{ borderColor: accentSofter }}>
-                  <button
-                    type="button"
-                    onClick={() => handleEditProfile(client)}
-                    className="w-full flex items-center justify-center px-4 py-2.5 text-white rounded-xl font-medium transition-opacity hover:opacity-90 shadow-lg"
-                    style={{ background: accentGradient }}
-                  >
-                    <Edit3 className="w-4 h-4 mr-2" />
-                    {hasProfile ? 'Modifica Profilo' : 'Crea Profilo'}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Empty State (stile ClientList) */}
-        {filteredClients.length === 0 && (
-          <div
-            className="rounded-2xl border p-10 text-center shadow-lg sm:p-14"
+        {/* Search */}
+        <div style={{ position: 'relative', marginBottom: 20 }}>
+          <Search size={16} color={C.muted} style={{
+            position: 'absolute', left: 16, top: '50%',
+            transform: 'translateY(-50%)', pointerEvents: 'none',
+          }} />
+          <input
+            type="text"
+            placeholder="Cerca per nome, telefono o email…"
+            value={searchTerm}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
             style={{
-              background: `linear-gradient(135deg, ${surfaceColor}F7, rgba(255,255,255,0.9))`,
-              borderColor: accentSofter,
+              width: '100%', boxSizing: 'border-box',
+              height: 50, paddingLeft: 44, paddingRight: 16,
+              borderRadius: 16, border: `1.5px solid ${C.border}`,
+              background: C.surface, fontSize: 15, color: C.text,
+              fontFamily: 'inherit', outline: 'none',
             }}
-          >
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl" style={{ background: accentSofter }}>
-              <User className="h-10 w-10 text-gray-400" />
-            </div>
-            <h3 className="mb-2 text-lg font-semibold sm:text-xl" style={{ color: textPrimaryColor }}>
-              {searchTerm ? 'Nessun cliente trovato' : 'Nessun cliente disponibile'}
-            </h3>
-            <p className="mx-auto max-w-lg text-sm sm:text-base" style={{ color: textSecondaryColor }}>
-              {searchTerm
-                ? 'Prova a modificare i termini di ricerca'
-                : 'Aggiungi dei clienti per iniziare a creare i profili'}
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              style={{
+                position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
+                width: 24, height: 24, borderRadius: 12,
+                background: C.border, border: 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{ fontSize: 12, color: C.muted, fontWeight: 700, lineHeight: 1 }}>✕</span>
+            </button>
+          )}
+        </div>
+
+        {/* Section header */}
+        {!isLoading && clients.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <p style={{ fontWeight: 800, fontSize: 16, color: C.text }}>
+              {searchTerm ? `Risultati (${filteredClients.length})` : 'Clienti'}
             </p>
+            <span style={{
+              fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
+              padding: '4px 10px', borderRadius: 100,
+              background: C.accentSft, color: C.accent,
+            }}>
+              {clients.length} totali
+            </span>
           </div>
         )}
-      </div>
+
+        {/* Loading skeletons */}
+        {isLoading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[...Array(5)].map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0.4, 0.8, 0.4] }}
+                transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }}
+              >
+                <SkeletonCard />
+              </motion.div>
+            ))}
+          </div>
+
+        /* Empty state */
+        ) : filteredClients.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              padding: '52px 24px',
+              borderRadius: 28, border: `2px dashed ${C.border}`,
+              background: C.surface, textAlign: 'center',
+            }}
+          >
+            <div style={{
+              width: 72, height: 72, borderRadius: 24,
+              background: C.accentSft,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+            }}>
+              <User size={32} color={C.accent} />
+            </div>
+            <p style={{ fontWeight: 800, fontSize: 18, color: C.text }}>
+              {searchTerm ? 'Nessun risultato' : 'Nessun cliente'}
+            </p>
+            <p style={{ fontSize: 14, color: C.muted, marginTop: 8, maxWidth: 260, lineHeight: 1.6 }}>
+              {searchTerm
+                ? `Nessun cliente corrisponde a "${searchTerm}"`
+                : 'Aggiungi clienti per iniziare a creare le schede personali'}
+            </p>
+          </motion.div>
+
+        /* Client list */
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {filteredClients.map(client => (
+              <ClientCard
+                key={client.id}
+                client={client}
+                onEdit={handleEditProfile}
+              />
+            ))}
+          </div>
+        )}
+      </main>
     </div>
   );
 };

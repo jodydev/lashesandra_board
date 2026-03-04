@@ -16,6 +16,7 @@ import { useApp } from '../contexts/AppContext';
 import { useAppColors } from '../hooks/useAppColors';
 import type { Client, Appointment, CalendarView } from '../types';
 import AppointmentForm from './AppointmentForm';
+import type { AppointmentPrefillNew } from './AppointmentForm';
 import PersonalCommitmentForm from './PersonalCommitmentForm';
 import MonthView from './views/MonthView';
 import WeekView from './views/WeekView';
@@ -49,6 +50,7 @@ export default function CalendarViewWithZoom() {
   const [personalAppointments, setPersonalAppointments] = useState<Appointment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
+  const [prefillNew, setPrefillNew] = useState<AppointmentPrefillNew | undefined>(undefined);
   const [showAppointmentDetails, setShowAppointmentDetails] = useState(false);
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
   const [showPersonalForm, setShowPersonalForm] = useState(false);
@@ -103,12 +105,15 @@ export default function CalendarViewWithZoom() {
   const handleNewAppointment = () => {
     setEditingAppointment(null);
     setEditingPersonal(null);
+    setPrefillNew(undefined);
+    setSelectedDate(currentDate);
     setShowNewEntryChooser(true);
   };
 
   const openWorkAppointmentForm = () => {
     setShowNewEntryChooser(false);
     setEditingAppointment(null);
+    setPrefillNew(undefined);
     setShowAppointmentForm(true);
   };
 
@@ -129,7 +134,20 @@ export default function CalendarViewWithZoom() {
       setShowPersonalForm(true);
       return;
     }
+    setPrefillNew(undefined);
+    setSelectedDate(dayjs(appointment.data));
     setEditingAppointment(appointment);
+    setShowAppointmentForm(true);
+  };
+
+  const handleQuickAddSlot = (date: Dayjs, time: string) => {
+    setEditingAppointment(null);
+    setEditingPersonal(null);
+    setSelectedDate(date);
+    setPrefillNew({
+      data: date.format('YYYY-MM-DD'),
+      ora: time,
+    });
     setShowAppointmentForm(true);
   };
 
@@ -297,6 +315,7 @@ export default function CalendarViewWithZoom() {
                   onPreviousDay={handlePreviousDay}
                   onNextDay={handleNextDay}
                   colors={colors}
+                  onQuickAddSlot={handleQuickAddSlot}
                 />
               )}
         </div>
@@ -474,6 +493,7 @@ export default function CalendarViewWithZoom() {
           <div className="fixed inset-0 z-50 flex flex-col h-screen min-h-full" style={{ backgroundColor: surfaceColor }}>
             <AppointmentForm
               appointment={editingAppointment}
+              prefillNew={prefillNew}
               selectedDate={selectedDate}
               appointmentsForOverlap={allAppointments}
               onSuccess={handleAppointmentFormSuccess}

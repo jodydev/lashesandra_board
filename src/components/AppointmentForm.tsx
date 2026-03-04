@@ -1,354 +1,913 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Calendar,
-  User,
-  Euro,
-  Sparkles,
-  Check,
-  ChevronRight,
-  Clock,
-  Phone,
-  Mail,
-  Search,
-  List,
-  Grid3X3,
-  EyeIcon,
-  FileWarning,
-  AlertTriangle,
-  X,
-  Pencil,
-  ListTodo,
-  Plus
+  Calendar, User, Euro, Sparkles, Check, Clock,
+  Phone, Mail, Search, AlertTriangle, X, Plus,
+  ChevronLeft, ChevronRight, Pencil
 } from 'lucide-react';
 import type { Appointment, Client, AppointmentChecklistItem, TreatmentCatalogEntry } from '../types';
 import { useSupabaseServices } from '../lib/supabaseService';
 import { formatDateForDatabase, formatDateForDisplay } from '../lib/utils';
 import { getTreatmentDurationMinutes, DEFAULT_APPOINTMENT_DURATION_MINUTES } from '../lib/treatmentDurations';
-import { useAppColors } from '../hooks/useAppColors';
 import dayjs, { Dayjs } from 'dayjs';
 import { useApp } from '../contexts/AppContext';
 import { hapticSelection } from '../lib/haptics';
-import {
-  scheduleAppointmentReminder,
-  cancelAppointmentReminder,
-} from '../lib/localNotifications';
+import { scheduleAppointmentReminder, cancelAppointmentReminder } from '../lib/localNotifications';
 import { isPersonalAppointment } from '../lib/personalEvents';
 import PageHeader from './PageHeader';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+export interface AppointmentPrefillNew {
+  client_id?: string;
+  tipo_trattamento?: string;
+  importo?: number;
+  duration_minutes?: number;
+  data?: string;
+  ora?: string;
+}
+
 interface AppointmentFormProps {
   appointment?: Appointment | null;
+  prefillNew?: AppointmentPrefillNew;
   selectedDate?: Dayjs | null;
-  /** Lista di appuntamenti (lavoro + personali) per controllare sovrapposizioni; se non passata il controllo non viene mostrato. */
   appointmentsForOverlap?: Appointment[];
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-const treatmentTypesLashesAndra = [
-  // Extension Ciglia Classiche & Volume
-  'Extension One to One (Classiche)',
-  'Refill One to One',
-  'Volume Russo 2D-6D',
-  'Refill Volume Russo',
-  'Volume Egiziano 3D',
-  'Refill Volume 3D',
-  'Mega Volume 7D+',
-  'Refill Mega Volume',
+// ─── Constants ────────────────────────────────────────────────────────────────
+const STEPS = [
+  { id: 'client',    icon: User,     label: 'Cliente'     },
+  { id: 'datetime',  icon: Calendar, label: 'Quando'      },
+  { id: 'treatment', icon: Sparkles, label: 'Servizio'    },
+  { id: 'confirm',   icon: Check,    label: 'Conferma'    },
+] as const;
 
-  // Effetti Speciali
-  'Extension Effetto Wet',
-  'Extension Effetto Eyeliner',
-  'Extension Effetto Foxy Eye',
-  'Extension Effetto Cat Eye',
-  'Extension Effetto Doll Eye',
-  'Extension Effetto Kim Kardashian (Wispy)',
-  'Extension Effetto Manga',
-  'Extension Effetto Hollywood',
+const QUICK_TIMES = ['08:00','09:00','10:00','10:30','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'];
 
-  // Laminazioni
-  'Laminazione Ciglia',
-  'Laminazione Ciglia con Colore',
-  'Laminazione Sopracciglia',
-  'Laminazione Sopracciglia con Tintura',
-  'Brow Lift & Styling',
-
-  // Trattamenti Cura Ciglia & Sopracciglia
-  'Rimozione Extension Ciglia',
-  'Trattamento Rinforzante Ciglia',
-  'Trattamento Idratante Ciglia',
-  'Trattamento Nutriente Ciglia con Cheratina',
-  'Trattamento Crescita Ciglia',
-  'Trattamento Styling Sopracciglia',
+const DURATIONS = [
+  { mins: 30,  label: '30 min' },
+  { mins: 45,  label: '45 min' },
+  { mins: 60,  label: '1 ora'  },
+  { mins: 90,  label: '1h 30'  },
+  { mins: 120, label: '2 ore'  },
+  { mins: 180, label: '3 ore'  },
 ];
 
+const QUICK_AMOUNTS_LASHES = [20, 30, 40, 50, 60, 70, 80, 90];
+const QUICK_AMOUNTS_NAILS  = [10, 20, 30, 40, 50, 60, 70, 80];
 
-const treatmentTypesIsabelle = [
-  // Manicure
-  'Manicure Classica',
-  'Manicure Spa',
-  'Manicure con Parafina',
-  'French Manicure',
-  'Manicure Giapponese (P-Shine)',
-
-  // Pedicure
-  'Pedicure Estetica',
-  'Pedicure Curativa',
-  'Pedicure Spa',
-  'Pedicure con Scrub e Maschera',
-
-  // Smalto
-  'Smalto Classico',
-  'Smalto Semipermanente',
-  'Rimozione Smalto',
-  'Rimozione Semipermanente',
-
-  // Ricostruzione e Gel
-  'Ricostruzione in Gel',
-  'Ricostruzione in Acrilico',
-  'Copertura in Gel',
-  'Allungamento con Cartina',
-  'Refill Gel/Acrilico',
-
-  // Nail Art & Decorazioni
-  'French Gel',
-  'Babyboomer',
-  'Nail Art Base',
-  'Nail Art Avanzata',
-  'Applicazione Strass/Decorazioni',
-
-  // Trattamenti specifici
-  'Pulizia Profonda Unghie',
-  'Trattamento Rinforzante',
-  'Trattamento Idratante Mani',
-  'Trattamento Calli e Duroni',
-  'Scrub Mani e Piedi',
+const TREATMENTS_LASHES = [
+  'Extension One to One (Classiche)', 'Refill One to One', 'Volume Russo 2D-6D',
+  'Refill Volume Russo', 'Volume Egiziano 3D', 'Mega Volume 7D+',
+  'Laminazione Ciglia', 'Laminazione Sopracciglia', 'Brow Lift & Styling',
+  'Rimozione Extension Ciglia', 'Trattamento Rinforzante Ciglia',
 ];
 
-
-const steps = [
-  { id: 'client', title: 'Cliente', icon: User, description: 'Seleziona il cliente per l\'appuntamento' },
-  { id: 'datetime', title: 'Dettagli', icon: Calendar, description: 'Imposta data, ora e importo' },
-  { id: 'treatment', title: 'Trattamento', icon: Sparkles, description: 'Scegli il tipo di servizio' },
-  { id: 'confirm', title: 'Conferma', icon: Check, description: 'Verifica e salva l\'appuntamento' }
+const TREATMENTS_NAILS = [
+  'Manicure Classica', 'Manicure Spa', 'French Manicure',
+  'Pedicure Estetica', 'Pedicure Curativa', 'Smalto Semipermanente',
+  'Ricostruzione in Gel', 'Ricostruzione in Acrilico', 'Refill Gel/Acrilico',
+  'French Gel', 'Babyboomer', 'Nail Art Avanzata',
 ];
 
-const quickAmountsLashesAndra = [20, 30, 40, 50, 60, 70, 80, 90];
-const quickAmountsIsabelle = [10, 20, 30, 40, 50, 60, 70, 80];
-const alphabetOptions = ['ALL', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
-
-const datePresets = [
-  { label: 'Oggi', value: () => dayjs() },
-  { label: 'Domani', value: () => dayjs().add(1, 'day') },
-  { label: 'Tra 2 giorni', value: () => dayjs().add(2, 'day') },
+const DATE_PRESETS = [
+  { label: 'Oggi',        fn: () => dayjs()            },
+  { label: 'Domani',      fn: () => dayjs().add(1,'day')},
+  { label: 'Dopodomani',  fn: () => dayjs().add(2,'day')},
 ];
 
-const quickTimeSlots = ['09:00', '10:30', '12:00', '13:30', '15:00', '17:00', '19:00'];
-
-/** Converte ora "HH:mm" o "HH:mm:ss" in minuti dalla mezzanotte. */
-function parseOraToMinutes(ora: string | undefined): number {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function parseOraToMinutes(ora?: string) {
   if (!ora) return 0;
-  const [h, m] = ora.trim().split(/[:\s]/).map(Number);
+  const [h, m] = ora.trim().split(':').map(Number);
   return (h ?? 0) * 60 + (m ?? 0);
 }
-
-function getAppointmentEndMinutes(apt: Appointment): number {
-  const start = parseOraToMinutes(apt.ora);
-  const duration = apt.duration_minutes ?? DEFAULT_APPOINTMENT_DURATION_MINUTES;
-  return start + duration;
+function getEndMinutes(apt: Appointment) {
+  return parseOraToMinutes(apt.ora) + (apt.duration_minutes ?? DEFAULT_APPOINTMENT_DURATION_MINUTES);
 }
-
-/** Restituisce gli appuntamenti che si sovrappongono al slot [startMinutes, endMinutes] nella stessa data, escludendo excludeId. */
-function getOverlappingAppointments(
-  date: Dayjs,
-  startMinutes: number,
-  endMinutes: number,
-  list: Appointment[],
-  excludeId?: string
-): Appointment[] {
-  return list.filter((apt) => {
+function getOverlaps(date: Dayjs, startM: number, endM: number, list: Appointment[], excludeId?: string) {
+  return list.filter(apt => {
     if (apt.id === excludeId) return false;
     if (!dayjs(apt.data).isSame(date, 'day')) return false;
-    const aptStart = parseOraToMinutes(apt.ora);
-    const aptEnd = getAppointmentEndMinutes(apt);
-    return startMinutes < aptEnd && aptStart < endMinutes;
+    return startM < getEndMinutes(apt) && parseOraToMinutes(apt.ora) < endM;
   });
 }
 
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+/** Floating label input */
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#B09080', textTransform: 'uppercase', marginBottom: 8 }}>
+      {children}
+    </p>
+  );
+}
+
+/** Chip-style pill button */
+function Chip({ active, onClick, children, disabled }: {
+  active?: boolean; onClick: () => void; children: React.ReactNode; disabled?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        padding: '9px 16px',
+        borderRadius: 100,
+        border: `1.5px solid ${active ? '#C07850' : '#E8D5C8'}`,
+        background: active ? '#C07850' : '#FFF',
+        color: active ? '#FFF' : '#7A6058',
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.4 : 1,
+        transition: 'all 0.18s ease',
+        whiteSpace: 'nowrap' as const,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Large selectable card row */
+function SelectRow({ selected, onClick, left, title, subtitle, right }: {
+  selected: boolean; onClick: () => void;
+  left?: React.ReactNode; title: string; subtitle?: string; right?: React.ReactNode;
+}) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileTap={{ scale: 0.985 }}
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: 14,
+        padding: '14px 16px',
+        borderRadius: 18,
+        border: `1.5px solid ${selected ? '#C07850' : '#EDE0D8'}`,
+        background: selected ? '#FDF4EF' : '#FFFFFF',
+        cursor: 'pointer',
+        textAlign: 'left' as const,
+        transition: 'border-color 0.2s, background 0.2s',
+        boxShadow: selected ? '0 2px 12px rgba(192,120,80,0.15)' : '0 1px 3px rgba(0,0,0,0.04)',
+      }}
+    >
+      {left}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontWeight: 700, fontSize: 15, color: '#2C2C2C', marginBottom: 2 }}>{title}</p>
+        {subtitle && (
+          <p style={{ fontSize: 13, color: '#9A8880', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Phone size={12} color="#B09080" />
+            {subtitle}
+          </p>
+        )}
+      </div>
+      {right ?? (
+        <div style={{
+          width: 22, height: 22, borderRadius: 11,
+          border: `2px solid ${selected ? '#C07850' : '#D5C4BC'}`,
+          background: selected ? '#C07850' : 'transparent',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+          transition: 'all 0.18s ease',
+        }}>
+          {selected && <Check size={12} color="#fff" strokeWidth={3} />}
+        </div>
+      )}
+    </motion.button>
+  );
+}
+
+/** Avatar circle: foto profilo se presente, altrimenti iniziale del nome */
+function Avatar({ name, imageUrl, size = 44 }: { name: string; imageUrl?: string | null; size?: number }) {
+  const initial = name.trim().charAt(0).toUpperCase() || '?';
+  const borderRadius = size * 0.35;
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius,
+        background: 'linear-gradient(135deg, #C07850, #A05830)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        color: '#fff',
+        fontWeight: 800,
+        fontSize: size * 0.38,
+        overflow: 'hidden',
+      }}
+    >
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt={name}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      ) : (
+        initial
+      )}
+    </div>
+  );
+}
+
+/** Section card wrapper */
+function SectionCard({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <div style={{
+      background: '#FFFFFF',
+      borderRadius: 24,
+      border: '1.5px solid #EDE0D8',
+      overflow: 'hidden',
+      ...style,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+/** Section header inside a card */
+function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementType; title: string; subtitle?: string }) {
+  return (
+    <div style={{ padding: '16px 20px', borderBottom: '1px solid #F5EAE4', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{
+        width: 36, height: 36, borderRadius: 12, background: '#FDF4EF',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      }}>
+        <Icon size={18} color="#C07850" strokeWidth={2} />
+      </div>
+      <div>
+        <p style={{ fontWeight: 700, fontSize: 15, color: '#2C2C2C' }}>{title}</p>
+        {subtitle && <p style={{ fontSize: 12, color: '#9A8880', marginTop: 1 }}>{subtitle}</p>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Step components ──────────────────────────────────────────────────────────
+
+function StepClient({
+  clients, formData, setFormData, searchQuery, setSearchQuery
+}: {
+  clients: Client[];
+  formData: any;
+  setFormData: (fn: any) => void;
+  searchQuery: string;
+  setSearchQuery: (s: string) => void;
+}) {
+  const filtered = clients.filter(c =>
+    `${c.nome} ${c.cognome}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.telefono?.includes(searchQuery)
+  );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Search */}
+      <div style={{ position: 'relative' }}>
+        <Search size={16} color="#B09080" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+        <input
+          type="text"
+          placeholder="Cerca per nome, email o telefono…"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          style={{
+            width: '100%', boxSizing: 'border-box',
+            height: 50, paddingLeft: 44, paddingRight: 16,
+            borderRadius: 16, border: '1.5px solid #EDE0D8',
+            background: '#FFF', fontSize: 15, color: '#2C2C2C',
+            outline: 'none', fontFamily: 'inherit',
+          }}
+        />
+      </div>
+
+      {/* List */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <AnimatePresence initial={false}>
+          {filtered.map((client, i) => (
+            <motion.div
+              key={client.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ delay: i * 0.03, duration: 0.22 }}
+            >
+              <SelectRow
+                selected={formData.client_id === client.id}
+                onClick={() => { hapticSelection(); setFormData((p: any) => ({ ...p, client_id: client.id })); }}
+                left={<Avatar name={client.nome} imageUrl={client.foto_url} />}
+                title={`${client.nome} ${client.cognome}`}
+                subtitle={[client.telefono].filter(Boolean).join(' · ')}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        {filtered.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: '#B09080' }}>
+            <User size={32} color="#D5C4BC" style={{ marginBottom: 8 }} />
+            <p style={{ fontSize: 14, fontWeight: 600 }}>Nessun cliente trovato</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StepDateTime({ formData, setFormData }: { formData: any; setFormData: (fn: any) => void }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Date */}
+      <SectionCard>
+        <SectionHeader icon={Calendar} title="Data appuntamento" />
+        <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <input
+            type="date"
+            value={formData.data.format('YYYY-MM-DD')}
+            onChange={e => setFormData((p: any) => ({ ...p, data: dayjs(e.target.value) }))}
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              height: 52, padding: '0 16px',
+              borderRadius: 14, border: '1.5px solid #EDE0D8',
+              background: '#FAFAFA', fontSize: 16, color: '#2C2C2C',
+              fontFamily: 'inherit', outline: 'none',
+            }}
+          />
+          {/* Presets */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
+            {DATE_PRESETS.map(p => (
+              <Chip
+                key={p.label}
+                active={formData.data.isSame(p.fn(), 'day')}
+                onClick={() => setFormData((prev: any) => ({ ...prev, data: p.fn() }))}
+              >
+                {p.label}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Time */}
+      <SectionCard>
+        <SectionHeader icon={Clock} title="Orario" subtitle="Scorri per scegliere l'orario" />
+        <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <input
+            type="time"
+            value={formData.ora}
+            onChange={e => setFormData((p: any) => ({ ...p, ora: e.target.value }))}
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              height: 52, padding: '0 16px',
+              borderRadius: 14, border: '1.5px solid #EDE0D8',
+              background: '#FAFAFA', fontSize: 20, fontWeight: 700, color: '#C07850',
+              fontFamily: 'inherit', outline: 'none',
+            }}
+          />
+          {/* Quick slots — horizontal scroll */}
+          <div style={{ overflowX: 'auto', display: 'flex', gap: 8, paddingBottom: 4, scrollbarWidth: 'none' }}>
+            {QUICK_TIMES.map(t => (
+              <Chip
+                key={t}
+                active={formData.ora === t}
+                onClick={() => setFormData((p: any) => ({ ...p, ora: t }))}
+              >
+                {t}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
+function StepTreatment({
+  formData, setFormData, catalogEntries, appType
+}: {
+  formData: any; setFormData: (fn: any) => void;
+  catalogEntries: TreatmentCatalogEntry[]; appType: string;
+}) {
+  const [search, setSearch] = useState('');
+  const useCatalog = catalogEntries.length > 0;
+  const staticList = appType === 'isabellenails' ? TREATMENTS_NAILS : TREATMENTS_LASHES;
+  const quickAmounts = appType === 'isabellenails' ? QUICK_AMOUNTS_NAILS : QUICK_AMOUNTS_LASHES;
+
+  const filteredCatalog = catalogEntries.filter(e => e.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredStatic = staticList.filter(t => t.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Treatment search + list */}
+      <SectionCard>
+        <SectionHeader icon={Sparkles} title="Tipo di trattamento" subtitle="Scegli il servizio da eseguire" />
+        <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Search */}
+          <div style={{ position: 'relative' }}>
+            <Search size={15} color="#B09080" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+            <input
+              type="text"
+              placeholder="Cerca trattamento…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                height: 44, paddingLeft: 40, paddingRight: 14,
+                borderRadius: 12, border: '1.5px solid #EDE0D8',
+                background: '#FAFAFA', fontSize: 14, color: '#2C2C2C',
+                fontFamily: 'inherit', outline: 'none',
+              }}
+            />
+          </div>
+
+          {/* Generic option */}
+          <SelectRow
+            selected={formData.tipo_trattamento === ''}
+            onClick={() => { hapticSelection(); setFormData((p: any) => ({ ...p, treatment_catalog_id: null, tipo_trattamento: '', duration_minutes: DEFAULT_APPOINTMENT_DURATION_MINUTES })); }}
+            left={
+              <div style={{ width: 44, height: 44, borderRadius: 14, background: '#F5EAE4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Sparkles size={20} color="#C07850" />
+              </div>
+            }
+            title="Appuntamento generico"
+            subtitle="Senza trattamento specificato"
+          />
+
+          <div style={{ height: 1, background: '#F5EAE4' }} />
+
+          {/* List */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {useCatalog
+              ? filteredCatalog.map(entry => {
+                  const sel = formData.treatment_catalog_id === entry.id;
+                  return (
+                    <SelectRow
+                      key={entry.id}
+                      selected={sel}
+                      onClick={() => {
+                        hapticSelection();
+                        setFormData((p: any) => ({
+                          ...p,
+                          treatment_catalog_id: entry.id,
+                          tipo_trattamento: entry.name,
+                          importo: entry.base_price,
+                          duration_minutes: entry.duration_minutes,
+                        }));
+                      }}
+                      title={entry.name}
+                      subtitle={`€${entry.base_price} · ${entry.duration_minutes} min`}
+                    />
+                  );
+                })
+              : filteredStatic.map(t => (
+                  <SelectRow
+                    key={t}
+                    selected={formData.tipo_trattamento === t}
+                    onClick={() => {
+                      hapticSelection();
+                      setFormData((p: any) => ({
+                        ...p, treatment_catalog_id: null,
+                        tipo_trattamento: t,
+                        duration_minutes: getTreatmentDurationMinutes(appType, t),
+                      }));
+                    }}
+                    title={t}
+                  />
+                ))
+            }
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Duration */}
+      <SectionCard>
+        <SectionHeader icon={Clock} title="Durata seduta" subtitle="Imposta il blocco nel calendario" />
+        <div style={{ padding: '16px 20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {DURATIONS.map(d => (
+              <button
+                key={d.mins}
+                type="button"
+                onClick={() => setFormData((p: any) => ({ ...p, duration_minutes: d.mins }))}
+                style={{
+                  padding: '12px 8px',
+                  borderRadius: 14,
+                  border: `1.5px solid ${formData.duration_minutes === d.mins ? '#C07850' : '#EDE0D8'}`,
+                  background: formData.duration_minutes === d.mins ? '#C07850' : '#FFF',
+                  color: formData.duration_minutes === d.mins ? '#FFF' : '#5A4A44',
+                  fontWeight: 700, fontSize: 13,
+                  cursor: 'pointer',
+                  transition: 'all 0.18s ease',
+                }}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Amount */}
+      <SectionCard>
+        <SectionHeader icon={Euro} title="Importo" subtitle="Imposta il prezzo del trattamento" />
+        <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Input */}
+          <div style={{ position: 'relative' }}>
+            <span style={{
+              position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
+              fontWeight: 800, fontSize: 18, color: '#C07850',
+            }}>€</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={formData.importo || ''}
+              onChange={e => setFormData((p: any) => ({ ...p, importo: parseFloat(e.target.value) || 0 }))}
+              placeholder="0"
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                height: 60, paddingLeft: 36, paddingRight: 16,
+                borderRadius: 16, border: '1.5px solid #EDE0D8',
+                background: '#FAFAFA', fontSize: 28, fontWeight: 800, color: '#2C2C2C',
+                fontFamily: 'inherit', outline: 'none',
+              }}
+            />
+          </div>
+          {/* Quick amounts */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+            {quickAmounts.map(amt => (
+              <motion.button
+                key={amt}
+                type="button"
+                whileTap={{ scale: 0.93 }}
+                onClick={() => setFormData((p: any) => ({ ...p, importo: amt }))}
+                style={{
+                  padding: '13px 4px',
+                  borderRadius: 14,
+                  border: `1.5px solid ${formData.importo === amt ? '#C07850' : '#EDE0D8'}`,
+                  background: formData.importo === amt ? '#C07850' : '#FFF',
+                  color: formData.importo === amt ? '#FFF' : '#5A4A44',
+                  fontWeight: 800, fontSize: 14,
+                  cursor: 'pointer',
+                  transition: 'all 0.18s ease',
+                  position: 'relative' as const,
+                }}
+              >
+                €{amt}
+                {formData.importo === amt && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    style={{
+                      position: 'absolute', top: 4, right: 4,
+                      width: 14, height: 14, borderRadius: 7,
+                      background: 'rgba(255,255,255,0.3)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <Check size={8} color="#fff" strokeWidth={3} />
+                  </motion.div>
+                )}
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
+function StepConfirm({
+  formData, setFormData, selectedClient, goToStep, newChecklistLabel, setNewChecklistLabel
+}: {
+  formData: any;
+  setFormData: (fn: any) => void;
+  selectedClient?: Client;
+  goToStep: (s: number) => void;
+  newChecklistLabel: string;
+  setNewChecklistLabel: (s: string) => void;
+}) {
+  const addChecklist = () => {
+    const label = newChecklistLabel.trim();
+    if (!label) return;
+    setFormData((p: any) => ({
+      ...p,
+      checklist: [...(p.checklist ?? []), { id: crypto.randomUUID(), label, done: false }],
+    }));
+    setNewChecklistLabel('');
+  };
+
+  const summaryFields = [
+    { icon: Calendar, label: 'Data',        value: formData.data ? formData.data.format('dddd DD MMMM YYYY') : '—', step: 1 },
+    { icon: Clock,    label: 'Orario',      value: formData.ora || '—',                                               step: 1 },
+    { icon: Sparkles, label: 'Trattamento', value: formData.tipo_trattamento || 'Generico',                           step: 2 },
+    { icon: Clock,    label: 'Durata',      value: `${formData.duration_minutes ?? 60} min`,                          step: 2 },
+    { icon: Euro,     label: 'Importo',     value: `€${formData.importo ?? 0}`,                                       step: 2 },
+  ];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+      {/* Client hero */}
+      <SectionCard>
+        <div style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <Avatar
+            name={selectedClient ? `${selectedClient.nome} ${selectedClient.cognome}` : '?'}
+            imageUrl={selectedClient?.foto_url}
+            size={60}
+          />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontWeight: 800, fontSize: 18, color: '#2C2C2C' }}>
+              {selectedClient ? `${selectedClient.nome} ${selectedClient.cognome}` : 'Cliente non selezionato'}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 4 }}>
+              {selectedClient?.telefono && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Phone size={12} color="#B09080" />
+                  <span style={{ fontSize: 13, color: '#7A6058' }}>{selectedClient.telefono}</span>
+                </div>
+              )}
+              {selectedClient?.email && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Mail size={12} color="#B09080" />
+                  <span style={{ fontSize: 13, color: '#7A6058' }}>{selectedClient.email}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => goToStep(0)}
+            style={{ padding: 8, borderRadius: 10, border: '1.5px solid #EDE0D8', background: '#FDF4EF', cursor: 'pointer' }}
+          >
+            <Pencil size={14} color="#C07850" />
+          </button>
+        </div>
+      </SectionCard>
+
+      {/* Details summary */}
+      <SectionCard>
+        <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {summaryFields.map((f, i) => (
+            <div key={f.label}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 10, background: '#FDF4EF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <f.icon size={15} color="#C07850" />
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#B09080', letterSpacing: '0.02em' }}>{f.label}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: '#2C2C2C', textAlign: 'right' as const, maxWidth: 180 }}>{f.value}</span>
+                  <button
+                    type="button"
+                    onClick={() => goToStep(f.step)}
+                    style={{ padding: '4px 6px', borderRadius: 8, border: '1.5px solid #EDE0D8', background: '#FFF', cursor: 'pointer' }}
+                  >
+                    <Pencil size={11} color="#C07850" />
+                  </button>
+                </div>
+              </div>
+              {i < summaryFields.length - 1 && <div style={{ height: 1, background: '#F5EAE4' }} />}
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+
+      {/* Note */}
+      <SectionCard>
+        <SectionHeader icon={Pencil} title="Note seduta" subtitle="Visibili solo a te" />
+        <div style={{ padding: '16px 20px' }}>
+          <textarea
+            value={formData.note}
+            onChange={e => setFormData((p: any) => ({ ...p, note: e.target.value }))}
+            placeholder="es. bigodino 0.15, patch test già effettuato…"
+            rows={3}
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              padding: '12px 14px',
+              borderRadius: 14, border: '1.5px solid #EDE0D8',
+              background: '#FAFAFA', fontSize: 14, color: '#2C2C2C',
+              fontFamily: 'inherit', resize: 'none', outline: 'none',
+              lineHeight: 1.5,
+            }}
+          />
+        </div>
+      </SectionCard>
+
+      {/* Checklist */}
+      <SectionCard>
+        <SectionHeader icon={Check} title="Checklist" subtitle="Da fare durante la seduta (opzionale)" />
+        <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* Items */}
+          <AnimatePresence initial={false}>
+            {(formData.checklist ?? []).map((item: AppointmentChecklistItem) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setFormData((p: any) => ({
+                    ...p,
+                    checklist: (p.checklist ?? []).map((i: AppointmentChecklistItem) =>
+                      i.id === item.id ? { ...i, done: !i.done } : i
+                    ),
+                  }))}
+                  style={{
+                    width: 22, height: 22, borderRadius: 7, flexShrink: 0,
+                    border: `2px solid ${item.done ? '#22c55e' : '#D5C4BC'}`,
+                    background: item.done ? '#22c55e' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {item.done && <Check size={12} color="#fff" strokeWidth={3} />}
+                </button>
+                <span style={{
+                  flex: 1, fontSize: 14, color: item.done ? '#B09080' : '#2C2C2C',
+                  textDecoration: item.done ? 'line-through' : 'none',
+                }}>
+                  {item.label}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setFormData((p: any) => ({
+                    ...p,
+                    checklist: (p.checklist ?? []).filter((i: AppointmentChecklistItem) => i.id !== item.id),
+                  }))}
+                  style={{ padding: 4, borderRadius: 6, border: 'none', background: 'none', cursor: 'pointer' }}
+                >
+                  <X size={14} color="#B09080" />
+                </button>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {/* Add item */}
+          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <input
+              type="text"
+              value={newChecklistLabel}
+              onChange={e => setNewChecklistLabel(e.target.value)}
+              placeholder="Aggiungi voce…"
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addChecklist(); } }}
+              style={{
+                flex: 1, height: 44, padding: '0 14px',
+                borderRadius: 12, border: '1.5px solid #EDE0D8',
+                background: '#FAFAFA', fontSize: 14, color: '#2C2C2C',
+                fontFamily: 'inherit', outline: 'none',
+              }}
+            />
+            <button
+              type="button"
+              onClick={addChecklist}
+              style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: '#C07850', border: 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', flexShrink: 0,
+              }}
+            >
+              <Plus size={18} color="#fff" />
+            </button>
+          </div>
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function AppointmentForm({
   appointment,
+  prefillNew,
   selectedDate,
   appointmentsForOverlap = [],
   onSuccess,
-  onCancel
+  onCancel,
 }: AppointmentFormProps) {
   const { appointmentService, clientService, treatmentCatalogService } = useSupabaseServices();
   const { appType } = useApp();
-  const colors = useAppColors();
-  const textPrimaryColor = '#2C2C2C';
-  const textSecondaryColor = '#7A7A7A';
-  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
-  const surfaceColor = '#FFFFFF';
-  const accentColor = colors.primary;
-  const accentDark = colors.primaryDark;
-  const accentGradient = colors.cssGradient;
-  const accentSoft = `${colors.primary}29`;
-  const accentSofter = `${colors.primary}14`;
+
   const [formData, setFormData] = useState({
     client_id: '',
-    data: selectedDate || dayjs(),
+    data: selectedDate ?? dayjs(),
     ora: '',
     importo: 0,
     tipo_trattamento: '',
     duration_minutes: DEFAULT_APPOINTMENT_DURATION_MINUTES,
     treatment_catalog_id: null as string | null,
     status: 'pending' as 'pending' | 'completed' | 'cancelled',
-    note: '' as string,
+    note: '',
     checklist: [] as AppointmentChecklistItem[],
   });
-  const [catalogEntries, setCatalogEntries] = useState<TreatmentCatalogEntry[]>([]);
+
   const [clients, setClients] = useState<Client[]>([]);
+  const [catalogEntries, setCatalogEntries] = useState<TreatmentCatalogEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
+  const [prevStep, setPrevStep] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isMobile, setIsMobile] = useState(false);
-  const [viewType, setViewType] = useState<'list' | 'grid'>('list');
-  const [treatmentSearch, setTreatmentSearch] = useState('');
-  const [showAdvancedTreatments, setShowAdvancedTreatments] = useState(false);
-  const [alphabetFilter, setAlphabetFilter] = useState('ALL');
   const [showSuccess, setShowSuccess] = useState(false);
-  const [overlapWarningDismissed, setOverlapWarningDismissed] = useState(false);
+  const [overlapDismissed, setOverlapDismissed] = useState(false);
   const [newChecklistLabel, setNewChecklistLabel] = useState('');
 
+  const prefillAppliedRef = useRef(false);
+
+  // ── Load data ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    checkIsMobile();
-    window.addEventListener('resize', checkIsMobile);
-
-    return () => window.removeEventListener('resize', checkIsMobile);
-  }, []);
+    clientService.getAll().then(setClients).catch(() => {});
+    treatmentCatalogService.getAllByAppType(appType).then(setCatalogEntries).catch(() => {});
+  }, [appType]);
 
   useEffect(() => {
-    loadClients();
-    if (appointment) {
-      const list = Array.isArray(appointment.checklist) ? appointment.checklist : [];
-      setFormData({
-        client_id: appointment.client_id,
-        data: dayjs(appointment.data),
-        ora: appointment.ora || '',
-        importo: appointment.importo,
-        tipo_trattamento: appointment.tipo_trattamento || '',
-        duration_minutes: appointment.duration_minutes ?? DEFAULT_APPOINTMENT_DURATION_MINUTES,
-        treatment_catalog_id: appointment.treatment_catalog_id ?? null,
-        status: appointment.status || 'pending',
-        note: appointment.note ?? '',
-        checklist: list.map((item) => ({
-          id: typeof item === 'object' && item && 'id' in item ? (item as AppointmentChecklistItem).id : crypto.randomUUID(),
-          label: typeof item === 'object' && item && 'label' in item ? (item as AppointmentChecklistItem).label : String(item),
-          done: typeof item === 'object' && item && 'done' in item ? (item as AppointmentChecklistItem).done : false,
-        })),
-      });
-      setIsEditing(true);
-    }
+    if (!appointment) return;
+    const list: AppointmentChecklistItem[] = Array.isArray(appointment.checklist)
+      ? appointment.checklist.map((item: any) => ({
+          id: item?.id ?? crypto.randomUUID(),
+          label: item?.label ?? String(item),
+          done: item?.done ?? false,
+        }))
+      : [];
+    setFormData({
+      client_id: appointment.client_id,
+      data: dayjs(appointment.data),
+      ora: appointment.ora || '',
+      importo: appointment.importo,
+      tipo_trattamento: appointment.tipo_trattamento || '',
+      duration_minutes: appointment.duration_minutes ?? DEFAULT_APPOINTMENT_DURATION_MINUTES,
+      treatment_catalog_id: appointment.treatment_catalog_id ?? null,
+      status: appointment.status || 'pending',
+      note: appointment.note ?? '',
+      checklist: list,
+    });
+    setIsEditing(true);
   }, [appointment]);
 
   useEffect(() => {
-    treatmentCatalogService.getAllByAppType(appType).then(setCatalogEntries).catch(() => setCatalogEntries([]));
-  }, [appType, treatmentCatalogService]);
+    if (appointment || !prefillNew || clients.length === 0 || prefillAppliedRef.current) return;
+    prefillAppliedRef.current = true;
+    const duration = prefillNew.duration_minutes ?? getTreatmentDurationMinutes(appType, prefillNew.tipo_trattamento);
+    const catalogEntry = catalogEntries.find(e => e.name === (prefillNew.tipo_trattamento ?? ''));
+    const hasClient = !!prefillNew.client_id;
+    setFormData(prev => ({
+      ...prev,
+      client_id: prefillNew.client_id ?? prev.client_id,
+      tipo_trattamento: prefillNew.tipo_trattamento ?? prev.tipo_trattamento,
+      importo: prefillNew.importo ?? prev.importo,
+      duration_minutes: duration,
+      treatment_catalog_id: catalogEntry?.id ?? null,
+      data: prefillNew.data ? dayjs(prefillNew.data) : (selectedDate ?? dayjs()),
+      ora: prefillNew.ora?.trim() || '09:00',
+    }));
+    setActiveStep(hasClient ? 3 : 0);
+  }, [prefillNew, clients.length, catalogEntries]);
 
-  const overlappingAppointments = useMemo(() => {
+  // ── Overlap detection ──────────────────────────────────────────────────────
+  const overlapping = useMemo(() => {
     if (!appointmentsForOverlap.length || !formData.data || !formData.ora) return [];
     const startM = parseOraToMinutes(formData.ora);
-    const durationM = formData.duration_minutes ?? DEFAULT_APPOINTMENT_DURATION_MINUTES;
-    const endM = startM + durationM;
-    return getOverlappingAppointments(
-      formData.data,
-      startM,
-      endM,
-      appointmentsForOverlap,
-      appointment?.id
-    );
-  }, [
-    appointmentsForOverlap,
-    formData.data,
-    formData.ora,
-    formData.duration_minutes,
-    appointment?.id,
-  ]);
+    return getOverlaps(formData.data, startM, startM + (formData.duration_minutes ?? DEFAULT_APPOINTMENT_DURATION_MINUTES), appointmentsForOverlap, appointment?.id);
+  }, [appointmentsForOverlap, formData.data, formData.ora, formData.duration_minutes, appointment?.id]);
 
-  useEffect(() => {
-    setOverlapWarningDismissed(false);
-  }, [overlappingAppointments]);
+  useEffect(() => { setOverlapDismissed(false); }, [overlapping]);
 
-  const loadClients = async () => {
-    try {
-      const data = await clientService.getAll();
-      setClients(data);
-    } catch (err) {
-      setError('Errore nel caricamento dei clienti');
+  // ── Navigation ─────────────────────────────────────────────────────────────
+  const canProceed = () => {
+    switch (activeStep) {
+      case 0: return !!formData.client_id;
+      case 1: return !!formData.data;
+      case 2: return formData.importo !== 0;
+      case 3: return true;
     }
   };
 
-  const handleChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.value
-    }));
+  const goToStep = (step: number) => {
+    setPrevStep(activeStep);
+    setActiveStep(step);
   };
+  const goNext = () => { if (canProceed()) goToStep(activeStep + 1); };
+  const goBack = () => { if (activeStep > 0) goToStep(activeStep - 1); else onCancel(); };
 
-  const handleDateChange = (date: string) => {
-    setFormData(prev => ({
-      ...prev,
-      data: dayjs(date)
-    }));
-  };
-
-  const handleDatePreset = (factory: () => Dayjs) => {
-    setFormData(prev => ({
-      ...prev,
-      data: factory(),
-    }));
-  };
-
-  const handleQuickTimeSelect = (time: string) => {
-    setFormData(prev => ({
-      ...prev,
-      ora: time,
-    }));
-  };
-
-  const handleNext = () => {
-    if (activeStep < steps.length - 1) {
-      setActiveStep(prev => prev + 1);
-    }
-  };
-
-  const handleBack = () => {
-    if (activeStep > 0) {
-      setActiveStep(prev => prev - 1);
-    }
-  };
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    console.log('handleSubmit chiamato', { formData, activeStep });
-
-    if (!formData.client_id || !formData.data || formData.tipo_trattamento === '') {
-      setError('Tutti i campi sono obbligatori!');
+  // ── Submit ─────────────────────────────────────────────────────────────────
+  const handleSubmit = async () => {
+    if (!formData.client_id || !formData.data || formData.tipo_trattamento === undefined) {
+      setError('Tutti i campi obbligatori devono essere compilati.');
       return;
     }
-
     try {
       setLoading(true);
       setError(null);
-      console.log('Inizio salvataggio...');
-
-      const appointmentData = {
+      const data = {
         ...formData,
         data: formatDateForDatabase(formData.data) || '',
         ora: formData.ora || undefined,
@@ -356,1307 +915,262 @@ export default function AppointmentForm({
         duration_minutes: formData.duration_minutes ?? DEFAULT_APPOINTMENT_DURATION_MINUTES,
         treatment_catalog_id: formData.treatment_catalog_id || null,
         note: formData.note?.trim() || null,
-        checklist: (formData.checklist?.length ? formData.checklist : null) ?? null,
+        checklist: formData.checklist?.length ? formData.checklist : null,
       };
-
-      console.log('Dati appuntamento:', appointmentData);
-
-      const selected = getSelectedClient();
-      const clientName =
-        selected?.nome != null || selected?.cognome != null
-          ? `${selected?.nome ?? ''} ${selected?.cognome ?? ''}`.trim() || 'Cliente'
-          : 'Cliente';
-
+      const selectedClient = clients.find(c => c.id === formData.client_id);
+      const clientName = selectedClient
+        ? `${selectedClient.nome ?? ''} ${selectedClient.cognome ?? ''}`.trim() || 'Cliente'
+        : 'Cliente';
       if (isEditing && appointment) {
-        console.log('Aggiornamento appuntamento...');
-        const updated = await appointmentService.update(
-          appointment.id,
-          appointmentData
-        );
+        const updated = await appointmentService.update(appointment.id, data);
         await cancelAppointmentReminder(updated.id);
         await scheduleAppointmentReminder(updated, clientName);
       } else {
-        console.log('Creazione nuovo appuntamento...');
-        const created = await appointmentService.create(appointmentData);
+        const created = await appointmentService.create(data);
         await scheduleAppointmentReminder(created, clientName);
       }
-
-      console.log('Appuntamento salvato con successo!');
       setShowSuccess(true);
       setTimeout(() => onSuccess(), 1600);
-    } catch (err) {
-      console.error('Errore nel salvataggio:', err);
-      setError('Errore nel salvataggio dell\'appuntamento');
+    } catch {
+      setError("Errore nel salvataggio dell'appuntamento");
     } finally {
       setLoading(false);
     }
   };
 
-  const getSelectedClient = () => {
-    return clients.find(client => client.id === formData.client_id);
-  };
+  const selectedClient = clients.find(c => c.id === formData.client_id);
+  const direction = activeStep > prevStep ? 1 : -1;
 
-  const filteredClients = clients.filter(client =>
-    `${client.nome} ${client.cognome}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.telefono?.includes(searchQuery)
-  ).filter((client) => {
-    if (alphabetFilter === 'ALL') return true;
-    const firstChar = (client.nome || client.cognome || '').charAt(0).toUpperCase();
-    return firstChar === alphabetFilter;
-  });
+  const stepTitles = ['Seleziona cliente', 'Seleziona data e ora', 'Servizio e importo', 'Riepilogo'];
 
-  const canProceed = () => {
-    switch (activeStep) {
-      case 0: return formData.client_id !== '';
-      case 1: return formData.data;
-      case 2: return formData.tipo_trattamento !== '' && formData.importo !== 0;
-      case 3: return true;
-      default: return false;
-    }
-  };
-
-  const selectedClient = getSelectedClient();
-  const summaryItems = [
-    {
-      label: 'Cliente',
-      value: selectedClient ? `${selectedClient.nome} ${selectedClient.cognome}` : 'Non selezionato',
-      onClick: () => setActiveStep(0),
-    },
-    {
-      label: 'Data',
-      value: formData.data ? formData.data.format('DD MMM YYYY') : 'Seleziona data',
-      onClick: () => setActiveStep(1),
-    },
-    {
-      label: 'Orario',
-      value: formData.ora ? formData.ora : 'Opzionale',
-      onClick: () => setActiveStep(1),
-    },
-    {
-      label: 'Trattamento',
-      value: formData.tipo_trattamento ? formData.tipo_trattamento : 'Da scegliere',
-      onClick: () => setActiveStep(2),
-    },
-    {
-      label: 'Durata',
-      value: `${formData.duration_minutes ?? 60} min`,
-      onClick: () => setActiveStep(2),
-    },
-  ];
-
-  const renderStepContent = () => {
-    const selectedClient = getSelectedClient();
-
-    switch (activeStep) {
-      case 0:
-        return (
-          <motion.div
-            className="space-y-4 sm:space-y-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            {/* Client Selection Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <div className="flex items-center justify-between mb-4 sm:mb-6">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <h2 className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                    Seleziona Cliente
-                  </h2>
-                </div>
-
-                {/* View Toggle Buttons - Hidden on mobile */}
-                {!isMobile && (
-                  <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
-                    <motion.button
-                      type="button"
-                      onClick={() => setViewType('list')}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className={`p-2 rounded-xl transition-all duration-200 ${viewType === 'list'
-                        ? `bg-white dark:bg-gray-700 ${colors.textPrimary} dark:${colors.textPrimaryDark} shadow-lg`
-                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                        }`}
-                    >
-                      <List className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button
-                      type="button"
-                      onClick={() => setViewType('grid')}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className={`p-2 rounded-xl transition-all duration-200 ${viewType === 'grid'
-                        ? `bg-white dark:bg-gray-700 ${colors.textPrimary} dark:${colors.textPrimaryDark} shadow-lg`
-                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                        }`}
-                    >
-                      <Grid3X3 className="w-4 h-4" />
-                    </motion.button>
-                  </div>
-                )}
-              </div>
-
-              {/* Enhanced Search Input */}
-              <div className="relative group mb-4 sm:mb-4">
-                <div className={`absolute inset-0 ${colors.bgGradientLight} rounded-2xl sm:rounded-3xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500`} />
-                <div className="relative">
-                  <Search className={`absolute left-4 sm:left-6 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 ${colors.textHover} transition-colors duration-200`} />
-                  <input
-                    type="text"
-                    placeholder="Cerca cliente..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className={`w-full h-12 sm:h-12 px-4 sm:px-6 pl-12 sm:pl-16 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl focus:${colors.borderPrimary} focus:bg-white dark:focus:bg-gray-800 transition-all duration-300 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-base sm:text-base font-medium shadow-lg shadow-black/5 ${colors.shadowPrimaryLight}`}
-                  />
-                </div>
-              </div>
-
-              {/* Clients Container with Toggle View */}
-              <div className="h-full overflow-y-auto scrollbar-hide pb-4">
-                {(viewType === 'list' || isMobile) ? (
-                  /* List View - Always on mobile */
-                  <div className="space-y-2 sm:space-y-3">
-                    <AnimatePresence>
-                      {filteredClients.map((client, index) => (
-                        <motion.div
-                          key={client.id}
-                          initial={{ opacity: 0, y: 12 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -12 }}
-                          transition={{
-                            duration: 0.3,
-                            delay: index * 0.04,
-                            ease: [0.25, 0.46, 0.45, 0.94]
-                          }}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => { hapticSelection(); setFormData(prev => ({ ...prev, client_id: client.id })); }}
-                            className="flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg sm:rounded-2xl sm:px-4 sm:py-3"
-                            style={{
-                              borderColor: formData.client_id === client.id ? accentSoft : 'rgba(209,213,219,0.5)',
-                              backgroundColor: formData.client_id === client.id ? `${accentSofter}` : 'rgba(255,255,255,0.9)',
-                            }}
-                          >
-                            <div
-                              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-sm font-semibold text-white shadow-lg sm:h-11 sm:w-11 sm:text-base"
-                              style={{ background: accentGradient }}
-                            >
-                              {client.nome.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="min-w-0 flex-1 space-y-1">
-                              <div className="flex items-center gap-2">
-                                <p
-                                  className="truncate text-sm font-semibold sm:text-base"
-                                  style={{ color: textPrimaryColor }}
-                                >
-                                  {client.nome} {client.cognome}
-                                </p>
-                                <span
-                                  className="rounded-full px-2 py-0.5 text-[10px] font-semibold sm:text-xs"
-                                  style={{
-                                    backgroundColor: client.tipo_cliente === 'nuovo' ? '#DCFCE7' : accentSofter,
-                                    color: client.tipo_cliente === 'nuovo' ? '#047857' : accentDark,
-                                  }}
-                                >
-                                  {client.tipo_cliente === 'nuovo' ? 'Nuovo' : 'Abituale'}
-                                </span>
-                              </div>
-                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
-                                {client.email && (
-                                  <span className="flex items-center gap-1">
-                                    <Mail className="h-3 w-3" />
-                                    <span className="truncate max-w-[140px] sm:max-w-[200px]">
-                                      {client.email}
-                                    </span>
-                                  </span>
-                                )}
-                                {client.telefono && (
-                                  <span className="flex items-center gap-1">
-                                    <Phone className="h-3 w-3" />
-                                    <span>{client.telefono}</span>
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <ChevronRight
-                              className="h-4 w-4 flex-shrink-0 text-gray-400"
-                              style={{ color: formData.client_id === client.id ? accentDark : '#9CA3AF' }}
-                            />
-                          </button>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                ) : (
-                  /* Grid View - Only on desktop */
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                    <AnimatePresence>
-                      {filteredClients.map((client, index) => (
-                        <motion.div
-                          key={client.id}
-                          initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.8, y: -20 }}
-                          transition={{
-                            duration: 0.4,
-                            delay: index * 0.08,
-                            type: "spring",
-                            stiffness: 300,
-                            damping: 25
-                          }}
-                          className="group"
-                        >
-                          <motion.button
-                            type="button"
-                            onClick={() => { hapticSelection(); setFormData(prev => ({ ...prev, client_id: client.id })); }}
-                            className={`w-full p-4 rounded-3xl border transition-all duration-500 text-left relative overflow-hidden backdrop-blur-sm ${formData.client_id === client.id
-                              ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimary} ring-2 ${colors.borderPrimary}`
-                              : `border-gray-200/50 dark:border-gray-700/50 bg-white/90 dark:bg-gray-800/90 hover:${colors.borderPrimary} hover:shadow-lg hover:shadow-black/10 ${colors.bgGradientHover} dark:${colors.bgPrimaryDark}`
-                              }`}
-                          >
-                            {/* Animated Background Glow */}
-                            <motion.div
-                              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
-                              animate={{
-                                background: formData.client_id === client.id
-                                  ? "radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.1) 0%, transparent 70%)"
-                                  : "radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.05) 0%, transparent 70%)"
-                              }}
-                            />
-
-                            <div className="flex flex-col items-center text-center space-y-4 relative z-10">
-                              {/* Premium Avatar with Layered Design */}
-                              <motion.div
-                                className="relative"
-                                whileHover={{ scale: 1.05 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                              >
-                                {/* Outer Ring */}
-                                <div className={`absolute inset-0 rounded-3xl transition-all duration-500 ${formData.client_id === client.id
-                                  ? 'bg-gradient-to-br from-[#c2886d]/20 to-[#a06d52]/20 scale-110'
-                                  : 'bg-gradient-to-br from-gray-300/20 to-gray-400/20 scale-100 group-hover:from-[#c2886d]/20 group-hover:to-[#a06d52]/20 group-hover:scale-105'
-                                  }`} />
-
-                                {/* Main Avatar */}
-                                <div className={`relative w-20 h-20 rounded-3xl flex items-center justify-center text-white font-bold text-2xl shadow-lg transition-all duration-500 ${formData.client_id === client.id
-                                  ? `${colors.bgGradient} ${colors.shadowPrimary}`
-                                  : `bg-gradient-to-br from-gray-400 to-gray-500 group-hover:${colors.bgGradient} shadow-black/20`
-                                  }`}>
-                                  <motion.span
-                                    initial={{ scale: 0.8 }}
-                                    animate={{ scale: 1 }}
-                                    transition={{ delay: index * 0.1 }}
-                                  >
-                                    {client.nome.charAt(0).toUpperCase()}
-                                  </motion.span>
-
-                                  {/* Subtle Inner Highlight */}
-                                  <div className="absolute inset-2 rounded-2xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                </div>
-                              </motion.div>
-
-                              {/* Client Information with Enhanced Typography */}
-                              <div className="w-full space-y-3">
-                                <motion.h3
-                                  className="text-lg font-bold text-gray-900 dark:text-white truncate leading-tight"
-                                  initial={{ opacity: 0, y: 10 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ delay: index * 0.1 + 0.2 }}
-                                >
-                                  {client.nome} {client.cognome}
-                                </motion.h3>
-
-                                {/* Contact Information with Modern Icons */}
-                                <div className="space-y-2">
-                                  {client.email && (
-                                    <motion.div
-                                      className="flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 group/contact"
-                                      initial={{ opacity: 0, x: -10 }}
-                                      animate={{ opacity: 1, x: 0 }}
-                                      transition={{ delay: index * 0.1 + 0.3 }}
-                                    >
-                                      <div className="w-5 h-5 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover/contact:bg-[#faede0] dark:group-hover/contact:bg-[#c2886d]/30 transition-colors duration-200">
-                                        <Mail className="w-3 h-3" strokeWidth={2.5} />
-                                      </div>
-                                      <span className="text-sm font-medium truncate max-w-[140px] group-hover/contact:text-gray-700 dark:group-hover/contact:text-gray-300 transition-colors duration-200">
-                                        {client.email}
-                                      </span>
-                                    </motion.div>
-                                  )}
-
-                                  {client.telefono && (
-                                    <motion.div
-                                      className="flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 group/contact"
-                                      initial={{ opacity: 0, x: -10 }}
-                                      animate={{ opacity: 1, x: 0 }}
-                                      transition={{ delay: index * 0.1 + 0.4 }}
-                                    >
-                                      <div className="w-5 h-5 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover/contact:bg-[#faede0] dark:group-hover/contact:bg-[#c2886d]/30 transition-colors duration-200">
-                                        <Phone className="w-3 h-3" strokeWidth={2.5} />
-                                      </div>
-                                      <span className="text-sm font-medium group-hover/contact:text-gray-700 dark:group-hover/contact:text-gray-300 transition-colors duration-200">
-                                        {client.telefono}
-                                      </span>
-                                    </motion.div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="absolute bottom-0 left-0 h-full bg-gradient-to-r from-[#c2886d] to-[#a06d52]" />
-                          </motion.button>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                )}
-
-                {filteredClients.length === 0 && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-center py-8 sm:py-12"
-                  >
-                    <User className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3 sm:mb-4" />
-                    <p className="text-gray-500 dark:text-gray-400 font-medium text-sm sm:text-base">Nessun cliente trovato</p>
-                  </motion.div>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        );
-
-      case 1:
-        return (
-          <motion.div
-            className="space-y-6 sm:space-y-8 h-full pb-4 overflow-y-auto"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            {/* Date and Time Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 shadow-xl shadow-black/5 dark:shadow-black/20 overflow-hidden"
-            >
-
-
-              <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                  {/* Enhanced Date Input with Modern Design */}
-                  <div className="space-y-2 sm:space-y-3">
-                    <h2 className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                      Data Appuntamento*
-                    </h2>
-                    <div className="space-y-2">
-                      <div className="relative group">
-                        <input
-                          type="date"
-                          value={formData.data.format('YYYY-MM-DD')}
-                          onChange={(e) => handleDateChange(e.target.value)}
-                          className={`w-full max-w-[300px] px-3 py-3 sm:px-4 sm:py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl sm:rounded-2xl focus:ring-4 ${colors.focusRing} focus:${colors.borderPrimary} transition-all duration-300 text-gray-900 dark:text-white text-sm sm:text-base font-medium group-hover:border-gray-300 dark:group-hover:border-gray-600`}
-                          required
-                        />
-                      </div>
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        {datePresets.map((preset) => {
-                          const presetDate = preset.value();
-                          const isSelected = formData.data.isSame(presetDate, 'day');
-                          return (
-                            <button
-                              type="button"
-                              key={preset.label}
-                              onClick={() => handleDatePreset(preset.value)}
-                              className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all duration-200 sm:text-sm ${isSelected ? 'text-white shadow-lg' : ''
-                                }`}
-                              style={
-                                isSelected
-                                  ? { background: accentGradient }
-                                  : { backgroundColor: `${accentSofter}`, color: accentDark }
-                              }
-                            >
-                              {preset.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Enhanced Time Input */}
-                  <div className="space-y-2 sm:space-y-3">
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      <h2 className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                        Orario*
-                      </h2>
-
-                    </label>
-                    <div className="space-y-2">
-                      <div className="relative group">
-                        <input
-                          type="time"
-                          value={formData.ora}
-                          onChange={handleChange('ora')}
-                          className={`w-full max-w-[300px] px-3 py-3 sm:px-4 sm:py-4 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl sm:rounded-2xl focus:ring-4 ${colors.focusRing} focus:${colors.borderPrimary} transition-all duration-300 text-gray-900 dark:text-white text-sm sm:text-base font-medium group-hover:border-gray-300 dark:group-hover:border-gray-600`}
-                          required
-                        />
-                      </div>
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        {quickTimeSlots.map((slot) => {
-                          const isSelected = formData.ora === slot;
-                          return (
-                            <button
-                              key={slot}
-                              type="button"
-                              onClick={() => handleQuickTimeSelect(slot)}
-                              className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all duration-200 sm:text-sm ${isSelected ? 'text-white shadow-lg' : ''
-                                }`}
-                              style={
-                                isSelected
-                                  ? { background: accentGradient }
-                                  : { backgroundColor: `${accentSofter}`, color: accentDark }
-                              }
-                            >
-                              {slot}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        );
-
-      case 2:
-        {
-          const useCatalog = catalogEntries.length > 0;
-          const filteredCatalogEntries = useCatalog
-            ? catalogEntries.filter((e) => e.name.toLowerCase().includes(treatmentSearch.toLowerCase()))
-            : [];
-          const displayCatalogEntries = showAdvancedTreatments ? filteredCatalogEntries : filteredCatalogEntries.slice(0, 16);
-          const allTreatmentNames = appType === 'isabellenails' ? treatmentTypesIsabelle : treatmentTypesLashesAndra;
-          const filteredNames = allTreatmentNames.filter((t) => t.toLowerCase().includes(treatmentSearch.toLowerCase()));
-          const displayNames = showAdvancedTreatments ? filteredNames : filteredNames.slice(0, 16);
-
-          return (
-            <motion.div
-              className="space-y-4 sm:space-y-6 pb-10"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            >
-
-              {/* Treatment Grid */}
-              <div className="space-y-3 max-h-[40vh] sm:max-h-[50vh] overflow-y-auto">
-
-                {/* Scelta trattamento */}
-                <motion.div
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                  className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 shadow-xl shadow-black/5 dark:shadow-black/20 overflow-hidden"
-                >
-                  <div className="p-4 sm:p-6 border-b border-gray-50 dark:border-gray-800">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 sm:w-10 sm:h-10 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl sm:rounded-2xl flex items-center justify-center`}>
-                        <Pencil className={`w-4 h-4 sm:w-5 sm:h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={2.5} />
-                      </div>
-                      <div>
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                          Scelta trattamento
-                        </h3>
-                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                          Seleziona il trattamento che vuoi offrire al cliente
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-       
-
-                {/* Generic Option - Featured */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.4, delay: 0.1 }}
-                  className="p-4 sm:p-6"
-                >
-                  <button
-                    type="button"
-                    onClick={() => { hapticSelection(); setFormData(prev => ({ ...prev, treatment_catalog_id: null, tipo_trattamento: '', duration_minutes: DEFAULT_APPOINTMENT_DURATION_MINUTES })); }}
-                    className={`group w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-300 text-left relative overflow-hidden ${formData.tipo_trattamento === ''
-                      ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimary}`
-                      : `border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:${colors.borderPrimary} hover:shadow-lg hover:shadow-black/5`
-                      }`}
-                  >
-                    {/* Subtle gradient overlay */}
-                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${formData.tipo_trattamento === ''
-                      ? `${colors.bgGradientLight}`
-                      : `${colors.bgGradientLight}`
-                      }`} />
-
-                    <div className="relative flex items-center gap-3 sm:gap-4">
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className={`text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1 ${colors.textHover} dark:${colors.textHoverDark} transition-colors`}>
-                          Appuntamento Generico
-                        </h3>
-                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium">
-                          Nessun trattamento specificato
-                        </p>
-                      </div>
-
-                      {/* Selection Indicator */}
-                      <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${formData.tipo_trattamento === ''
-                        ? `${colors.borderPrimary} ${colors.bgGradient}`
-                        : `border-gray-300 dark:border-gray-600 hover:${colors.borderPrimary}`
-                        }`}>
-                        {formData.tipo_trattamento === '' && (
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                          >
-                            <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" strokeWidth={3} />
-                          </motion.div>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                </motion.div>
-
-                {/* Treatment Options (da listino o elenco statico) */}
-                <div className="space-y-2 p-4 sm:p-6">
-                  {useCatalog && displayCatalogEntries.map((entry, index) => {
-                    const isSelected = formData.treatment_catalog_id === entry.id || (formData.tipo_trattamento === entry.name && !formData.treatment_catalog_id);
-                    return (
-                      <motion.div
-                        key={entry.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: 0.15 + index * 0.02 }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            hapticSelection();
-                            setFormData((prev) => ({
-                              ...prev,
-                              treatment_catalog_id: entry.id,
-                              tipo_trattamento: entry.name,
-                              importo: entry.base_price,
-                              duration_minutes: entry.duration_minutes,
-                            }));
-                          }}
-                          className={`group w-full p-3 sm:p-4 rounded-xl sm:rounded-xl border transition-all duration-300 text-left relative overflow-hidden ${isSelected
-                            ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimaryLight}`
-                            : `border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:${colors.borderPrimary} hover:shadow-md hover:shadow-black/5`
-                            }`}
-                        >
-                          <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${colors.bgGradientLight}`} />
-                          <div className="relative flex items-center gap-3 sm:gap-4">
-                            <div className="flex-1 min-w-0 py-3">
-                              <h3 className={`text-sm sm:text-base font-semibold transition-colors duration-300 ${isSelected ? `${colors.textPrimary} dark:${colors.textPrimaryDark}` : `text-gray-900 dark:text-white ${colors.textHover} dark:${colors.textHoverDark}`}`}>
-                                {entry.name}
-                              </h3>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                €{entry.base_price} · {entry.duration_minutes} min
-                              </p>
-                            </div>
-                            <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${isSelected ? `${colors.borderPrimary} ${colors.bgGradient}` : `border-gray-300 dark:border-gray-600 hover:${colors.borderPrimary}`}`}>
-                              {isSelected && (
-                                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }} className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full" />
-                              )}
-                            </div>
-                          </div>
-                        </button>
-                      </motion.div>
-                    );
-                  })}
-                  {!useCatalog && displayNames.map((treatment, index) => (
-                    <motion.div
-                      key={treatment}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: 0.15 + index * 0.02 }}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => { hapticSelection(); setFormData(prev => ({ ...prev, treatment_catalog_id: null, tipo_trattamento: treatment, duration_minutes: getTreatmentDurationMinutes(appType, treatment) })); }}
-                        className={`group w-full p-3 sm:p-4 rounded-xl sm:rounded-xl border transition-all duration-300 text-left relative overflow-hidden ${formData.tipo_trattamento === treatment
-                          ? `${colors.borderPrimary} ${colors.bgPrimary} dark:${colors.bgPrimaryDark} shadow-lg ${colors.shadowPrimaryLight}`
-                          : `border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:${colors.borderPrimary} hover:shadow-md hover:shadow-black/5`
-                          }`}
-                      >
-                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${colors.bgGradientLight}`} />
-                        <div className="relative flex items-center gap-3 sm:gap-4">
-                          <div className="flex-1 min-w-0 py-3">
-                            <h3 className={`text-sm sm:text-base font-semibold transition-colors duration-300 ${formData.tipo_trattamento === treatment ? `${colors.textPrimary} dark:${colors.textPrimaryDark}` : `text-gray-900 dark:text-white ${colors.textHover} dark:${colors.textHoverDark}`}`}>
-                              {treatment}
-                            </h3>
-                          </div>
-                          <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${formData.tipo_trattamento === treatment ? `${colors.borderPrimary} ${colors.bgGradient}` : `border-gray-300 dark:border-gray-600 hover:${colors.borderPrimary}`}`}>
-                            {formData.tipo_trattamento === treatment && (
-                              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }} className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full" />
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                    </motion.div>
-                  ))}
-                </div>
-                </motion.div>
-              </div>
-
-              {/* Durata seduta - blocco slot in calendario */}
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 shadow-xl shadow-black/5 dark:shadow-black/20 overflow-hidden"
-              >
-                <div className="p-4 sm:p-6 border-b border-gray-50 dark:border-gray-800">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 sm:w-10 sm:h-10 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl sm:rounded-2xl flex items-center justify-center`}>
-                      <Clock className={`w-4 h-4 sm:w-5 sm:h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={2.5} />
-                    </div>
-                    <div>
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                        Durata seduta (per blocco in calendario)
-                      </h3>
-                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                        Definisci la durata della seduta (per blocco in calendario)
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 sm:p-6 grid grid-cols-3 gap-2">
-                  {[30, 60, 90, 120, 180, 240].map((mins) => {
-                    const isSelected = formData.duration_minutes === mins;
-                    // Costruisci la label più leggibile se >= 90 minuti
-                    let label: string;
-                    if (mins === 60) {
-                      label = `1 ora`;
-                    } else if (mins < 90) {
-                      label = `${mins} min`;
-                    } else if (mins === 90) {
-                      label = '1 ora e mezza';
-                    } else if (mins === 120) {
-                      label = '2 ore';
-                    } else if (mins === 180) {
-                      label = '3 ore';
-                    } else if (mins === 240) {
-                      label = '4 ore';
-                    } else {
-                      label = `${mins} min`;
-                    }
-                    return (
-                      <button
-                        key={mins}
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, duration_minutes: mins }))}
-                        className={`rounded-xl px-3 py-2 text-sm font-semibold transition-all ${isSelected ? 'text-white shadow-md' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-[#c2886d]'}`}
-                        style={isSelected ? { background: accentGradient } : undefined}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </motion.div>
-              {/* Amount Card with Premium Design */}
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 shadow-xl shadow-black/5 dark:shadow-black/20 overflow-hidden"
-              >
-                <div className="p-4 sm:p-6 border-b border-gray-50 dark:border-gray-800">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 sm:w-10 sm:h-10 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl sm:rounded-2xl flex items-center justify-center`}>
-                      <Euro className={`w-4 h-4 sm:w-5 sm:h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={2.5} />
-                    </div>
-                    <div>
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                        Importo Servizio
-                      </h3>
-                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                        Definisci il prezzo del trattamento
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-                  {/* Premium Amount Input */}
-                  <div className="space-y-2 sm:space-y-3">
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Importo in Euro
-                      <span className="text-[#c2886d] ml-1">*</span>
-                    </label>
-                    <div className="relative group">
-                      <input
-                        type="number"
-                        value={formData.importo || ''}
-                        onChange={handleChange('importo')}
-                        placeholder="0.00"
-                        min="0"
-                        step="0.01"
-                        className={`w-full px-3 py-3 sm:px-4 sm:py-4 pl-10 sm:pl-12 pr-12 sm:pr-16 bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl sm:rounded-2xl focus:ring-4 ${colors.focusRing} focus:${colors.borderPrimary} transition-all duration-300 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm sm:text-base font-medium group-hover:border-gray-300 dark:group-hover:border-gray-600`}
-                        required
-                      />
-                      <div className={`absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl sm:rounded-xl flex items-center justify-center`}>
-                        <Euro className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={3} />
-                      </div>
-                      <div className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 text-xs sm:text-sm font-semibold text-gray-400 dark:text-gray-500">
-                        EUR
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Redesigned Quick Amount Buttons */}
-                  <div className="space-y-3 sm:space-y-4">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        Importi Frequenti
-                      </label>
-                      <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
-                        Tocca per selezionare
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-4 gap-2 sm:gap-3">
-                      {(appType === 'isabellenails' ? quickAmountsIsabelle : quickAmountsLashesAndra).map((amount, index) => (
-                        <motion.button
-                          key={amount}
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, importo: amount }))}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: index * 0.05 + 0.5 }}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className={`relative h-12 sm:h-16 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all duration-300 shadow-lg overflow-hidden ${formData.importo === amount
-                            ? `${colors.bgGradient} text-white ${colors.shadowPrimary} shadow-xl`
-                            : `bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:${colors.borderPrimary} hover:shadow-xl ${colors.shadowPrimaryLight}`
-                            }`}
-                        >
-                          <div className="flex flex-col items-center justify-center h-full">
-                            <span className="text-sm sm:text-lg font-bold">€{amount}</span>
-                          </div>
-                          {formData.importo === amount && (
-                            <motion.div
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              className="absolute top-1 right-1 w-4 h-4 sm:w-5 sm:h-5 bg-white/20 rounded-full flex items-center justify-center"
-                            >
-                              <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" strokeWidth={3} />
-                            </motion.div>
-                          )}
-                        </motion.button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          );
-        }
-
-      case 3:
-        return (
-          <motion.div
-            className="space-y-4 sm:space-y-6 h-full flex flex-col"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-
-            {/* Premium Summary Card with Glass Morphism */}
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.4, type: "spring", stiffness: 300, damping: 30 }}
-              className="flex-1 h-full pb-4 overflow-y-auto"
-            >
-
-              <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 shadow-2xl shadow-black/10 dark:shadow-black/30">
-                <div className="relative p-4 sm:p-8">
-                  {/* Client Profile Section */}
-                  <motion.div
-                    className="flex items-center gap-4 sm:gap-6 mb-6 sm:mb-10 pb-4 sm:pb-8 border-b border-gray-100 dark:border-gray-800"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: 0.6 }}
-                  >
-                    <motion.div
-                      className="relative"
-                      whileHover={{ scale: 1.05 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    >
-                      {/* Avatar with Glow Effect */}
-                      <div className={`absolute inset-0 ${colors.bgGradient} rounded-2xl sm:rounded-3xl blur-lg opacity-30 scale-110`} />
-                      <div className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl ${colors.bgGradient} flex items-center justify-center text-white font-bold text-xl sm:text-2xl shadow-xl`}>
-                        {selectedClient ? selectedClient.nome.charAt(0).toUpperCase() : '?'}
-                      </div>
-                    </motion.div>
-
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
-                        {selectedClient ? `${selectedClient.nome} ${selectedClient.cognome}` : 'Cliente non selezionato'}
-                      </h3>
-                      <div className="flex flex-col gap-1 sm:gap-2">
-                        {selectedClient?.email && (
-                          <motion.div
-                            className="flex items-center gap-2 sm:gap-3 text-gray-600 dark:text-gray-400"
-                            whileHover={{ x: 4 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                          >
-                            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-xl sm:rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                              <Mail className="w-2.5 h-2.5 sm:w-3 sm:h-3" strokeWidth={2} />
-                            </div>
-                            <span className="font-medium text-xs sm:text-sm">{selectedClient.email}</span>
-                          </motion.div>
-                        )}
-                        {selectedClient?.telefono && (
-                          <motion.div
-                            className="flex items-center gap-2 sm:gap-3 text-gray-600 dark:text-gray-400"
-                            whileHover={{ x: 4 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                          >
-                            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-xl sm:rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                              <Phone className="w-2.5 h-2.5 sm:w-3 sm:h-3" strokeWidth={2} />
-                            </div>
-                            <span className="font-medium text-xs sm:text-sm">{selectedClient.telefono}</span>
-                          </motion.div>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  {/* Details Grid with Enhanced Cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
-                    {/* Date Card */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.7 }}
-                      whileHover={{ y: -4, scale: 1.02 }}
-                      className="group"
-                    >
-                      <div className={`relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-4 sm:p-6 shadow-lg shadow-black/5 hover:shadow-xl ${colors.shadowPrimaryLight} transition-all duration-300`}>
-                        <div className={`absolute inset-0 ${colors.bgGradientLight} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-
-                        <div className="relative">
-                          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
-                            <motion.div
-                              className={`w-8 h-8 sm:w-10 sm:h-10 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl sm:rounded-xl flex items-center justify-center`}
-                              whileHover={{ rotate: 10 }}
-                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                            >
-                              <Calendar className={`w-4 h-4 sm:w-5 sm:h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={2} />
-                            </motion.div>
-                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</span>
-                          </div>
-                          <p className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
-                            {formatDateForDisplay(formData.data)}
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-
-                    {/* Time Card */}
-                    {formData.ora && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.8 }}
-                        whileHover={{ y: -4, scale: 1.02 }}
-                        className="group"
-                      >
-                        <div className={`relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-4 sm:p-6 shadow-lg shadow-black/5 hover:shadow-xl ${colors.shadowPrimaryLight} transition-all duration-300`}>
-                          <div className={`absolute inset-0 ${colors.bgGradientLight} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-
-                          <div className="relative">
-                            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
-                              <motion.div
-                                className={`w-8 h-8 sm:w-10 sm:h-10 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl sm:rounded-xl flex items-center justify-center`}
-                                whileHover={{ rotate: 10 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                              >
-                                <Clock className={`w-4 h-4 sm:w-5 sm:h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={2} />
-                              </motion.div>
-                              <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Orario</span>
-                            </div>
-                            <p className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
-                              {formData.ora.split(':')[0]}:{formData.ora.split(':')[1]}
-                            </p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* Amount Card */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.9 }}
-                      whileHover={{ y: -4, scale: 1.02 }}
-                      className="group"
-                    >
-                      <div className={`relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-4 sm:p-6 shadow-lg shadow-black/5 hover:shadow-xl ${colors.shadowPrimaryLight} transition-all duration-300`}>
-                        <div className={`absolute inset-0 ${colors.bgGradientLight} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-
-                        <div className="relative">
-                          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
-                            <motion.div
-                              className={`w-8 h-8 sm:w-10 sm:h-10 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl sm:rounded-xl flex items-center justify-center`}
-                              whileHover={{ rotate: 10 }}
-                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                            >
-                              <Euro className={`w-4 h-4 sm:w-5 sm:h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={2} />
-                            </motion.div>
-                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Importo</span>
-                          </div>
-                          <p className={`text-base sm:text-xl font-bold ${colors.textPrimary} dark:${colors.textPrimaryDark}`}>
-                            {new Intl.NumberFormat('it-IT', {
-                              style: 'currency',
-                              currency: 'EUR',
-                            }).format(formData.importo)}
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-
-                    {/* Treatment Card */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 1.0 }}
-                      whileHover={{ y: -4, scale: 1.02 }}
-                      className="group"
-                    >
-                      <div className={`relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-4 sm:p-6 shadow-lg shadow-black/5 hover:shadow-xl ${colors.shadowPrimaryLight} transition-all duration-300`}>
-                        <div className={`absolute inset-0 ${colors.bgGradientLight} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-
-                        <div className="relative">
-                          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
-                            <motion.div
-                              className={`w-8 h-8 sm:w-10 sm:h-10 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl sm:rounded-xl flex items-center justify-center`}
-                              whileHover={{ rotate: 10 }}
-                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                            >
-                              <Sparkles className={`w-4 h-4 sm:w-5 sm:h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={2} />
-                            </motion.div>
-                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trattamento</span>
-                          </div>
-                          <p className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
-                            {formData.tipo_trattamento || 'Generico'}
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-
-                    {/* Duration Card */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 1.05 }}
-                      whileHover={{ y: -4, scale: 1.02 }}
-                      className="group"
-                    >
-                      <div className={`relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-4 sm:p-6 shadow-lg shadow-black/5 hover:shadow-xl ${colors.shadowPrimaryLight} transition-all duration-300`}>
-                        <div className={`absolute inset-0 ${colors.bgGradientLight} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                        <div className="relative">
-                          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
-                            <motion.div
-                              className={`w-8 h-8 sm:w-10 sm:h-10 ${colors.bgPrimary} dark:${colors.bgPrimaryDark} rounded-xl sm:rounded-xl flex items-center justify-center`}
-                              whileHover={{ rotate: 10 }}
-                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                            >
-                              <Clock className={`w-4 h-4 sm:w-5 sm:h-5 ${colors.textPrimary} dark:${colors.textPrimaryDark}`} strokeWidth={2} />
-                            </motion.div>
-                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Durata slot</span>
-                          </div>
-                          <p className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
-                            {formData.duration_minutes ?? 60} min
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  </div>
-
-                  {/* Note rapide e checklist "da fare" */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 1.1 }}
-                    className="mt-4 sm:mt-6 space-y-3"
-                  >
-                    <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                      <ListTodo className="w-4 h-4" />
-                      Note e da fare
-                    </h3>
-                    <div className="rounded-xl sm:rounded-2xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800/50 p-4 sm:p-5 space-y-4">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Note seduta</label>
-                        <textarea
-                          value={formData.note}
-                          onChange={(e) => setFormData((prev) => ({ ...prev, note: e.target.value }))}
-                          placeholder="es. refill, ricordarsi bigodino 0.15"
-                          rows={2}
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:ring-2 focus:ring-offset-0 focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Checklist da fare (opzionale)</label>
-                        <ul className="space-y-2 mb-2">
-                          {(formData.checklist ?? []).map((item) => (
-                            <li key={item.id} className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setFormData((prev) => ({
-                                  ...prev,
-                                  checklist: (prev.checklist ?? []).map((i) => i.id === item.id ? { ...i, done: !i.done } : i),
-                                }))}
-                                className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition ${item.done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 dark:border-gray-500'}`}
-                              >
-                                {item.done && <Check className="w-3 h-3" strokeWidth={2.5} />}
-                              </button>
-                              <span className={`flex-1 text-sm ${item.done ? 'line-through text-gray-500' : 'text-gray-900 dark:text-white'}`}>
-                                {item.label || '(senza testo)'}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => setFormData((prev) => ({
-                                  ...prev,
-                                  checklist: (prev.checklist ?? []).filter((i) => i.id !== item.id),
-                                }))}
-                                className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                aria-label="Rimuovi"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={newChecklistLabel}
-                            onChange={(e) => setNewChecklistLabel(e.target.value)}
-                            placeholder="Aggiungi voce (es. pulizia, patch test)"
-                            className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 text-sm"
-                            onKeyDown={(e) => {
-                              if (e.key !== 'Enter') return;
-                              e.preventDefault();
-                              const label = newChecklistLabel.trim();
-                              if (!label) return;
-                              setFormData((prev) => ({
-                                ...prev,
-                                checklist: [...(prev.checklist ?? []), { id: crypto.randomUUID(), label, done: false }],
-                              }));
-                              setNewChecklistLabel('');
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const label = newChecklistLabel.trim();
-                              if (!label) return;
-                              setFormData((prev) => ({
-                                ...prev,
-                                checklist: [...(prev.checklist ?? []), { id: crypto.randomUUID(), label, done: false }],
-                              }));
-                              setNewChecklistLabel('');
-                            }}
-                            className={`px-3 py-2 rounded-xl font-medium text-sm ${colors.bgPrimary} ${colors.textPrimary} dark:${colors.bgPrimaryDark} dark:${colors.textPrimaryDark}`}
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  {/* Success Indicator */}
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 1.1, type: "spring", stiffness: 300, damping: 25 }}
-                    className="mt-4 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-100 dark:border-gray-800"
-                  >
-                    <div className={`flex items-center justify-center gap-2 sm:gap-3 ${colors.textPrimary} dark:${colors.textPrimaryDark}`}>
-                      <motion.div
-                        className="w-4 h-4 sm:w-5 sm:h-5"
-                      >
-                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
-                      </motion.div>
-                      <span className="font-semibold text-xs sm:text-sm">Pronto per il salvataggio</span>
-                    </div>
-                  </motion.div>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="w-full h-full min-h-screen flex flex-col bg-white relative">
+    <div style={{ minHeight: '100vh', background: '#FAF0E8', display: 'flex', flexDirection: 'column' }}>
+
+      {/* ── Header ── */}
       <PageHeader
-        title={isEditing ? 'Modifica Appuntamento' : 'Nuovo Appuntamento'}
+        title={stepTitles[activeStep]}
         showBack
-        onBack={onCancel}
-        backLabel="Annulla"
-        variant="fixed"
-        rightAction={
-          activeStep === steps.length - 1
-            ? { type: 'label', label: loading ? '...' : isEditing ? 'Aggiorna' : 'Salva', formId: 'appointment-form', disabled: loading }
-            : { type: 'label', label: 'Continua', onClick: () => handleNext(), disabled: !canProceed() }
-        }
+        onBack={goBack}
       />
 
-      {/* Step indicator compatto — pt per non restare sotto l'header fixed */}
-      <div className="safe-area-content-below-header px-4 py-2 border-b border-gray-100 flex-shrink-0">
-        <div className="flex items-center justify-center gap-2">
-          {steps.map((_, index) => (
-            <div
-              key={steps[index].id}
-              className={`h-1.5 flex-1 max-w-12 rounded-full transition-colors ${index <= activeStep ? 'bg-[#c2886d]' : 'bg-gray-200'
-                }`}
-            />
-          ))}
-        </div>
-        <p className="text-center text-xs text-gray-500 mt-1.5">
-          {steps[activeStep].title}
-        </p>
-      </div>
+      {/* ── Overlap warning ── */}
+      <AnimatePresence>
+        {overlapping.length > 0 && !overlapDismissed && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{
+              margin: '12px 16px 0',
+              padding: '12px 16px',
+              borderRadius: 16,
+              background: '#FFF8EC',
+              border: '1.5px solid #F0C060',
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+            }}>
+              <AlertTriangle size={18} color="#C08010" style={{ flexShrink: 0, marginTop: 1 }} />
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#7A5010' }}>
+                  Sovrapposizione con {overlapping.length} appuntament{overlapping.length > 1 ? 'i' : 'o'}
+                </p>
+                {overlapping.map(apt => {
+                  const sm = parseOraToMinutes(apt.ora);
+                  const em = getEndMinutes(apt);
+                  const fmt = (m: number) => `${String(Math.floor(m / 60)).padStart(2,'0')}:${String(m % 60).padStart(2,'0')}`;
+                  const c = clients.find(x => x.id === apt.client_id);
+                  const label = isPersonalAppointment(apt) ? (apt.tipo_trattamento || 'Impegno personale') : c ? `${c.nome} ${c.cognome}` : 'Cliente';
+                  return (
+                    <p key={apt.id} style={{ fontSize: 12, color: '#9A6010', marginTop: 3 }}>
+                      {fmt(sm)}–{fmt(em)} · {label}
+                    </p>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={() => setOverlapDismissed(true)}
+                style={{ padding: 4, border: 'none', background: 'none', cursor: 'pointer', flexShrink: 0 }}
+              >
+                <X size={16} color="#C08010" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Error */}
+      {/* ── Error ── */}
       <AnimatePresence>
         {error && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700"
+            style={{
+              margin: '12px 16px 0',
+              padding: '12px 16px',
+              borderRadius: 16,
+              background: '#FFF0F0',
+              border: '1.5px solid #FFB0B0',
+              fontSize: 14, color: '#C02020', fontWeight: 600,
+            }}
           >
             {error}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Avviso sovrapposizione slot - UX/UI migliorata, aggiunta icona warning e pulsante chiudi */}
-      <AnimatePresence>
-        {overlappingAppointments.length > 0 && !overlapWarningDismissed && (
-          <motion.div
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="mx-4 mt-4 p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-2xl text-sm text-amber-900 dark:text-amber-200 shadow-lg flex items-start gap-3"
-            role="alert"
-            aria-live="assertive"
-          >
-            {/* Icona warning */}
-            <div className="flex-shrink-0 pt-0.5">
-              <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-300" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1">
-                <span className="font-semibold text-amber-900 dark:text-amber-100">
-                  Attenzione: sovrapposizione con {overlappingAppointments.length} appuntament{overlappingAppointments.length > 1 ? 'i!' : 'o!'}
-                </span>
-              </div>
-              <ul className="ml-0.5 mt-1 list-none space-y-1 text-[15px] sm:text-base">
-                {overlappingAppointments.map((apt) => {
-                  const startM = parseOraToMinutes(apt.ora);
-                  const endM = getAppointmentEndMinutes(apt);
-                  const startStr = `${Math.floor(startM / 60).toString().padStart(2, '0')}:${(startM % 60).toString().padStart(2, '0')}`;
-                  const endStr = `${Math.floor(endM / 60).toString().padStart(2, '0')}:${(endM % 60).toString().padStart(2, '0')}`;
-                  const label = isPersonalAppointment(apt)
-                    ? (apt.tipo_trattamento || 'Impegno personale')
-                    : (() => {
-                      const c = clients.find((x) => x.id === apt.client_id);
-                      return c ? `${c.nome} ${c.cognome}` : 'Cliente';
-                    })();
-                  return (
-                    <li key={apt.id} className="flex items-center gap-2">
-                      <span className="rounded bg-amber-200/80 dark:bg-amber-800/60 px-2 text-xs font-medium text-amber-900 dark:text-amber-100">{startStr}-{endStr}</span>
-                      <span>{label}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-              <div className="mt-2 text-xs leading-tight text-amber-700 dark:text-amber-300 flex items-center gap-1">
-                Puoi comunque salvare l'appuntamento, ma verifica che non ci siano conflitti in agenda.
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setOverlapWarningDismissed(true)}
-              className="flex-shrink-0 p-1 rounded-full text-amber-600 dark:text-amber-400 hover:bg-amber-200/60 dark:hover:bg-amber-800/60 focus:outline-none focus:ring-2 focus:ring-amber-400 dark:focus:ring-amber-600 transition-colors"
-              aria-label="Chiudi avviso"
+      {/* ── Step content ── */}
+      <form id="appt-form" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+        <div style={{ position: 'relative', overflow: 'hidden' }}>
+          <AnimatePresence mode="wait" custom={direction} initial={false}>
+            <motion.div
+              key={activeStep}
+              custom={direction}
+              initial={{ x: direction * 60, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: direction * -60, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 36, mass: 0.9 }}
+              style={{ padding: '20px 16px 120px' }}
             >
-              <X className="w-5 h-5" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              {activeStep === 0 && (
+                <StepClient
+                  clients={clients}
+                  formData={formData}
+                  setFormData={setFormData}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                />
+              )}
+              {activeStep === 1 && (
+                <StepDateTime formData={formData} setFormData={setFormData} />
+              )}
+              {activeStep === 2 && (
+                <StepTreatment
+                  formData={formData}
+                  setFormData={setFormData}
+                  catalogEntries={catalogEntries}
+                  appType={appType}
+                />
+              )}
+              {activeStep === 3 && (
+                <StepConfirm
+                  formData={formData}
+                  setFormData={setFormData}
+                  selectedClient={selectedClient}
+                  goToStep={goToStep}
+                  newChecklistLabel={newChecklistLabel}
+                  setNewChecklistLabel={setNewChecklistLabel}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </form>
 
-      {/* Contenuto scrollabile: min-h-0 permette al flex item di ridursi e abilitare overflow-y-auto */}
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-        <form id="appointment-form" onSubmit={handleSubmit} className="px-4 py-6 h-full">
-          <div key={activeStep}>
-            {renderStepContent()}
-          </div>
-        </form>
+      {/* ── Bottom CTA ── */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 20,
+        padding: '16px 16px calc(16px + env(safe-area-inset-bottom, 0px))',
+        background: 'linear-gradient(to top, #FAF0E8 70%, transparent)',
+      }}>
+        {activeStep < STEPS.length - 1 ? (
+          <motion.button
+            type="button"
+            onClick={goNext}
+            disabled={!canProceed()}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              width: '100%', height: 56,
+              borderRadius: 18, border: 'none',
+              background: canProceed()
+                ? 'linear-gradient(135deg, #C07850, #A05830)'
+                : '#E8D5C8',
+              color: canProceed() ? '#FFF' : '#B09080',
+              fontWeight: 800, fontSize: 17,
+              cursor: canProceed() ? 'pointer' : 'not-allowed',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              boxShadow: canProceed() ? '0 6px 24px rgba(192,120,80,0.4)' : 'none',
+              transition: 'background 0.2s, box-shadow 0.2s',
+              fontFamily: 'inherit',
+            }}
+          >
+            Continua
+            <ChevronRight size={20} strokeWidth={2.5} />
+          </motion.button>
+        ) : (
+          <motion.button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              width: '100%', height: 56,
+              borderRadius: 18, border: 'none',
+              background: loading ? '#E8D5C8' : 'linear-gradient(135deg, #C07850, #A05830)',
+              color: loading ? '#B09080' : '#FFF',
+              fontWeight: 800, fontSize: 17,
+              cursor: loading ? 'wait' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              boxShadow: loading ? 'none' : '0 6px 24px rgba(192,120,80,0.4)',
+              fontFamily: 'inherit',
+            }}
+          >
+            {loading ? (
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ repeat: Infinity, duration: 0.8, ease: 'linear' }}
+                style={{ width: 22, height: 22, border: '3px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: 11 }}
+              />
+            ) : (
+              <>
+                {isEditing ? 'Aggiorna appuntamento' : 'Salva appuntamento'}
+              </>
+            )}
+          </motion.button>
+        )}
       </div>
 
-      {/* Feedback visivo di successo */}
+      {/* ── Success overlay ── */}
       <AnimatePresence>
         {showSuccess && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="absolute inset-0 z-20 flex items-center justify-center bg-white/95 backdrop-blur-sm"
+            style={{
+              position: 'fixed', inset: 0, zIndex: 100,
+              background: 'rgba(250,240,232,0.95)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
           >
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
+              initial={{ scale: 0.7, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 24, delay: 0.05 }}
-              className="flex flex-col items-center gap-4 px-8"
+              transition={{ type: 'spring', stiffness: 350, damping: 22 }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '0 32px' }}
             >
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 18, delay: 0.15 }}
-                className="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30"
+                transition={{ type: 'spring', stiffness: 400, damping: 18, delay: 0.1 }}
+                style={{
+                  width: 80, height: 80, borderRadius: 40,
+                  background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 8px 32px rgba(34,197,94,0.4)',
+                }}
               >
-                <Check className="w-8 h-8 text-white" strokeWidth={3} />
+                <Check size={38} color="#fff" strokeWidth={3} />
               </motion.div>
-              <p className="text-lg font-semibold text-gray-900">
-                {isEditing ? 'Appuntamento aggiornato!' : 'Appuntamento creato!'}
+              <p style={{ fontSize: 22, fontWeight: 900, color: '#2C2C2C', textAlign: 'center' }}>
+                {isEditing ? 'Appuntamento aggiornato!' : 'Appuntamento salvato!'}
               </p>
-              <p className="text-sm text-gray-500">Chiusura in corso...</p>
+              <p style={{ fontSize: 14, color: '#9A8880', textAlign: 'center' }}>
+                Tutto pronto ✨
+              </p>
             </motion.div>
           </motion.div>
         )}

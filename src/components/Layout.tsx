@@ -64,7 +64,7 @@ export default function Layout({ children }: LayoutProps) {
         role="navigation"
         aria-label="Menu principale"
       >
-        <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-2">
+        <div className="mx-auto flex max-w-lg items-center justify-around p-3">
           <button
             type="button"
             onClick={() => navigate(`${appPrefix}/home`)}

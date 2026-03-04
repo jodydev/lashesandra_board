@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Calendar, 
   Clock, 
@@ -22,8 +22,21 @@ import AppointmentForm from '../components/AppointmentForm';
 import { formatDate, formatCurrency } from '../lib/utils';
 import { useApp } from '../contexts/AppContext';
 
+/** Prefill per nuovo appuntamento (es. da Richiami: cliente + refill 20€, data refill, ora ultimo appuntamento). */
+export interface AppointmentPrefillNew {
+  client_id: string;
+  tipo_trattamento?: string;
+  importo?: number;
+  duration_minutes?: number;
+  /** Data in YYYY-MM-DD (es. data refill = oggi + 3 settimane). */
+  data?: string;
+  /** Orario in HH:mm (es. orario ultimo appuntamento). */
+  ora?: string;
+}
+
 export default function AppointmentsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { appointmentService, clientService } = useSupabaseServices();
   const colors = useAppColors();
   const { appType } = useApp();
@@ -32,9 +45,13 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [prefillNew, setPrefillNew] = useState<AppointmentPrefillNew | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [showFiltersOptions, setShowFiltersOptions] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'oggi' | 'questa_settimana' | 'questo_mese'>('all');
 
@@ -51,6 +68,21 @@ export default function AppointmentsPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Apri form con prefill da Richiami (Prenota)
+  const prefillConsumedRef = useRef(false);
+  useEffect(() => {
+    const state = location.state as { prefillNew?: AppointmentPrefillNew } | null;
+    if (!state?.prefillNew) {
+      prefillConsumedRef.current = false;
+      return;
+    }
+    if (prefillConsumedRef.current) return;
+    prefillConsumedRef.current = true;
+    setPrefillNew(state.prefillNew);
+    setSelectedAppointment(null);
+    setShowForm(true);
+  }, [location.state]);
 
   const loadData = async () => {
     try {
@@ -105,15 +137,48 @@ export default function AppointmentsPage() {
     }
   };
 
+  const handleBulkDeletePastAppointments = () => {
+    setShowBulkDeleteDialog(true);
+  };
+
+  const confirmBulkDeletePastAppointments = async () => {
+    try {
+      setBulkDeleting(true);
+      setError(null);
+      const { cancelAppointmentReminder } = await import(
+        '../lib/localNotifications'
+      );
+      const pastAppointments = appointments.filter((apt) => {
+        const d = new Date(apt.data);
+        const isToday = d.toDateString() === todayRef.toDateString();
+        return d < todayRef && !isToday;
+      });
+      await Promise.all(
+        pastAppointments.map(async (apt) => {
+          await cancelAppointmentReminder(apt.id);
+          await appointmentService.delete(apt.id);
+        })
+      );
+      await loadData();
+      setShowBulkDeleteDialog(false);
+    } catch {
+      setError('Errore nell\'eliminazione degli appuntamenti passati');
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   const handleFormSuccess = () => {
     setShowForm(false);
     setSelectedAppointment(null);
+    setPrefillNew(null);
     loadData();
   };
 
   const handleFormCancel = () => {
     setShowForm(false);
     setSelectedAppointment(null);
+    setPrefillNew(null);
   };
 
   const todayRef = new Date();
@@ -232,7 +297,7 @@ export default function AppointmentsPage() {
   if (loading) {
     return (
       <div className="min-h-screen" style={{ backgroundColor }}>
-        <PageHeader title="Gestione Appuntamenti" showBack />
+        <PageHeader title="Gestione Appuntamenti" showBack backLabel="Indietro" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
             {[...Array(4)].map((_, i) => (
@@ -271,6 +336,7 @@ export default function AppointmentsPage() {
       <PageHeader
         title="Gestione Appuntamenti"
         showBack
+        backLabel="Indietro"
         rightAction={{ type: 'icon', icon: Plus, ariaLabel: 'Nuovo appuntamento', onClick: handleAddAppointment }}
       />
 
@@ -317,44 +383,84 @@ export default function AppointmentsPage() {
           </div>
         </div>
 
-        {/* Barra ricerca e filtri (stile ClientList: una riga, filtri con count) */}
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-          <div className="relative flex-1 min-w-0 sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Cerca appuntamenti..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl border bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-white"
-              style={{ borderColor: accentSoft }}
-            />
+        {/* Barra ricerca + pannello opzioni (filtri & azioni di massa) */}
+        <div className="mb-6 space-y-3">
+          {/* Search + options toggle */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Cerca appuntamenti..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-xl border bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-white"
+                style={{ borderColor: accentSoft }}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowFiltersOptions((prev) => !prev)}
+              className="inline-flex items-center gap-1.5 rounded-full border p-3 text-xs sm:text-sm font-semibold bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200"
+              style={{ borderColor: accentSofter }}
+            >
+              <Filter className="h-4 w-4" />
+              <span className="hidden sm:inline">Opzioni</span>
+            </button>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {[
-              { key: 'all', label: 'Tutti', count: totalAppointments },
-              { key: 'oggi', label: 'Oggi', count: todayAppointments },
-              { key: 'questa_settimana', label: 'Settimana', count: weekAppointments },
-              { key: 'questo_mese', label: 'Mese', count: monthAppointments },
-            ].map((filter) => {
-              const isActive = filterType === filter.key;
-              return (
-                <button
-                  key={filter.key}
-                  type="button"
-                  onClick={() => setFilterType(filter.key as typeof filterType)}
-                  className={`whitespace-nowrap rounded-2xl px-3 py-1.5 text-xs font-medium sm:text-sm ${isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400'}`}
-                  style={
-                    isActive
-                      ? { background: accentGradient }
-                      : { backgroundColor: surfaceColor, border: `1px solid ${accentSofter}` }
-                  }
-                >
-                  {filter.label} ({filter.count})
-                </button>
-              );
-            })}
-          </div>
+
+          {/* Filters & bulk delete panel */}
+          {showFiltersOptions && (
+            <div
+              className="rounded-2xl border px-3 py-3 sm:px-4 sm:py-3 space-y-3 bg-white/80 dark:bg-gray-900/80"
+              style={{ borderColor: accentSofter }}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  { key: 'all', label: 'Tutti', count: totalAppointments },
+                  { key: 'oggi', label: 'Oggi', count: todayAppointments },
+                  { key: 'questa_settimana', label: 'Settimana', count: weekAppointments },
+                  { key: 'questo_mese', label: 'Mese', count: monthAppointments },
+                ].map((filter) => {
+                  const isActive = filterType === filter.key;
+                  return (
+                    <button
+                      key={filter.key}
+                      type="button"
+                      onClick={() => setFilterType(filter.key as typeof filterType)}
+                      className={`whitespace-nowrap rounded-2xl px-3 py-1.5 text-xs font-medium sm:text-sm ${isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400'}`}
+                      style={
+                        isActive
+                          ? { background: accentGradient }
+                          : { backgroundColor: surfaceColor, border: `1px solid ${accentSofter}` }
+                      }
+                    >
+                      {filter.label} ({filter.count})
+                    </button>
+                  );
+                })}
+              </div>
+
+              {appointments.some((apt) => {
+                const d = new Date(apt.data);
+                return d < todayRef && d.toDateString() !== todayRef.toDateString();
+              }) && (
+                <>
+                  <div className="h-px w-full bg-gray-100 dark:bg-gray-800" />
+                  <div className="flex justify-start sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={handleBulkDeletePastAppointments}
+                      className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs sm:text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Elimina appuntamenti passati
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Error Alert (stile ClientList) */}
@@ -391,11 +497,6 @@ export default function AppointmentsPage() {
                     {section.title}
                     <span className="font-normal opacity-90">({section.list.length})</span>
                   </span>
-                  {section.subtitle && (
-                    <span className="text-sm" style={{ color: textSecondaryColor }}>
-                      {section.subtitle}
-                    </span>
-                  )}
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                   {section.list.map((appointment) => {
@@ -429,7 +530,15 @@ export default function AppointmentsPage() {
                                 className={`flex h-12 w-12 items-center justify-center rounded-xl text-base font-semibold text-white shadow-lg sm:h-14 sm:w-14 sm:text-lg ${colors.shadowPrimary}`}
                                 style={{ background: statusInfo.isCompleted ? 'linear-gradient(135deg, #22C55E, #047857)' : accentGradient }}
                               >
-                                {client ? client.nome.charAt(0).toUpperCase() : '?'}
+                                {client?.foto_url ? (
+                                  <img
+                                    src={client.foto_url}
+                                    alt={`${client.nome} ${client.cognome}`}
+                                    className="h-full w-full rounded-xl object-cover"
+                                  />
+                                ) : (
+                                  (client ? client.nome.charAt(0).toUpperCase() : '?')
+                                )}
                               </div>
                               {statusInfo.isCompleted && (
                                 <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white sm:h-5 sm:w-5">
@@ -572,6 +681,7 @@ export default function AppointmentsPage() {
           <div className="fixed inset-0 z-50 flex flex-col h-screen min-h-full" style={{ backgroundColor: surfaceColor }}>
             <AppointmentForm
               appointment={selectedAppointment}
+              prefillNew={prefillNew ?? undefined}
               appointmentsForOverlap={[...appointments, ...loadPersonalAppointments(appType)]}
               onSuccess={handleFormSuccess}
               onCancel={handleFormCancel}
@@ -617,6 +727,53 @@ export default function AppointmentsPage() {
                     className="flex-1 px-4 py-2.5 sm:py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-xl shadow-lg shadow-red-500/25 text-sm sm:text-base"
                   >
                     Elimina
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Delete Past Appointments Modal */}
+        {showBulkDeleteDialog && (
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+            onClick={() => !bulkDeleting && setShowBulkDeleteDialog(false)}
+          >
+            <div
+              className="bg-white dark:bg-gray-900 rounded-xl shadow-lg max-w-sm sm:max-w-md w-full p-4 sm:p-6 mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                  <Trash2 className="w-6 h-6 sm:w-8 sm:h-8 text-red-600 dark:text-red-400" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Elimina appuntamenti passati
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4 sm:mb-6 text-sm sm:text-base">
+                  Vuoi eliminare <span className="font-semibold">tutti gli appuntamenti con data precedente a oggi</span>?
+                  Questa azione non può essere annullata.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    onClick={() => !bulkDeleting && setShowBulkDeleteDialog(false)}
+                    className="flex-1 px-4 py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 text-sm sm:text-base disabled:opacity-60"
+                    disabled={bulkDeleting}
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmBulkDeletePastAppointments}
+                    className="flex-1 px-4 py-2.5 sm:py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-xl shadow-lg shadow-red-500/25 text-sm sm:text-base disabled:opacity-60 flex items-center justify-center gap-2"
+                    disabled={bulkDeleting}
+                  >
+                    {bulkDeleting && (
+                      <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    )}
+                    Elimina tutto
                   </button>
                 </div>
               </div>
