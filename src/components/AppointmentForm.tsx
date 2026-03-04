@@ -330,7 +330,7 @@ function StepDateTime({ formData, setFormData }: { formData: any; setFormData: (
             value={formData.data.format('YYYY-MM-DD')}
             onChange={e => setFormData((p: any) => ({ ...p, data: dayjs(e.target.value) }))}
             style={{
-              width: '85%', boxSizing: 'border-box',
+              width: '90%', boxSizing: 'border-box',
               height: 52, padding: '0 16px',
               borderRadius: 14, border: '1.5px solid #EDE0D8',
               background: '#FAFAFA', fontSize: 16, color: '#2C2C2C',
@@ -361,7 +361,7 @@ function StepDateTime({ formData, setFormData }: { formData: any; setFormData: (
             value={formData.ora}
             onChange={e => setFormData((p: any) => ({ ...p, ora: e.target.value }))}
             style={{
-              width: '85%', boxSizing: 'border-box',
+              width: '90%', boxSizing: 'border-box',
               height: 52, padding: '0 16px',
               borderRadius: 14, border: '1.5px solid #EDE0D8',
               background: '#FAFAFA', fontSize: 20, fontWeight: 700, color: '#C07850',
@@ -650,7 +650,7 @@ function StepConfirm({
                   <span style={{ fontSize: 13, fontWeight: 600, color: '#B09080', letterSpacing: '0.02em' }}>{f.label}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: '#2C2C2C', textAlign: 'right' as const, maxWidth: 180 }}>{f.value}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#2C2C2C', textAlign: 'right' as const, maxWidth: 180 }}>{f.value}</span>
                   <button
                     type="button"
                     onClick={() => goToStep(f.step)}
@@ -938,11 +938,17 @@ export default function AppointmentForm({
   return (
     <div
       className="min-h-screen flex flex-col min-h-0 flex-1"
-      style={{
-        backgroundColor,
-        paddingTop: 'env(safe-area-inset-top, 0px)',
-      }}
+      style={{ backgroundColor }}
     >
+      {/* Safe area sopra l'header: sfondo bianco come nelle altre pagine con PageHeader */}
+      <div
+        style={{
+          height: 'env(safe-area-inset-top, 0px)',
+          minHeight: 'env(safe-area-inset-top, 0px)',
+          flexShrink: 0,
+          backgroundColor: '#FFFFFF',
+        }}
+      />
 
       {/* ── Header ── */}
       <PageHeader
