@@ -273,10 +273,10 @@ export default function HomePage() {
 
   return (
     <div
-      className="min-h-screen w-full"
+      className="min-h-screen w-full absolute top-0 left-0 right-0 bottom-0"
       style={{ backgroundColor }}
     >
-      <div className="mx-auto max-w-lg px-4">
+      <div className="mx-auto max-w-lg px-4 safe-area-content-below-header">
         {/* Header: profilo + benvenuta, campanella */}
         <header className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">

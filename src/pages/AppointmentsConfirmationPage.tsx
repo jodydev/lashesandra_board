@@ -243,7 +243,7 @@ export default function AppointmentsConfirmationPage() {
   if (loading) {
     return (
       <div className="min-h-screen" style={{ backgroundColor }}>
-        <PageHeader title="Conferma Appuntamenti" showBack backLabel="Indietro" />
+        <PageHeader title="Conferme" showBack backLabel="Indietro" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           {/* Skeleton carosello statistiche */}
           <div className="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
@@ -282,7 +282,7 @@ export default function AppointmentsConfirmationPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor }}>
-      <PageHeader title="Conferma Appuntamenti" showBack backLabel="Indietro" />
+      <PageHeader title="Conferme" showBack backLabel="Indietro" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-6 sm:space-y-8">
         {/* Error (stile ClientList) */}
