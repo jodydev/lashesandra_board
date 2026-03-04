@@ -935,7 +935,7 @@ export default function AppointmentForm({
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div
-      className="min-h-screen safe-area-header flex flex-col min-h-0 flex-1"
+      className="min-h-screen flex flex-col min-h-0 flex-1"
       style={{ backgroundColor }}
     >
 
@@ -944,7 +944,6 @@ export default function AppointmentForm({
         title={stepTitles[activeStep]}
         showBack
         onBack={goBack}
-        skipSafeAreaTop
       />
 
       {/* ── Overlap warning ── */}
