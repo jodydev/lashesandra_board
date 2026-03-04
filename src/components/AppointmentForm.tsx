@@ -934,7 +934,10 @@ export default function AppointmentForm({
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen safe-area-header" style={{ backgroundColor }}>
+    <div
+      className="min-h-screen safe-area-header flex flex-col min-h-0 flex-1"
+      style={{ backgroundColor }}
+    >
 
       {/* ── Header ── */}
       <PageHeader
@@ -1013,7 +1016,10 @@ export default function AppointmentForm({
       </AnimatePresence>
 
       {/* ── Step content ── */}
-      <form id="appt-form" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+      <form
+        id="appt-form"
+        style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden' }}
+      >
         <div style={{ position: 'relative', overflow: 'hidden' }}>
           <AnimatePresence mode="wait" custom={direction} initial={false}>
             <motion.div
