@@ -935,7 +935,7 @@ export default function AppointmentForm({
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div
-      className="min-h-screen flex flex-col min-h-0 flex-1"
+      className="min-h-screen"
       style={{ backgroundColor }}
     >
 
@@ -944,8 +944,8 @@ export default function AppointmentForm({
         title={stepTitles[activeStep]}
         showBack
         onBack={goBack}
-        skipSafeAreaTop
       />
+      <main style={{ maxWidth: 540, margin: '0 auto', padding: '20px 16px 100px' }} className="safe-area-content-below-header">
 
       {/* ── Overlap warning ── */}
       <AnimatePresence>
@@ -1171,6 +1171,7 @@ export default function AppointmentForm({
           </motion.div>
         )}
       </AnimatePresence>
+      </main>
     </div>
   );
 }
