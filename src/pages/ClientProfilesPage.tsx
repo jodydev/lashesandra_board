@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import type { Client, ClientProfileData, ClientWithProfile } from '../types';
 import ClientProfileForm from '../components/ClientProfileForm';
 import { useSupabaseServices } from '../lib/supabaseService';
@@ -308,12 +308,16 @@ const ClientProfilesPage: React.FC = () => {
   const loadClients = async () => {
     try {
       setIsLoading(true);
-      const baseClients = await clientService.getAll();
-      const clientsWithoutProfiles: ClientWithProfile[] = baseClients.map(c => ({
+      const [baseClients, allProfiles] = await Promise.all([
+        clientService.getAll(),
+        clientProfileService.getAll(),
+      ]);
+      const profileByClientId = new Map(allProfiles.map(p => [p.client_id, p]));
+      const clientsWithProfiles: ClientWithProfile[] = baseClients.map(c => ({
         ...c,
-        profile: undefined,
+        profile: profileByClientId.get(c.id) ?? undefined,
       }));
-      setClients(clientsWithoutProfiles);
+      setClients(clientsWithProfiles);
     } catch {
       showError('Errore nel caricamento dei clienti. Riprova.');
     } finally {
@@ -444,9 +448,9 @@ const ClientProfilesPage: React.FC = () => {
         {/* Loading skeletons */}
         {isLoading ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {[...Array(5)].map((_, i) => (
+            {Array.from({ length: 5 }, (_, i) => (
               <motion.div
-                key={i}
+                key={`skeleton-${i}`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: [0.4, 0.8, 0.4] }}
                 transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }}
@@ -455,9 +459,8 @@ const ClientProfilesPage: React.FC = () => {
               </motion.div>
             ))}
           </div>
-
-        /* Empty state */
         ) : filteredClients.length === 0 ? (
+          /* Empty state */
           <motion.div
             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
             style={{
@@ -483,9 +486,8 @@ const ClientProfilesPage: React.FC = () => {
                 : 'Aggiungi clienti per iniziare a creare le schede personali'}
             </p>
           </motion.div>
-
-        /* Client list */
         ) : (
+          /* Client list */
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {filteredClients.map(client => (
               <ClientCard

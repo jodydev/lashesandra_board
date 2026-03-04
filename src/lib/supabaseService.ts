@@ -690,6 +690,15 @@ export function useSupabaseServices() {
 
   // Client Profile operations
   const clientProfileService = {
+    async getAll(): Promise<ClientProfileData[]> {
+      const { data, error } = await supabase
+        .from(clientProfilesTable)
+        .select('*')
+        .order('client_id', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+
     async getByClientId(clientId: string): Promise<ClientProfileData | null> {
       const { data, error } = await supabase
         .from(clientProfilesTable)
