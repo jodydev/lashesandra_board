@@ -55,10 +55,6 @@ html.page-header-visible #root {
   padding-top: calc(env(safe-area-inset-top, 0px) + 3.5rem);
 }
 
-.safe-area-content-below-header1 {
-  padding-top: calc(env(safe-area-inset-top, 0px) + 1rem);
-}
-
 /* Bottom nav: spazio sopra home indicator */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);

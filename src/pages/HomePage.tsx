@@ -276,7 +276,7 @@ export default function HomePage() {
       className="h-full w-full pb-10"
       style={{ backgroundColor }}
     >
-      <div className="mx-auto max-w-lg px-4 h-full safe-area-content-below-header1" >
+      <div className="mx-auto max-w-lg px-4 h-full" >
         {/* Header: profilo + benvenuta, campanella */}
         <header className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
