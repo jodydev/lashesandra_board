@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type React from 'react';
-import { motion } from 'framer-motion';
 import type { Client, ClientProfileData, ClientWithProfile } from '../types';
 import ClientProfileForm from '../components/ClientProfileForm';
 import { useSupabaseServices } from '../lib/supabaseService';
@@ -33,15 +32,22 @@ const GRAD = `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`;
 function getProfileCompletion(client: ClientWithProfile): number | null {
   if (!client.profile) return null;
   const p = client.profile;
-  let completed = 0, total = 0;
-  total += 1; if (p.data_nascita) completed++;
-  const eyeVals = Object.values(p.caratteristiche_occhi);
-  total += eyeVals.length;
-  completed += eyeVals.filter(v => v !== undefined && v !== '').length;
-  const profVals = Object.values(p.profilo_cliente);
-  total += profVals.length;
-  completed += profVals.filter(v => v !== undefined && v !== '').length;
-  total += 1; if (p.trattamenti?.length) completed++;
+  let completed = 0;
+  let total = 0;
+  total += 1;
+  if (p.data_nascita) completed += 1;
+  const eye = p.caratteristiche_occhi && typeof p.caratteristiche_occhi === 'object'
+    ? Object.values(p.caratteristiche_occhi)
+    : [];
+  total += eye.length;
+  completed += eye.filter(v => v !== undefined && v !== '' && v !== null).length;
+  const prof = p.profilo_cliente && typeof p.profilo_cliente === 'object'
+    ? Object.values(p.profilo_cliente)
+    : [];
+  total += prof.length;
+  completed += prof.filter(v => v !== undefined && v !== '' && v !== null).length;
+  total += 1;
+  if (p.trattamenti?.length) completed += 1;
   return total > 0 ? Math.round((completed / total) * 100) : 0;
 }
 
@@ -98,11 +104,13 @@ function ProgressBar({ pct }: { pct: number }) {
   const color = pct >= 80 ? C.ok : pct >= 40 ? C.accent : C.muted;
   return (
     <div style={{ height: 5, borderRadius: 100, background: '#F0E8E0', overflow: 'hidden' }}>
-      <motion.div
-        initial={{ width: 0 }}
-        animate={{ width: `${pct}%` }}
-        transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
-        style={{ height: '100%', borderRadius: 100, background: color }}
+      <div
+        style={{
+          height: '100%',
+          width: `${pct}%`,
+          borderRadius: 100,
+          background: color,
+        }}
       />
     </div>
   );
@@ -120,12 +128,7 @@ function ClientCard({
   const completion = getProfileCompletion(client);
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.97 }}
-      transition={{ duration: 0.24 }}
+    <div
       style={{
         background: C.surface,
         border: `1.5px solid ${hasProfile ? C.accentMid : C.border}`,
@@ -250,9 +253,8 @@ function ClientCard({
         )}
 
         {/* CTA */}
-        <motion.button
+        <button
           type="button"
-          whileTap={{ scale: 0.97 }}
           onClick={() => onEdit(client)}
           style={{
             width: '100%', marginTop: 14, height: 46,
@@ -266,44 +268,38 @@ function ClientCard({
         >
           <Edit3 size={15} strokeWidth={2.5} />
           {hasProfile ? 'Modifica scheda' : 'Crea scheda'}
-        </motion.button>
+        </button>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 const ClientProfilesPage: React.FC = () => {
-  const [clients,         setClients]         = useState<ClientWithProfile[]>([]);
-  const [filteredClients, setFilteredClients] = useState<ClientWithProfile[]>([]);
-  const [selectedClient,  setSelectedClient]  = useState<Client | null>(null);
+  const [clients,        setClients]        = useState<ClientWithProfile[]>([]);
+  const [selectedClient, setSelectedClient]  = useState<Client | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<ClientProfileData | null>(null);
-  const [isLoading,       setIsLoading]       = useState(true);
-  const [isSaving,        setIsSaving]        = useState(false);
-  const [searchTerm,      setSearchTerm]      = useState('');
-  const [view,            setView]            = useState<'list' | 'form'>('list');
+  const [isLoading,      setIsLoading]       = useState(true);
+  const [isSaving,       setIsSaving]        = useState(false);
+  const [searchTerm,     setSearchTerm]      = useState('');
+  const [view,           setView]            = useState<'list' | 'form'>('list');
 
   const { clientService, clientProfileService } = useSupabaseServices();
   const { showSuccess, showError } = useToast();
 
+  const filteredClients = useMemo(() => {
+    const q = searchTerm.toLowerCase().trim();
+    if (!q) return clients;
+    return clients.filter(c => {
+      const fullName = `${(c.nome ?? '')} ${(c.cognome ?? '')}`.toLowerCase();
+      const phone = (c.telefono || '').toLowerCase();
+      const email = (c.email || '').toLowerCase();
+      return fullName.includes(q) || phone.includes(q) || email.includes(q);
+    });
+  }, [clients, searchTerm]);
+
   // ── Load ───────────────────────────────────────────────────────────────────
   useEffect(() => { loadClients(); }, []);
-
-  useEffect(() => {
-    const q = searchTerm.toLowerCase();
-    setFilteredClients(
-      clients.filter(c => {
-        const fullName = `${c.nome} ${c.cognome}`.toLowerCase();
-        const phone = (c.telefono || '').toLowerCase();
-        const email = (c.email || '').toLowerCase();
-        return (
-          fullName.includes(q) ||
-          phone.includes(q) ||
-          email.includes(q)
-        );
-      })
-    );
-  }, [clients, searchTerm]);
 
   const loadClients = async () => {
     try {
@@ -449,20 +445,14 @@ const ClientProfilesPage: React.FC = () => {
         {isLoading ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {Array.from({ length: 5 }, (_, i) => (
-              <motion.div
-                key={`skeleton-${i}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0.4, 0.8, 0.4] }}
-                transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }}
-              >
+              <div key={`skeleton-${i}`}>
                 <SkeletonCard />
-              </motion.div>
+              </div>
             ))}
           </div>
         ) : filteredClients.length === 0 ? (
           /* Empty state */
-          <motion.div
-            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          <div
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               padding: '52px 24px',
@@ -485,7 +475,7 @@ const ClientProfilesPage: React.FC = () => {
                 ? `Nessun cliente corrisponde a "${searchTerm}"`
                 : 'Aggiungi clienti per iniziare a creare le schede personali'}
             </p>
-          </motion.div>
+          </div>
         ) : (
           /* Client list */
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

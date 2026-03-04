@@ -364,7 +364,7 @@ export default function TimerPage() {
               border: "none", color: "#fff", fontWeight: 700, fontSize: 16,
               cursor: "pointer", boxShadow: `0 6px 24px ${ACCENT}55`
             }}>
-              ▶ {remaining === 0 ? "Ricomincia" : "Avvia"}
+              {remaining === 0 ? "Ricomincia" : "Avvia"}
             </button>
           )}
 
@@ -391,7 +391,7 @@ export default function TimerPage() {
               opacity: mode === "countdown" && isRunning ? 0.4 : 1
             }}
           >
-            ↺ Reset
+            Reset
           </button>
         </div>
 
