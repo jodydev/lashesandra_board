@@ -330,7 +330,7 @@ function StepDateTime({ formData, setFormData }: { formData: any; setFormData: (
             value={formData.data.format('YYYY-MM-DD')}
             onChange={e => setFormData((p: any) => ({ ...p, data: dayjs(e.target.value) }))}
             style={{
-              width: '80%', boxSizing: 'border-box',
+              width: '85%', boxSizing: 'border-box',
               height: 52, padding: '0 16px',
               borderRadius: 14, border: '1.5px solid #EDE0D8',
               background: '#FAFAFA', fontSize: 16, color: '#2C2C2C',
@@ -361,7 +361,7 @@ function StepDateTime({ formData, setFormData }: { formData: any; setFormData: (
             value={formData.ora}
             onChange={e => setFormData((p: any) => ({ ...p, ora: e.target.value }))}
             style={{
-              width: '80%', boxSizing: 'border-box',
+              width: '85%', boxSizing: 'border-box',
               height: 52, padding: '0 16px',
               borderRadius: 14, border: '1.5px solid #EDE0D8',
               background: '#FAFAFA', fontSize: 20, fontWeight: 700, color: '#C07850',
@@ -934,13 +934,14 @@ export default function AppointmentForm({
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen" style={{ backgroundColor }}>
+    <div className="min-h-screen safe-area-header" style={{ backgroundColor }}>
 
       {/* ── Header ── */}
       <PageHeader
         title={stepTitles[activeStep]}
         showBack
         onBack={goBack}
+        skipSafeAreaTop
       />
 
       {/* ── Overlap warning ── */}

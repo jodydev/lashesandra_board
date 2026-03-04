@@ -1,32 +1,21 @@
 import { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronRight,
-  Activity,
-  Eye,
-  Palette,
-  Sparkles,
-  CircleDot,
-  ChevronLeft,
+  ChevronLeft, ChevronRight, TrendingUp, TrendingDown,
+  Activity, Eye, Palette, Sparkles, CircleDot,
+  Users, AlertTriangle, Target, BarChart2,
 } from 'lucide-react';
 import PageHeader from './PageHeader';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarController,
-  BarElement,
-  Tooltip,
-  ArcElement,
-  Legend,
-} from 'chart.js';
-import { Bar, Pie } from 'react-chartjs-2';
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
+  RadialBarChart, RadialBar, Legend,
+} from 'recharts';
 import dayjs from 'dayjs';
 import 'dayjs/locale/it';
 import type {
-  MonthlyStats,
-  RetentionStats,
-  NoShowCancellationStats,
-  TreatmentMarginStats,
+  MonthlyStats, RetentionStats,
+  NoShowCancellationStats, TreatmentMarginStats,
 } from '../types';
 import { useSupabaseServices } from '../lib/supabaseService';
 import { useAppColors } from '../hooks/useAppColors';
@@ -35,327 +24,577 @@ import { formatCurrency } from '../lib/utils';
 
 dayjs.locale('it');
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarController,
-  BarElement,
-  Tooltip,
-  ArcElement,
-  Legend,
-);
+// ─── Palette ──────────────────────────────────────────────────────────────────
+const C = {
+  bg:       '#FAF0E8',
+  surface:  '#FFFFFF',
+  accent:   '#C07850',
+  accentDk: '#A05830',
+  accentSft:'rgba(192,120,80,0.10)',
+  accentMid:'rgba(192,120,80,0.18)',
+  border:   '#EDE0D8',
+  text:     '#2C2C2C',
+  muted:    '#9A8880',
+  ok:       '#22C55E',
+  okSft:    'rgba(34,197,94,0.12)',
+  warn:     '#F59E0B',
+  warnSft:  'rgba(245,158,11,0.12)',
+  red:      '#EF4444',
+  redSft:   'rgba(239,68,68,0.10)',
+  blue:     '#6366F1',
+  blueSft:  'rgba(99,102,241,0.10)',
+} as const;
 
-const textPrimaryColor = '#2C2C2C';
-const textSecondaryColor = '#7A7A7A';
-const surfaceColor = '#FFFFFF';
-const greenPill = '#DCFCE7';
-const greenText = '#15803D';
-const grayBar = 'rgba(0,0,0,0.08)';
-
-type Period = 'day' | 'week' | 'month' | 'year';
+const GRAD = `linear-gradient(135deg, ${C.accent}, ${C.accentDk})`;
 
 const WEEKDAY_LABELS = ['LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM'];
+type Period = 'day' | 'week' | 'month' | 'year';
+const SERVICE_ICONS = [Eye, Palette, Sparkles, CircleDot, BarChart2];
 
-// Mini sparkline (SVG) per le card KPI — scala in base a min/max per rendere la linea dinamica
-function Sparkline({ data, color }: Readonly<{ data: number[]; color: string }>) {
-  if (!data.length) return null;
-  const w = 80;
-  const h = 24;
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1; // evita divisione per zero quando tutti i valori sono uguali
-  const points = data.map((v, i) => {
-    const x = (i / (data.length - 1 || 1)) * w;
-    const y = h - 4 - ((v - min) / range) * (h - 8); // riserva 4px sopra/sotto, scala su range reale
-    return `${x},${y}`;
-  });
-  const path = `M ${points.join(' L ')}`;
+// ─── Tooltip personalizzato Recharts ─────────────────────────────────────────
+function CustomTooltip({ active, payload, label, formatter }: any) {
+  if (!active || !payload?.length) return null;
   return (
-    <svg width={w} height={h} className="overflow-visible" aria-hidden>
-      <path
-        d={path}
-        fill="none"
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity={0.8}
-      />
-    </svg>
+    <div style={{
+      background: C.surface, border: `1.5px solid ${C.border}`,
+      borderRadius: 14, padding: '10px 14px',
+      boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+      fontSize: 13,
+    }}>
+      {label && <p style={{ fontWeight: 700, color: C.muted, marginBottom: 6, fontSize: 11 }}>{label}</p>}
+      {payload.map((p: any, i: number) => (
+        <p key={i} style={{ color: p.color || C.accent, fontWeight: 700 }}>
+          {formatter ? formatter(p.value, p.name) : `${p.name}: ${p.value}`}
+        </p>
+      ))}
+    </div>
   );
 }
 
-// Card KPI in stile screenshot: titolo, pill % change, valore, sparkline
+// ─── KPI Card ─────────────────────────────────────────────────────────────────
 function KpiCard({
-  title,
-  value,
-  percentChange,
-  sparklineData,
-  accentColor,
-}: Readonly<{
-  title: string;
-  value: string;
-  percentChange: number | null;
-  sparklineData: number[];
-  accentColor: string;
-}>) {
+  title, value, sub, change, icon: Icon, color = C.accent,
+}: {
+  title: string; value: string; sub?: string;
+  change?: number | null; icon: React.ElementType; color?: string;
+}) {
+  const up   = (change ?? 0) >= 0;
+  const hasChange = change !== null && change !== undefined;
+
   return (
-    <div
-      className="rounded-2xl border p-4 sm:p-5 flex flex-col gap-3 shadow-sm"
-      style={{ backgroundColor: surfaceColor, borderColor: `${accentColor}20` }}
+    <motion.div
+      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      style={{
+        background: C.surface,
+        border: `1.5px solid ${C.border}`,
+        borderRadius: 22, padding: '16px',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+        position: 'relative', overflow: 'hidden',
+      }}
     >
-      <div className="flex items-center justify-between gap-2">
-        <p
-          className="text-xs font-semibold uppercase tracking-wide"
-          style={{ color: textSecondaryColor }}
-        >
-          {title}
-        </p>
-        {percentChange !== null && (
-          <span
-            className="rounded-lg px-2 py-0.5 text-xs font-medium"
-            style={{
-              backgroundColor: greenPill,
-              color: greenText,
-            }}
-          >
-            {percentChange >= 0 ? '↑' : '↓'} {Math.abs(percentChange)}%
-          </span>
+      {/* Decorative circle */}
+      <div style={{
+        position: 'absolute', top: -18, right: -18,
+        width: 80, height: 80, borderRadius: '50%',
+        background: `#C0785018`,
+        pointerEvents: 'none',
+      }} />
+
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: 12,
+          background: `#C0785018`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Icon size={17} color="#C07850" strokeWidth={2} />
+        </div>
+        {hasChange && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 3,
+            padding: '3px 8px', borderRadius: 100,
+            background: up ? C.okSft : C.redSft,
+            fontSize: 11, fontWeight: 800,
+            color: up ? C.ok : C.red,
+          }}>
+            {up ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+            {Math.abs(change!)}%
+          </div>
         )}
       </div>
-      <p
-        className="text-xl sm:text-2xl font-bold truncate"
-        style={{ color: textPrimaryColor }}
-      >
+
+      <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: C.muted, marginBottom: 4 }}>
+        {title}
+      </p>
+      <p style={{ fontSize: 24, fontWeight: 900, color: C.text, lineHeight: 1.1 }}>
         {value}
       </p>
-      <div className="mt-auto pt-1">
-        <Sparkline data={sparklineData} color={accentColor} />
+      {sub && <p style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>{sub}</p>}
+    </motion.div>
+  );
+}
+
+// ─── Section card wrapper ─────────────────────────────────────────────────────
+function SectionCard({ title, subtitle, children, extra }: {
+  title: string; subtitle?: string;
+  children: React.ReactNode; extra?: React.ReactNode;
+}) {
+  return (
+    <div style={{
+      background: C.surface, border: `1.5px solid ${C.border}`,
+      borderRadius: 24, overflow: 'hidden',
+      boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+    }}>
+      <div style={{
+        padding: '16px 18px',
+        borderBottom: `1px solid ${C.border}`,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8,
+      }}>
+        <div>
+          <p style={{ fontWeight: 800, fontSize: 15, color: C.text }}>{title}</p>
+          {subtitle && <p style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{subtitle}</p>}
+        </div>
+        {extra}
+      </div>
+      <div style={{ padding: '16px 18px' }}>{children}</div>
+    </div>
+  );
+}
+
+// ─── Area chart: andamento ricavi mensile ─────────────────────────────────────
+function RevenueAreaChart({ data, color }: {
+  data: Array<{ day: number; revenue: number; appointments: number }>;
+  color: string;
+}) {
+  const [activeMetric, setActiveMetric] = useState<'revenue' | 'appointments'>('revenue');
+
+  const chartData = data.map(d => ({
+    label: `${d.day}`,
+    value: activeMetric === 'revenue' ? d.revenue : d.appointments,
+  }));
+
+  return (
+    <div>
+      {/* Toggle */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        {(['revenue', 'appointments'] as const).map(m => (
+          <button
+            key={m} type="button"
+            onClick={() => setActiveMetric(m)}
+            style={{
+              padding: '6px 14px', borderRadius: 100,
+              border: `1.5px solid ${activeMetric === m ? color : C.border}`,
+              background: activeMetric === m ? color : C.surface,
+              color: activeMetric === m ? '#FFF' : C.muted,
+              fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            {m === 'revenue' ? 'Entrate' : 'Appuntamenti'}
+          </button>
+        ))}
+      </div>
+
+      <ResponsiveContainer width="100%" height={200}>
+        <AreaChart data={chartData} margin={{ top: 8, right: 4, bottom: 0, left: -16 }}>
+          <defs>
+            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%"  stopColor={color} stopOpacity={0.25} />
+              <stop offset="95%" stopColor={color} stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
+          <XAxis
+            dataKey="label" tick={{ fontSize: 11, fill: C.muted }}
+            tickLine={false} axisLine={false}
+            interval={Math.floor(chartData.length / 6)}
+          />
+          <YAxis
+            tick={{ fontSize: 11, fill: C.muted }}
+            tickLine={false} axisLine={false}
+            tickFormatter={v => activeMetric === 'revenue' ? `€${v}` : `${v}`}
+          />
+          <Tooltip
+            content={({ active, payload, label }) => (
+              <CustomTooltip
+                active={active} payload={payload} label={`Giorno ${label}`}
+                formatter={(v: number) => activeMetric === 'revenue' ? formatCurrency(v) : `${v} appuntamenti`}
+              />
+            )}
+          />
+          <Area
+            type="monotone" dataKey="value"
+            stroke={color} strokeWidth={2.5}
+            fill="url(#areaGrad)"
+            dot={false} activeDot={{ r: 5, fill: color, strokeWidth: 2, stroke: '#FFF' }}
+            animationDuration={800}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ─── Bar chart settimanale ────────────────────────────────────────────────────
+function WeeklyBarChart({ data, highlight, color }: {
+  data: Array<{ label: string; value: number }>;
+  highlight: number; color: string;
+}) {
+  return (
+    <ResponsiveContainer width="100%" height={180}>
+      <BarChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: -16 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
+        <XAxis dataKey="label" tick={{ fontSize: 11, fill: C.muted }} tickLine={false} axisLine={false} />
+        <YAxis tick={{ fontSize: 11, fill: C.muted }} tickLine={false} axisLine={false} tickFormatter={v => `€${v}`} />
+        <Tooltip
+          content={({ active, payload, label }) => (
+            <CustomTooltip
+              active={active} payload={payload} label={label}
+              formatter={(v: number) => formatCurrency(v)}
+            />
+          )}
+        />
+        <Bar dataKey="value" radius={[8, 8, 4, 4]} animationDuration={800}>
+          {data.map((_, i) => (
+            <Cell key={i} fill={i === highlight ? color : C.accentSft} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+// ─── Pie chart trattamenti ────────────────────────────────────────────────────
+function TreatmentPieChart({ data, colors: pieColors }: {
+  data: Array<{ name: string; value: number; count: number }>;
+  colors: string[];
+}) {
+  const [active, setActive] = useState<number | null>(null);
+
+  if (!data.length) return null;
+
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <PieChart>
+        <Pie
+          data={data} cx="50%" cy="50%"
+          innerRadius={55} outerRadius={85}
+          paddingAngle={3} dataKey="value"
+          onMouseEnter={(_, i) => setActive(i)}
+          onMouseLeave={() => setActive(null)}
+          animationDuration={800}
+        >
+          {data.map((_, i) => (
+            <Cell
+              key={i}
+              fill={pieColors[i % pieColors.length]}
+              opacity={active === null || active === i ? 1 : 0.5}
+              stroke="none"
+            />
+          ))}
+        </Pie>
+        <Tooltip
+          content={({ active: a, payload }) => {
+            if (!a || !payload?.length) return null;
+            const d = payload[0];
+            return (
+              <CustomTooltip
+                active={a} payload={payload}
+                formatter={(v: number) => `${formatCurrency(v)} · ${data[d.payload?.index ?? 0]?.count ?? ''} appt.`}
+              />
+            );
+          }}
+        />
+        <Legend
+          iconType="circle" iconSize={8}
+          formatter={(v) => <span style={{ fontSize: 12, color: C.muted, fontWeight: 600 }}>{v}</span>}
+        />
+      </PieChart>
+    </ResponsiveContainer>
+  );
+}
+
+// ─── Retention radial chart ───────────────────────────────────────────────────
+function RetentionRadialChart({ buckets, color }: {
+  buckets: Array<{ weeks: number; percentage: number; retainedClients: number; totalClients: number }>;
+  color: string;
+}) {
+  const data = buckets.map((b, i) => ({
+    name: `${b.weeks} sett.`,
+    value: b.percentage,
+    fill: i === 0 ? color : i === 1 ? C.accentDk : C.warn,
+  }));
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+      {buckets.map((b, i) => {
+        const hue = i === 0 ? color : i === 1 ? C.accentDk : C.warn;
+        const pct = b.percentage;
+        const r = 28, circ = 2 * Math.PI * r;
+        const dash = (pct / 100) * circ;
+        return (
+          <motion.div
+            key={b.weeks}
+            initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: i * 0.1 }}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              padding: '14px 8px', borderRadius: 18,
+              background: `${hue}10`, border: `1.5px solid ${hue}28`,
+            }}
+          >
+            {/* SVG ring */}
+            <svg width={72} height={72} style={{ transform: 'rotate(-90deg)' }}>
+              <circle cx={36} cy={36} r={r} fill="none" stroke={C.border} strokeWidth={6} />
+              <motion.circle
+                cx={36} cy={36} r={r} fill="none"
+                stroke={hue} strokeWidth={6}
+                strokeLinecap="round"
+                initial={{ strokeDasharray: `0 ${circ}` }}
+                animate={{ strokeDasharray: `${dash} ${circ}` }}
+                transition={{ duration: 1, ease: 'easeOut', delay: i * 0.1 + 0.2 }}
+              />
+            </svg>
+            <p style={{ fontWeight: 900, fontSize: 18, color: hue, marginTop: -8 }}>{pct}%</p>
+            <p style={{ fontSize: 12, fontWeight: 700, color: C.text, marginTop: 2 }}>{b.weeks} settimane</p>
+            <p style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
+              {b.retainedClients}/{b.totalClients}
+            </p>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── No-show horizontal bar ───────────────────────────────────────────────────
+function NoShowBar({ label, pct, count, color }: {
+  label: string; pct: number; count: number; color: string;
+}) {
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{label}</span>
+        <span style={{ fontSize: 13, fontWeight: 800, color }}>{pct}% <span style={{ fontWeight: 500, color: C.muted }}>({count})</span></span>
+      </div>
+      <div style={{ height: 8, borderRadius: 100, background: C.border, overflow: 'hidden' }}>
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.min(100, pct)}%` }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+          style={{ height: '100%', borderRadius: 100, background: color }}
+        />
       </div>
     </div>
   );
 }
 
-// Grafico a barre settimanale LUN–DOM con giorno evidenziato in rosa
-function WeeklyRevenueChart({
-  data,
-  highlightIndex,
-  barColor,
-  textPrimaryColor,
-}: Readonly<{
-  data: Array<{ label: string; value: number }>;
-  highlightIndex: number;
-  barColor: string;
-  textPrimaryColor: string;
-}>) {
-  const chartData = useMemo(
-    () => ({
-      labels: data.map((d) => d.label),
-      datasets: [
-        {
-          data: data.map((d) => d.value),
-          backgroundColor: data.map((_, i) =>
-            i === highlightIndex ? barColor : grayBar
-          ),
-          borderRadius: 6,
-        },
-      ],
-    }),
-    [data, highlightIndex, barColor]
-  );
-
-  const options = useMemo(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { intersect: false, mode: 'index' as const },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: 'rgba(255,255,255,0.96)',
-          titleColor: textPrimaryColor,
-          bodyColor: textPrimaryColor,
-          borderColor: '#e5e7eb',
-          borderWidth: 1,
-          padding: 12,
-          cornerRadius: 12,
-          callbacks: {
-            label: (ctx: { raw: unknown }) =>
-              formatCurrency(Number(ctx.raw ?? 0)),
-          },
-        },
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: {
-            font: { size: 11 },
-            color: textPrimaryColor,
-          },
-        },
-        y: {
-          beginAtZero: true,
-          grid: { color: 'rgba(0,0,0,0.06)' },
-          ticks: {
-            font: { size: 11 },
-            color: textPrimaryColor,
-            callback: (value: number | string) =>
-              typeof value === 'number' ? formatCurrency(value) : value,
-          },
-        },
-      },
-    }),
-    [textPrimaryColor]
-  );
-
+// ─── Treatment margin horizontal bars ────────────────────────────────────────
+function MarginChart({ items, color }: {
+  items: Array<{ name: string; marginTotal: number; marginAverage: number; count: number }>;
+  color: string;
+}) {
+  const max = Math.max(...items.map(i => i.marginTotal), 1);
   return (
-    <div className="h-[200px] sm:h-[240px] w-full">
-      <Bar data={chartData} options={options} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {items.slice(0, 6).map((item, i) => {
+        const pct = (item.marginTotal / max) * 100;
+        return (
+          <div key={item.name}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: C.text, maxWidth: '55%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{item.name}</span>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <span style={{ fontSize: 12, color: C.muted }}>{formatCurrency(item.marginAverage)} media</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color }}>{formatCurrency(item.marginTotal)}</span>
+              </div>
+            </div>
+            <div style={{ height: 8, borderRadius: 100, background: C.border, overflow: 'hidden' }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${pct}%` }}
+                transition={{ duration: 0.7, ease: 'easeOut', delay: i * 0.06 }}
+                style={{ height: '100%', borderRadius: 100, background: `linear-gradient(90deg, ${color}, ${C.accentDk})` }}
+              />
+            </div>
+            <p style={{ fontSize: 11, color: C.muted, marginTop: 3 }}>{item.count} trattamenti</p>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-function TreatmentPieChart({
-  data,
-  segmentColors,
-}: Readonly<{
-  data: Array<{ name: string; value: number; count: number; color: string }>;
-  segmentColors: string[];
-}>) {
-  const chartData = useMemo(
-    () => ({
-      labels: data.map((d) => d.name),
-      datasets: [
-        {
-          data: data.map((d) => d.value),
-          backgroundColor: data.map(
-            (_d, index) => segmentColors[index % segmentColors.length] || '#c4c4c4',
-          ),
-          borderWidth: 1,
-          borderColor: '#ffffff',
-        },
-      ],
-    }),
-    [data, segmentColors]
-  );
-
-  const options = useMemo(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'bottom' as const,
-          labels: {
-            boxWidth: 10,
-            boxHeight: 10,
-            usePointStyle: true,
-            pointStyle: 'circle',
-            padding: 14,
-          },
-        },
-        tooltip: {
-          backgroundColor: 'rgba(255,255,255,0.96)',
-          titleColor: textPrimaryColor,
-          bodyColor: textPrimaryColor,
-          borderColor: '#e5e7eb',
-          borderWidth: 1,
-          padding: 12,
-          cornerRadius: 12,
-          callbacks: {
-            label: (ctx: { label: string; raw: unknown; dataIndex: number }) => {
-              const rawValue = Number(ctx.raw ?? 0);
-              const count = data[ctx.dataIndex]?.count ?? 0;
-              return `${ctx.label}: ${formatCurrency(rawValue)} · ${count} appuntamenti`;
-            },
-          },
-        },
-      },
-    }),
-    [data]
-  );
-
-  if (!data.length) return null;
+// ─── Mini heatmap ricavi giornalieri ──────────────────────────────────────────
+function DayHeatmap({ data, color, daysInMonth }: {
+  data: Array<{ day: number; revenue: number; appointments: number }>;
+  color: string; daysInMonth: number;
+}) {
+  const map = new Map(data.map(d => [d.day, d]));
+  const max = Math.max(...data.map(d => d.revenue), 1);
+  const [hovered, setHovered] = useState<number | null>(null);
 
   return (
-    <div className="h-52 sm:h-60">
-      <Pie data={chartData} options={options} />
+    <div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
+        {Array.from({ length: daysInMonth }, (_, i) => {
+          const day = i + 1;
+          const d = map.get(day);
+          const intensity = d ? d.revenue / max : 0;
+          const isHov = hovered === day;
+          return (
+            <div
+              key={day}
+              onMouseEnter={() => setHovered(day)}
+              onMouseLeave={() => setHovered(null)}
+              style={{
+                width: 28, height: 28, borderRadius: 8,
+                background: d && d.revenue > 0
+                  ? `rgba(192,120,80,${0.12 + intensity * 0.78})`
+                  : C.border,
+                border: isHov ? `1.5px solid ${color}` : '1.5px solid transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', position: 'relative',
+                transition: 'all 0.12s ease',
+                transform: isHov ? 'scale(1.15)' : 'scale(1)',
+              }}
+            >
+              <span style={{ fontSize: 9, fontWeight: 700, color: intensity > 0.5 ? '#FFF' : C.muted }}>
+                {day}
+              </span>
+
+              {/* Tooltip */}
+              {isHov && d && (
+                <div style={{
+                  position: 'absolute', bottom: '110%', left: '50%', transform: 'translateX(-50%)',
+                  zIndex: 10, minWidth: 110,
+                  background: C.text, borderRadius: 10,
+                  padding: '7px 10px', pointerEvents: 'none',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
+                }}>
+                  <p style={{ fontSize: 11, fontWeight: 800, color: '#FFF' }}>Giorno {day}</p>
+                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>
+                    {formatCurrency(d.revenue)}
+                  </p>
+                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>
+                    {d.appointments} appuntamenti
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+        <span style={{ fontSize: 10, color: C.muted }}>Basso</span>
+        {[0.12, 0.3, 0.5, 0.7, 0.9].map(o => (
+          <div key={o} style={{ width: 14, height: 14, borderRadius: 4, background: `rgba(192,120,80,${o})` }} />
+        ))}
+        <span style={{ fontSize: 10, color: C.muted }}>Alto</span>
+      </div>
     </div>
   );
 }
 
-// Icone per tipo servizio (fallback generico)
-const SERVICE_ICONS = [Eye, Palette, Sparkles, CircleDot];
+// ─── Risky client card ────────────────────────────────────────────────────────
+function RiskyClientRow({ entry }: { entry: any }) {
+  const total = entry.noShowCount + entry.cancellationCount;
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 12,
+      padding: '10px 12px', borderRadius: 14,
+      background: C.warnSft, border: `1.5px solid rgba(245,158,11,0.2)`,
+    }}>
+      <div style={{
+        width: 38, height: 38, borderRadius: 12, flexShrink: 0,
+        background: 'rgba(245,158,11,0.2)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontWeight: 800, fontSize: 15, color: C.warn,
+      }}>
+        {entry.client.nome.charAt(0)}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontWeight: 700, fontSize: 14, color: C.text }}>
+          {entry.client.nome} {entry.client.cognome}
+        </p>
+        <p style={{ fontSize: 12, color: C.muted, marginTop: 1 }}>
+          {entry.noShowCount} no-show · {entry.cancellationCount} cancellazioni
+        </p>
+      </div>
+      <div style={{
+        padding: '3px 10px', borderRadius: 100,
+        background: 'rgba(245,158,11,0.25)',
+        fontSize: 11, fontWeight: 800, color: '#78350F',
+        whiteSpace: 'nowrap' as const,
+      }}>
+        {total} eventi
+      </div>
+    </div>
+  );
+}
 
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+function StatSkeleton() {
+  return (
+    <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ height: 44, borderRadius: 100, background: C.border }} className="animate-pulse" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12 }}>
+        {[0, 1].map(i => (
+          <div key={i} style={{ height: 120, borderRadius: 22, background: C.border }} className="animate-pulse" />
+        ))}
+      </div>
+      {[0, 1, 2].map(i => (
+        <div key={i} style={{ height: 220, borderRadius: 24, background: C.border }} className="animate-pulse" />
+      ))}
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function MonthlyOverview() {
   const { statsService } = useSupabaseServices();
   const colors = useAppColors();
   const { appType } = useApp();
-  const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
-  const accentColor = colors.primary;
-  const accentDarkColor = colors.primaryDark;
 
-  const [period, setPeriod] = useState<Period>('month');
+  const [period,      setPeriod]      = useState<Period>('month');
   const [currentDate, setCurrentDate] = useState(dayjs());
-  const [stats, setStats] = useState<MonthlyStats | null>(null);
-  const [prevStats, setPrevStats] = useState<MonthlyStats | null>(null);
-  const [dailyStats, setDailyStats] = useState<
-    Array<{ day: number; revenue: number; clients: number; appointments: number }>
-  >([]);
-  const [treatmentDistribution, setTreatmentDistribution] = useState<
-    Array<{ name: string; value: number; count: number; color: string }>
-  >([]);
+  const [stats,       setStats]       = useState<MonthlyStats | null>(null);
+  const [prevStats,   setPrevStats]   = useState<MonthlyStats | null>(null);
+  const [dailyStats,  setDailyStats]  = useState<Array<{ day: number; revenue: number; clients: number; appointments: number }>>([]);
+  const [treatmentDist,  setTreatmentDist]  = useState<Array<{ name: string; value: number; count: number; color: string }>>([]);
   const [retentionStats, setRetentionStats] = useState<RetentionStats | null>(null);
-  const [noShowStats, setNoShowStats] = useState<NoShowCancellationStats | null>(null);
-  const [treatmentMarginStats, setTreatmentMarginStats] = useState<TreatmentMarginStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [noShowStats,    setNoShowStats]    = useState<NoShowCancellationStats | null>(null);
+  const [marginStats,    setMarginStats]    = useState<TreatmentMarginStats | null>(null);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState<string | null>(null);
 
-  const treatmentPieColors = useMemo(
-    () => [colors.primary, colors.primaryLight, colors.primaryDark],
-    [colors.primary, colors.primaryLight, colors.primaryDark],
-  );
+  const accentColor = colors.primary;
+  const pieColors   = useMemo(() => [accentColor, colors.primaryDark, colors.primaryLight, C.warn, C.blue], [colors]);
 
-  useEffect(() => {
-    loadStats();
-  }, [currentDate, appType]);
+  useEffect(() => { loadStats(); }, [currentDate, appType]);
 
   const loadStats = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      const y = currentDate.year();
-      const m = currentDate.month() + 1;
+      setLoading(true); setError(null);
+      const y = currentDate.year(), m = currentDate.month() + 1;
       const prev = currentDate.subtract(1, 'month');
+      const pStart = currentDate.startOf('month').format('YYYY-MM-DD');
+      const pEnd   = currentDate.endOf('month').format('YYYY-MM-DD');
 
-      const periodStart = currentDate.startOf('month').format('YYYY-MM-DD');
-      const periodEnd = currentDate.endOf('month').format('YYYY-MM-DD');
-
-      const [
-        monthlyData,
-        dailyData,
-        treatmentData,
-        prevMonthlyData,
-        retentionData,
-        noShowData,
-        treatmentMarginData,
-      ] = await Promise.all([
+      const [monthly, daily, treatment, prevMonthly, retention, noShow, margin] = await Promise.all([
         statsService.getMonthlyStats(y, m),
         statsService.getDailyStats(y, m),
         statsService.getTreatmentDistribution(y, m),
         statsService.getMonthlyStats(prev.year(), prev.month() + 1),
-        statsService.getRetentionStats(periodStart, periodEnd),
-        statsService.getNoShowCancellationStats(periodStart, periodEnd),
-        statsService.getTreatmentMarginStats(periodStart, periodEnd, appType),
+        statsService.getRetentionStats(pStart, pEnd),
+        statsService.getNoShowCancellationStats(pStart, pEnd),
+        statsService.getTreatmentMarginStats(pStart, pEnd, appType),
       ]);
 
-      setStats(monthlyData);
-      setPrevStats(prevMonthlyData);
-      setDailyStats(dailyData);
-      setTreatmentDistribution(treatmentData);
-      setRetentionStats(retentionData);
-      setNoShowStats(noShowData);
-      setTreatmentMarginStats(treatmentMarginData);
+      setStats(monthly); setPrevStats(prevMonthly);
+      setDailyStats(daily); setTreatmentDist(treatment);
+      setRetentionStats(retention); setNoShowStats(noShow); setMarginStats(margin);
     } catch {
       setError('Errore nel caricamento delle statistiche');
     } finally {
@@ -363,598 +602,307 @@ export default function MonthlyOverview() {
     }
   };
 
-  // Percentuale variazione vs mese precedente
-  const percentChangeRevenue =
-    stats && prevStats && prevStats.totalRevenue > 0
-      ? Math.round(
-          ((stats.totalRevenue - prevStats.totalRevenue) /
-            prevStats.totalRevenue) *
-            100,
-        )
-      : null;
-  const percentChangeAppointments =
-    stats && prevStats && prevStats.totalAppointments > 0
-      ? Math.round(
-          ((stats.totalAppointments - prevStats.totalAppointments) /
-            prevStats.totalAppointments) *
-            100,
-        )
-      : null;
+  // ── Derived KPI values ─────────────────────────────────────────────────────
+  const pctRevenue = stats && prevStats && prevStats.totalRevenue > 0
+    ? Math.round(((stats.totalRevenue - prevStats.totalRevenue) / prevStats.totalRevenue) * 100)
+    : null;
 
-  const displayTotals = useMemo(
-    () => {
-      if (!stats) {
-        return { revenue: 0, appointments: 0 };
+  const pctAppts = stats && prevStats && prevStats.totalAppointments > 0
+    ? Math.round(((stats.totalAppointments - prevStats.totalAppointments) / prevStats.totalAppointments) * 100)
+    : null;
+
+  const displayTotals = useMemo(() => {
+    if (!stats) return { revenue: 0, appointments: 0, clients: 0 };
+    if (!dailyStats.length || period === 'month' || period === 'year')
+      return { revenue: stats.totalRevenue, appointments: stats.totalAppointments, clients: stats.totalClients ?? 0 };
+
+    if (period === 'day') {
+      const d = dailyStats.find(x => x.day === currentDate.date());
+      return { revenue: d?.revenue ?? 0, appointments: d?.appointments ?? 0, clients: d?.clients ?? 0 };
+    }
+
+    if (period === 'week') {
+      const ws = currentDate.startOf('isoWeek'), we = currentDate.endOf('isoWeek');
+      const ms = currentDate.startOf('month'), me = currentDate.endOf('month');
+      const s = ws.isBefore(ms) ? ms : ws, e = we.isAfter(me) ? me : we;
+      let rev = 0, apts = 0, cls = 0;
+      for (let d = s.date(); d <= e.date(); d++) {
+        const x = dailyStats[d - 1];
+        if (!x) continue;
+        rev += x.revenue; apts += x.appointments; cls += x.clients;
       }
+      return { revenue: rev, appointments: apts, clients: cls };
+    }
 
-      if (!dailyStats.length || period === 'month') {
-        return {
-          revenue: stats.totalRevenue,
-          appointments: stats.totalAppointments,
-        };
-      }
+    return { revenue: stats.totalRevenue, appointments: stats.totalAppointments, clients: stats.totalClients ?? 0 };
+  }, [stats, dailyStats, period, currentDate]);
 
-      if (period === 'day') {
-        const targetDay = currentDate.date();
-        const dayStats = dailyStats.find((d) => d.day === targetDay);
-        return {
-          revenue: dayStats?.revenue ?? 0,
-          appointments: dayStats?.appointments ?? 0,
-        };
-      }
-
-      if (period === 'week') {
-        const weekStart = currentDate.startOf('isoWeek');
-        const weekEnd = currentDate.endOf('isoWeek');
-        const monthStart = currentDate.startOf('month');
-        const monthEnd = currentDate.endOf('month');
-
-        const start = weekStart.isBefore(monthStart) ? monthStart : weekStart;
-        const end = weekEnd.isAfter(monthEnd) ? monthEnd : weekEnd;
-
-        let revenue = 0;
-        let appointments = 0;
-        for (
-          let d = start.date();
-          d <= end.date();
-          d += 1
-        ) {
-          const statsForDay = dailyStats[d - 1];
-          if (!statsForDay) continue;
-          revenue += statsForDay.revenue;
-          appointments += statsForDay.appointments;
-        }
-
-        return { revenue, appointments };
-      }
-
-      // Per "anno" usiamo per ora gli stessi totali mensili
-      return {
-        revenue: stats.totalRevenue,
-        appointments: stats.totalAppointments,
-      };
-    },
-    [stats, dailyStats, period, currentDate],
-  );
-
-  const displayPercentChangeRevenue =
-    period === 'month' ? percentChangeRevenue : null;
-  const displayPercentChangeAppointments =
-    period === 'month' ? percentChangeAppointments : null;
-
-  // Ultimi 7 giorni fino a oggi (o fine mese se mese passato) per sparkline dinamica
-  const last7Revenue = useMemo(() => {
-    const isCurrentMonth = currentDate.isSame(dayjs(), 'month');
-    const endDay = isCurrentMonth
-      ? Math.min(dayjs().date(), currentDate.endOf('month').date())
-      : currentDate.endOf('month').date();
-    const startDay = Math.max(1, endDay - 6);
-    const daysInMonth = currentDate.endOf('month').date();
-    const dayToRevenue = new Map(dailyStats.map((d) => [d.day, d.revenue]));
-    return Array.from({ length: 7 }, (_, i) => {
-      const day = startDay + i;
-      return day <= daysInMonth ? dayToRevenue.get(day) ?? 0 : 0;
-    });
-  }, [dailyStats, currentDate]);
-
-  const last7Appointments = useMemo(() => {
-    const isCurrentMonth = currentDate.isSame(dayjs(), 'month');
-    const endDay = isCurrentMonth
-      ? Math.min(dayjs().date(), currentDate.endOf('month').date())
-      : currentDate.endOf('month').date();
-    const startDay = Math.max(1, endDay - 6);
-    const daysInMonth = currentDate.endOf('month').date();
-    const dayToAppointments = new Map(dailyStats.map((d) => [d.day, d.appointments]));
-    return Array.from({ length: 7 }, (_, i) => {
-      const day = startDay + i;
-      return day <= daysInMonth ? dayToAppointments.get(day) ?? 0 : 0;
-    });
-  }, [dailyStats, currentDate]);
-
-  // Dati grafico settimanale: settimana corrente (LUN–DOM) con ricavi per ogni giorno
+  // Weekly chart data
   const weeklyChartData = useMemo(() => {
-    const year = currentDate.year();
-    const month = currentDate.month();
-    const dayToRevenue = new Map(
-      dailyStats.map((d) => [d.day, d.revenue])
-    );
-    // Settimana che contiene il giorno corrente (o ultimo giorno del mese se futuro)
-    const refDate =
-      currentDate.isAfter(dayjs()) ? currentDate.endOf('month') : dayjs();
-    const weekStart = refDate.startOf('isoWeek');
-    return WEEKDAY_LABELS.map((_, i) => {
-      const d = weekStart.add(i, 'day');
-      const inMonth =
-        d.month() === month && d.year() === year;
-      const value = inMonth ? dayToRevenue.get(d.date()) ?? 0 : 0;
-      return { label: WEEKDAY_LABELS[i], value };
+    const mo = currentDate.month(), yr = currentDate.year();
+    const dayToRev = new Map(dailyStats.map(d => [d.day, d.revenue]));
+    const ref = currentDate.isAfter(dayjs()) ? currentDate.endOf('month') : dayjs();
+    const ws  = ref.startOf('isoWeek');
+    return WEEKDAY_LABELS.map((lbl, i) => {
+      const d = ws.add(i, 'day');
+      const inMonth = d.month() === mo && d.year() === yr;
+      return { label: lbl, value: inMonth ? dayToRev.get(d.date()) ?? 0 : 0 };
     });
   }, [dailyStats, currentDate]);
 
-  const weeklyHighlightIndex = useMemo(() => {
-    const today = dayjs();
-    const dayOfWeek = today.day();
-    return dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const weekHighlight = useMemo(() => {
+    const d = dayjs().day();
+    return d === 0 ? 6 : d - 1;
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen" style={{ backgroundColor }}>
-        <PageHeader
-          title="Statistiche"
-          backLabel="Indietro" 
-          showBack
-        />
-        <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-          <div className="h-10 bg-white rounded-full border animate-pulse" style={{ borderColor: `${accentColor}20` }} />
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border p-5 bg-white h-32 animate-pulse" style={{ borderColor: `${accentColor}20` }} />
-            <div className="rounded-2xl border p-5 bg-white h-32 animate-pulse" style={{ borderColor: `${accentColor}20` }} />
-          </div>
-          <div className="rounded-2xl border bg-white p-5 h-64 animate-pulse" style={{ borderColor: `${accentColor}20` }} />
-          <div className="rounded-2xl border bg-white p-5 h-48 animate-pulse" style={{ borderColor: `${accentColor}20` }} />
-        </div>
-      </div>
-    );
-  }
+  const daysInMonth = currentDate.daysInMonth();
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen pb-8" style={{ backgroundColor }}>
-      {/* Header: freccia, titolo Statistiche, icona calendario */}
-      <PageHeader
-        title="Statistiche"
-        showBack
-        backLabel="Indietro"
-      />
+    <div style={{ minHeight: '100vh', background: C.bg }}>
+      <PageHeader title="Statistiche" showBack backLabel="Indietro" />
 
-      <div className="max-w-2xl mx-auto px-4 py-5 sm:py-6 space-y-5 sm:space-y-6">
-        {/* Segmented control: Giorno, Settimana, Mese, Anno */}
-        <div
-          className="flex rounded-full border p-1 shadow-sm"
-          style={{ backgroundColor: surfaceColor, borderColor: `${accentColor}20` }}
-        >
-          {(
-            [
-              ['day', 'Giorno'],
-              ['week', 'Settimana'],
-              ['month', 'Mese'],
-              ['year', 'Anno'],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setPeriod(key)}
-              className="flex-1 py-2.5 rounded-full text-sm font-medium transition-colors"
-              style={
-                period === key
-                  ? {
-                      backgroundColor: accentDarkColor,
-                      color: '#FFFFFF',
-                    }
-                  : { color: textSecondaryColor }
-              }
-            >
-              {label}
-            </button>
-          ))}
+      {loading ? (
+        <div style={{ maxWidth: 540, margin: '0 auto' }}>
+          <StatSkeleton />
         </div>
+      ) : (
+        <main style={{ maxWidth: 540, margin: '0 auto', padding: '16px 16px 80px' }}
+          className="safe-area-content-below-header">
 
-        {error && (
-          <div
-            className="p-4 rounded-xl border border-red-200 bg-red-50 text-red-800 text-sm font-medium"
-          >
-            {error}
-          </div>
-        )}
-
-        {/* Due card KPI: Entrate e Appuntamenti */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <KpiCard
-            title="Entrate"
-            value={formatCurrency(displayTotals.revenue)}
-            percentChange={displayPercentChangeRevenue}
-            sparklineData={last7Revenue.length ? last7Revenue : [0]}
-            accentColor={accentColor}
-          />
-          <KpiCard
-            title="Appuntamenti"
-            value={String(displayTotals.appointments)}
-            percentChange={displayPercentChangeAppointments}
-            sparklineData={last7Appointments.length ? last7Appointments : [0]}
-            accentColor={accentColor}
-          />
-        </div>
-
-        {/* Andamento Ricavi: titolo + mese in rosa, grafico LUN–DOM */}
-        <div
-          className="rounded-2xl border overflow-hidden shadow-sm"
-          style={{ backgroundColor: surfaceColor, borderColor: `${accentColor}20` }}
-        >
-          <div className="p-4 sm:p-5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" style={{ borderColor: `${accentColor}14` }}>
-            <h2
-              className="text-base sm:text-lg font-semibold"
-              style={{ color: textPrimaryColor }}
-            >
-              Andamento Ricavi
-            </h2>
-            <div className="flex items-center gap-1 justify-center">
-              <button
-                type="button"
-                onClick={() => setCurrentDate((d) => d.subtract(1, 'month'))}
-                className="p-1.5 rounded-lg hover:bg-black/5 transition-colors"
-                style={{ color: textSecondaryColor }}
-                aria-label="Mese precedente"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <span
-                className="min-w-[140px] text-center text-sm font-medium capitalize"
-              >
-                {currentDate.format('MMMM YYYY')}
-              </span>
-              <button
-                type="button"
-                onClick={() => setCurrentDate((d) => d.add(1, 'month'))}
-                className="p-1.5 rounded-lg hover:bg-black/5 transition-colors"
-                style={{ color: textSecondaryColor }}
-                aria-label="Mese successivo"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
+          {/* Error */}
+          {error && (
+            <div style={{
+              marginBottom: 16, padding: '12px 16px', borderRadius: 14,
+              background: '#FEF2F2', border: '1.5px solid rgba(239,68,68,0.3)',
+              fontSize: 13, color: C.red, fontWeight: 600,
+            }}>
+              {error}
             </div>
-          </div>
-          <div className="p-4 sm:p-5">
-            {weeklyChartData.some((d) => d.value > 0) ? (
-              <WeeklyRevenueChart
-                data={weeklyChartData}
-                highlightIndex={weeklyHighlightIndex}
-                barColor={accentColor}
-                textPrimaryColor={textPrimaryColor}
-              />
-            ) : (
-              <div
-                className="flex flex-col items-center justify-center h-[200px] text-center"
-                style={{ color: textSecondaryColor }}
-              >
-                <Activity size={40} className="opacity-50 mb-3" />
-                <p className="text-sm">Nessun dato per questo periodo</p>
-              </div>
-            )}
-          </div>
-        </div>
+          )}
 
-        {/* Servizi Più Richiesti */}
-        <div
-          className="rounded-2xl border overflow-hidden shadow-sm"
-          style={{ backgroundColor: surfaceColor, borderColor: `${accentColor}20` }}
-        >
-          <div className="p-4 sm:p-5 border-b" style={{ borderColor: `${accentColor}14` }}>
-            <h2
-              className="text-base sm:text-lg font-semibold"
-              style={{ color: textPrimaryColor }}
-            >
-              Servizi Più Richiesti
-            </h2>
-          </div>
-          <div className="p-4 sm:p-5 space-y-3">
-            {treatmentDistribution.length > 0 && (
-              <div className="mb-3">
-                <TreatmentPieChart
-                  data={treatmentDistribution}
-                  segmentColors={treatmentPieColors}
-                />
-              </div>
-            )}
-            {treatmentDistribution.length > 0 ? (
-              treatmentDistribution.slice(0, 5).map((item, index) => {
-                const Icon = SERVICE_ICONS[index % SERVICE_ICONS.length];
-                return (
-                  <div
-                    key={item.name}
-                    className="flex items-center gap-3 p-3 sm:p-4 rounded-xl border transition-colors"
-                    style={{
-                      backgroundColor: `${accentColor}08`,
-                      borderColor: `${accentColor}18`,
-                    }}
-                  >
-                    <div
-                      className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
-                      style={{ backgroundColor: `${accentColor}20`, color: accentColor }}
-                    >
-                      <Icon className="w-5 h-5" strokeWidth={2} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className="font-semibold text-sm sm:text-base truncate"
-                        style={{ color: textPrimaryColor }}
-                      >
-                        {item.name}
-                      </p>
-                      <p
-                        className="text-xs sm:text-sm"
-                        style={{ color: textSecondaryColor }}
-                      >
-                        {item.count} Appuntamenti
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0 text-right">
-                      <p
-                        className="font-semibold text-sm sm:text-base"
-                        style={{ color: accentColor }}
-                      >
-                        {formatCurrency(item.value)}
-                      </p>
-                      <p
-                        className="text-xs"
-                        style={{ color: textSecondaryColor }}
-                      >
-                        0%
-                      </p>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div
-                className="flex flex-col items-center justify-center py-10 text-center"
-                style={{ color: textSecondaryColor }}
-              >
-                <Activity size={32} className="opacity-50 mb-2" />
-                <p className="text-sm">Nessun servizio nel periodo selezionato</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Retention clienti 3/4/5 settimane */}
-        {retentionStats && (
-          <div
-            className="rounded-2xl border overflow-hidden shadow-sm"
-            style={{ backgroundColor: surfaceColor, borderColor: `${accentColor}20` }}
-          >
-            <div
-              className="p-4 sm:p-5 border-b"
-              style={{ borderColor: `${accentColor}14` }}
-            >
-              <h2
-                className="text-base sm:text-lg font-semibold"
-                style={{ color: textPrimaryColor }}
-              >
-                Retention clienti
-              </h2>
-              <p
-                className="mt-1 text-xs sm:text-sm"
-                style={{ color: textSecondaryColor }}
-              >
-                Percentuale di clienti che tornano entro 3, 4 o 5 settimane
-              </p>
-            </div>
-            <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {retentionStats.buckets.map((bucket) => (
-                <div
-                  key={bucket.weeks}
-                  className="rounded-xl border px-4 py-3 flex flex-col gap-1"
+          {/* Period tabs */}
+          <div style={{
+            display: 'flex', background: C.surface,
+            border: `1.5px solid ${C.border}`, borderRadius: 100,
+            padding: 4, marginBottom: 20,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          }}>
+            {(['day', 'week', 'month', 'year'] as Period[]).map((p, i) => {
+              const labels = ['Giorno', 'Settimana', 'Mese', 'Anno'];
+              const active = period === p;
+              return (
+                <button
+                  key={p} type="button"
+                  onClick={() => setPeriod(p)}
                   style={{
-                    backgroundColor: `${accentColor}08`,
-                    borderColor: `${accentColor}18`,
+                    flex: 1, padding: '9px 4px', borderRadius: 100,
+                    border: 'none',
+                    background: active ? accentColor : 'transparent',
+                    color: active ? '#FFF' : C.muted,
+                    fontSize: 13, fontWeight: 700,
+                    cursor: 'pointer', transition: 'all 0.15s ease',
                   }}
                 >
-                  <p
-                    className="text-xs font-semibold uppercase tracking-wide"
-                    style={{ color: textSecondaryColor }}
-                  >
-                    {bucket.weeks} settimane
-                  </p>
-                  <p
-                    className="text-xl font-bold"
-                    style={{ color: textPrimaryColor }}
-                  >
-                    {bucket.percentage}%
-                  </p>
-                  <p
-                    className="text-xs"
-                    style={{ color: textSecondaryColor }}
-                  >
-                    {bucket.retainedClients} su {bucket.totalClients} clienti
-                  </p>
-                </div>
-              ))}
-            </div>
+                  {labels[i]}
+                </button>
+              );
+            })}
           </div>
-        )}
 
-        {/* No-show, cancellazioni e clienti a rischio */}
-        {noShowStats && (
-          <div
-            className="rounded-2xl border overflow-hidden shadow-sm"
-            style={{ backgroundColor: surfaceColor, borderColor: `${accentColor}20` }}
-          >
-            <div
-              className="p-4 sm:p-5 border-b"
-              style={{ borderColor: `${accentColor}14` }}
+          {/* Month navigator */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginBottom: 20, padding: '8px 4px',
+          }}>
+            <button
+              type="button"
+              onClick={() => setCurrentDate(d => d.subtract(1, 'month'))}
+              style={{
+                width: 36, height: 36, borderRadius: 12,
+                background: C.surface, border: `1.5px solid ${C.border}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+              }}
             >
-              <h2
-                className="text-base sm:text-lg font-semibold"
-                style={{ color: textPrimaryColor }}
-              >
-                No-show e cancellazioni
-              </h2>
-              <p
-                className="mt-1 text-xs sm:text-sm"
-                style={{ color: textSecondaryColor }}
-              >
-                Ultimo mese selezionato
-              </p>
-            </div>
-            <div className="p-4 sm:p-5 space-y-4">
-              <div className="flex flex-col gap-1 text-sm">
-                <p style={{ color: textPrimaryColor }}>
-                  <span className="font-semibold">Totale appuntamenti:</span>{' '}
-                  {noShowStats.totalAppointments}
-                </p>
-                <p style={{ color: textPrimaryColor }}>
-                  <span className="font-semibold">No-show:</span>{' '}
-                  {noShowStats.noShowCount} (
-                  {noShowStats.noShowPercentage}%)
-                </p>
-                <p style={{ color: textPrimaryColor }}>
-                  <span className="font-semibold">Cancellazioni:</span>{' '}
-                  {noShowStats.cancellationCount} (
-                  {noShowStats.cancellationPercentage}%)
-                </p>
-              </div>
+              <ChevronLeft size={18} color={C.muted} />
+            </button>
+            <p style={{ fontWeight: 800, fontSize: 16, color: C.text, textTransform: 'capitalize' }}>
+              {currentDate.format('MMMM YYYY')}
+            </p>
+            <button
+              type="button"
+              onClick={() => setCurrentDate(d => d.add(1, 'month'))}
+              style={{
+                width: 36, height: 36, borderRadius: 12,
+                background: C.surface, border: `1.5px solid ${C.border}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <ChevronRight size={18} color={C.muted} />
+            </button>
+          </div>
 
-              <div className="space-y-2">
-                <p
-                  className="text-xs font-semibold uppercase tracking-wide"
-                  style={{ color: textSecondaryColor }}
-                >
-                  Clienti a rischio
-                </p>
-                {noShowStats.riskyClients.length === 0 ? (
-                  <p
-                    className="text-xs"
-                    style={{ color: textSecondaryColor }}
-                  >
-                    Nessun cliente a rischio nel periodo analizzato.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {noShowStats.riskyClients.slice(0, 5).map((entry) => (
-                      <div
-                        key={entry.client.id}
-                        className="flex items-center justify-between gap-3 rounded-xl border px-3 py-2"
-                        style={{
-                          backgroundColor: `${accentColor}08`,
-                          borderColor: `${accentColor}18`,
-                        }}
-                      >
-                        <div className="min-w-0">
-                          <p
-                            className="text-sm font-semibold truncate"
-                            style={{ color: textPrimaryColor }}
-                          >
-                            {entry.client.nome} {entry.client.cognome}
-                          </p>
-                          <p
-                            className="text-xs"
-                            style={{ color: textSecondaryColor }}
-                          >
-                            {entry.noShowCount} no-show ·{' '}
-                            {entry.cancellationCount} cancellazioni
-                          </p>
+          {/* KPI cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12, marginBottom: 20 }}>
+            <KpiCard
+              title="Entrate"
+              value={formatCurrency(displayTotals.revenue)}
+              sub={period === 'month' && prevStats ? `vs ${formatCurrency(prevStats.totalRevenue)} mese prec.` : undefined}
+              change={period === 'month' ? pctRevenue : null}
+              icon={TrendingUp} color={accentColor}
+            />
+            <KpiCard
+              title="Appuntamenti"
+              value={String(displayTotals.appointments)}
+              sub={period === 'month' && prevStats ? `vs ${prevStats.totalAppointments} mese prec.` : undefined}
+              change={period === 'month' ? pctAppts : null}
+              icon={Activity} color={C.blue}
+            />
+          </div>
+
+          {/* Andamento ricavi (area + toggle) */}
+          {dailyStats.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <SectionCard
+                title="Andamento mensile"
+                subtitle={currentDate.format('MMMM YYYY')}
+              >
+                <RevenueAreaChart data={dailyStats} color={accentColor} />
+              </SectionCard>
+            </div>
+          )}
+
+          {/* Heatmap giornaliero */}
+          {dailyStats.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <SectionCard
+                title="Mappa ricavi"
+                subtitle="Intensità entrate per giorno"
+              >
+                <DayHeatmap data={dailyStats} color={accentColor} daysInMonth={daysInMonth} />
+              </SectionCard>
+            </div>
+          )}
+
+          {/* Grafico settimanale */}
+          <div style={{ marginBottom: 16 }}>
+            <SectionCard title="Settimana corrente" subtitle="Entrate da lunedì a domenica">
+              {weeklyChartData.some(d => d.value > 0)
+                ? <WeeklyBarChart data={weeklyChartData} highlight={weekHighlight} color={accentColor} />
+                : (
+                  <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8 }}>
+                    <Activity size={28} color={C.border} />
+                    <p style={{ fontSize: 13, color: C.muted }}>Nessun dato per questa settimana</p>
+                  </div>
+                )
+              }
+            </SectionCard>
+          </div>
+
+          {/* Servizi più richiesti */}
+          {treatmentDist.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <SectionCard title="Servizi più richiesti" subtitle="Distribuzione entrate per tipo">
+                <TreatmentPieChart data={treatmentDist} colors={pieColors} />
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
+                  {treatmentDist.slice(0, 5).map((item, i) => {
+                    const Icon = SERVICE_ICONS[i % SERVICE_ICONS.length];
+                    const cl = pieColors[i % pieColors.length];
+                    return (
+                      <div key={item.name} style={{
+                        display: 'flex', alignItems: 'center', gap: 12,
+                        padding: '10px 12px', borderRadius: 14,
+                        background: `${cl}0F`, border: `1.5px solid ${cl}22`,
+                      }}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 11, flexShrink: 0,
+                          background: `${cl}22`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <Icon size={16} color={cl} />
                         </div>
-                        <p
-                          className="text-[11px]"
-                          style={{ color: textSecondaryColor }}
-                        >
-                          Ultimo: {dayjs(entry.lastIssueDate).format('D MMM')}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{item.name}</p>
+                          <p style={{ fontSize: 12, color: C.muted }}>{item.count} appuntamenti</p>
+                        </div>
+                        <p style={{ fontWeight: 800, fontSize: 14, color: cl, flexShrink: 0 }}>
+                          {formatCurrency(item.value)}
                         </p>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
+                </div>
+              </SectionCard>
+            </div>
+          )}
+
+          {/* Retention */}
+          {retentionStats?.buckets?.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <SectionCard
+                title="Retention clienti"
+                subtitle="% che tornano entro 3, 4 e 5 settimane"
+              >
+                <RetentionRadialChart buckets={retentionStats.buckets} color={accentColor} />
+              </SectionCard>
+            </div>
+          )}
+
+          {/* No-show e cancellazioni */}
+          {noShowStats && (
+            <div style={{ marginBottom: 16 }}>
+              <SectionCard
+                title="No-show e cancellazioni"
+                subtitle={`Su ${noShowStats.totalAppointments} appuntamenti totali`}
+              >
+                <NoShowBar
+                  label="No-show"
+                  pct={noShowStats.noShowPercentage}
+                  count={noShowStats.noShowCount}
+                  color={C.red}
+                />
+                <NoShowBar
+                  label="Cancellazioni"
+                  pct={noShowStats.cancellationPercentage}
+                  count={noShowStats.cancellationCount}
+                  color={C.warn}
+                />
+
+                {noShowStats.riskyClients?.length > 0 && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '16px 0 10px' }}>
+                      <AlertTriangle size={14} color={C.warn} />
+                      <p style={{ fontSize: 12, fontWeight: 700, color: C.text, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                        Clienti a rischio
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {noShowStats.riskyClients.slice(0, 5).map(entry => (
+                        <RiskyClientRow key={entry.client.id} entry={entry} />
+                      ))}
+                    </div>
+                  </>
                 )}
-              </div>
+              </SectionCard>
             </div>
-          </div>
-        )}
-        
-        {/* Trattamenti top per margine */}
-        {treatmentMarginStats && treatmentMarginStats.items.length > 0 && (
-          <div
-            className="rounded-2xl border overflow-hidden shadow-sm"
-            style={{ backgroundColor: surfaceColor, borderColor: `${accentColor}20` }}
-          >
-            <div
-              className="p-4 sm:p-5 border-b"
-              style={{ borderColor: `${accentColor}14` }}
-            >
-              <h2
-                className="text-base sm:text-lg font-semibold"
-                style={{ color: textPrimaryColor }}
+          )}
+
+          {/* Margini trattamenti */}
+          {marginStats?.items?.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <SectionCard
+                title="Margini per trattamento"
+                subtitle="Ordinati per margine totale"
               >
-                Trattamenti top per margine
-              </h2>
-              <p
-                className="mt-1 text-xs sm:text-sm"
-                style={{ color: textSecondaryColor }}
-              >
-                Ordinati per margine totale (prezzo meno costo stimato)
-              </p>
+                <MarginChart items={marginStats.items} color={accentColor} />
+              </SectionCard>
             </div>
-            <div className="p-4 sm:p-5 overflow-x-auto">
-              <table className="min-w-full text-xs sm:text-sm">
-                <thead>
-                  <tr
-                    className="text-left"
-                    style={{ color: textSecondaryColor }}
-                  >
-                    <th className="pb-2 pr-4 font-medium">Trattamento</th>
-                    <th className="pb-2 pr-4 font-medium text-right">
-                      Margine totale
-                    </th>
-                    <th className="pb-2 pr-4 font-medium text-right">
-                      Margine medio
-                    </th>
-                    <th className="pb-2 font-medium text-right">N°</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {treatmentMarginStats.items.slice(0, 6).map((item) => (
-                    <tr key={item.name}>
-                      <td
-                        className="py-1.5 pr-4"
-                        style={{ color: textPrimaryColor }}
-                      >
-                        {item.name}
-                      </td>
-                      <td
-                        className="py-1.5 pr-4 text-right"
-                        style={{ color: textPrimaryColor }}
-                      >
-                        {formatCurrency(item.marginTotal)}
-                      </td>
-                      <td
-                        className="py-1.5 pr-4 text-right"
-                        style={{ color: textPrimaryColor }}
-                      >
-                        {formatCurrency(item.marginAverage)}
-                      </td>
-                      <td
-                        className="py-1.5 text-right"
-                        style={{ color: textSecondaryColor }}
-                      >
-                        {item.count}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+
+        </main>
+      )}
     </div>
   );
 }

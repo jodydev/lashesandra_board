@@ -29,6 +29,8 @@ export interface PageHeaderProps {
   className?: string;
   /** Stili inline aggiuntivi (es. borderColor) */
   style?: React.CSSProperties;
+  /** Se true, non applica padding-top safe area (utile quando il contenitore ha già safe-area-header) */
+  skipSafeAreaTop?: boolean;
 }
 
 export default function PageHeader({
@@ -40,6 +42,7 @@ export default function PageHeader({
   variant = 'sticky',
   className = '',
   style = {},
+  skipSafeAreaTop = false,
 }: PageHeaderProps) {
   const navigate = useNavigate();
   const colors = useAppColors();
@@ -57,7 +60,8 @@ export default function PageHeader({
   }, []);
 
   const baseClasses =
-    'relative flex h-14 min-h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800 safe-area-header';
+    'relative flex h-14 min-h-14 items-center justify-between border-b bg-white px-4 shadow-sm dark:bg-gray-900 dark:border-gray-800' +
+    (skipSafeAreaTop ? '' : ' safe-area-header');
   const variantClasses =
     variant === 'fixed'
       ? 'fixed top-0 left-0 right-0 z-10 flex-shrink-0'
