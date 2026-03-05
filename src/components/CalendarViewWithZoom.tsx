@@ -175,7 +175,15 @@ export default function CalendarViewWithZoom() {
   const allAppointments = [...appointments, ...personalAppointments];
 
   const getAppointmentsForDate = (date: Dayjs) => {
-    return allAppointments.filter(apt => dayjs(apt.data).isSame(date, 'day'));
+    return allAppointments.filter((apt) => {
+      const start = dayjs(apt.data);
+      const end = apt.end_date ? dayjs(apt.end_date) : start;
+      return (
+        date.isSame(start, 'day') ||
+        date.isSame(end, 'day') ||
+        (date.isAfter(start, 'day') && date.isBefore(end, 'day'))
+      );
+    });
   };
 
   const getClientById = (clientId: string) => {
@@ -197,7 +205,7 @@ export default function CalendarViewWithZoom() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor }}>
+      <div className="min-h-full" style={{ backgroundColor }}>
         <PageHeader title="Agenda" showBack backLabel="Indietro" />
         <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center p-4">
           <div className="bg-red-50 border border-red-200 rounded-2xl p-6 max-w-md">
@@ -213,7 +221,7 @@ export default function CalendarViewWithZoom() {
   const dateStripDays = Array.from({ length: 14 }, (_, i) => dateStripStart.add(i, 'day'));
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor }}>
+    <div className="min-h-full" style={{ backgroundColor }}>
       <PageHeader
         title="Agenda"
         showBack
@@ -221,7 +229,7 @@ export default function CalendarViewWithZoom() {
         rightAction={{ type: 'icon', icon: Plus, ariaLabel: 'Nuovo evento', onClick: handleNewAppointment }}
       />
 
-      <div className="max-w-4xl mx-auto h-screen pt-4">
+      <div className="max-w-4xl mx-auto h-full pt-4">
         {/* View selector: Giorno | Settimana | Mese */}
         <div
           className="flex rounded-full p-1 border mb-4 mx-2"
@@ -275,7 +283,7 @@ export default function CalendarViewWithZoom() {
         )}
 
         {/* Calendar Container */}
-        <div className="relative h-screen">
+        <div className="relative h-full">
               {currentView === 'month' && (
                 <MonthView
                   currentDate={currentDate}
@@ -391,6 +399,11 @@ export default function CalendarViewWithZoom() {
                               const isPersonal = isPersonalAppointment(appointment);
                               const client = getClientById(appointment.client_id);
                               const isCompleted = appointment.status === 'completed';
+                              const hasRange =
+                                isPersonal &&
+                                appointment.end_date &&
+                                appointment.end_date !== appointment.data;
+
                               return (
                                 <button
                                   key={appointment.id}
@@ -421,6 +434,14 @@ export default function CalendarViewWithZoom() {
                                             style={{ backgroundColor: accentSofter, color: textSecondaryColor }}
                                           >
                                             Impegno Personale
+                                          </span>
+                                        )}
+                                        {isPersonal && !appointment.ora && (
+                                          <span
+                                            className="inline-flex items-center px-2 py-0.5 rounded-xl text-xs font-medium"
+                                            style={{ backgroundColor: accentSofter, color: textSecondaryColor }}
+                                          >
+                                            Tutto il giorno
                                           </span>
                                         )}
                                         {appointment.ora && (
@@ -467,6 +488,17 @@ export default function CalendarViewWithZoom() {
                                             </div>
                                           )}
                                         </>
+                                      )}
+                                      {hasRange && (
+                                        <p
+                                          className="text-[11px] mt-0.5 truncate"
+                                          style={{ color: textSecondaryColor }}
+                                        >
+                                          Periodo:{' '}
+                                          {dayjs(appointment.data).format('DD MMM YYYY')}
+                                          {' – '}
+                                          {dayjs(appointment.end_date).format('DD MMM YYYY')}
+                                        </p>
                                       )}
                                     </div>
                                     {isCompleted && (

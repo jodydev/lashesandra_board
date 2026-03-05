@@ -37,7 +37,15 @@ export default function MonthView({
   const accentColor = colors.primary;
   const accentSofter = `${colors.primary}14`;
   const getAppointmentsForDate = (date: Dayjs) => {
-    return appointments.filter((apt) => dayjs(apt.data).isSame(date, 'day'));
+    return appointments.filter((apt) => {
+      const start = dayjs(apt.data);
+      const end = apt.end_date ? dayjs(apt.end_date) : start;
+      return (
+        date.isSame(start, 'day') ||
+        date.isSame(end, 'day') ||
+        (date.isAfter(start, 'day') && date.isBefore(end, 'day'))
+      );
+    });
   };
 
   const getClientById = (clientId: string) => {
@@ -197,8 +205,12 @@ function MonthViewMiniCard({
   const accentSofter = `${colors.primary}14`;
   const personal = isPersonalAppointment(appointment);
   const clientName = client ? `${client.nome} ${client.cognome}` : '—';
-  const time = formatTime(appointment.ora);
+  const time = appointment.ora ? formatTime(appointment.ora) : '';
   const personalTitle = appointment.tipo_trattamento || 'Impegno personale';
+
+  const personalLabel = time
+    ? `${personalTitle} · ${time}`
+    : `${personalTitle} · tutto il giorno`;
 
   return (
     <button
@@ -214,7 +226,7 @@ function MonthViewMiniCard({
         className="text-[10px] font-semibold block truncate text-left"
         style={{ color: textSecondaryColor }}
       >
-        {personal ? `${personalTitle} · ${time}` : `${clientName} · ${time}`}
+        {personal ? personalLabel : `${clientName} · ${time || 'tutto il giorno'}`}
       </span>
     </button>
   );

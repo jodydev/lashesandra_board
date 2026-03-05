@@ -33,8 +33,29 @@ export default function Layout({ children }: LayoutProps) {
     return location.pathname === `${appPrefix}/${path}` || location.pathname.startsWith(`${appPrefix}/${path}/`);
   };
 
+  const isHomePage = isActive('home');
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isHomePage) {
+      root.classList.add('no-safe-area');
+    } else {
+      root.classList.remove('no-safe-area');
+    }
+    return () => {
+      root.classList.remove('no-safe-area');
+    };
+  }, [isHomePage]);
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh',
+        backgroundColor: isHomePage ? '#faede0' : surfaceColor,
+      }}
+    >
       <Box
         component="main"
         sx={{

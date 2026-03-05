@@ -34,6 +34,7 @@ export function loadPersonalAppointments(appType: string): Appointment[] {
       status: a.status ?? 'pending',
       kind: 'personal',
       created_at: a.created_at ?? new Date().toISOString(),
+      end_date: a.end_date ?? a.data,
     }));
 }
 
@@ -45,6 +46,7 @@ export function savePersonalAppointments(appType: string, items: Appointment[]) 
 export function makePersonalAppointment(params: {
   id?: string;
   date: string;
+  endDate?: string;
   time?: string;
   title: string;
   createdAt?: string;
@@ -57,6 +59,7 @@ export function makePersonalAppointment(params: {
     id,
     client_id: PERSONAL_APPOINTMENT_CLIENT_ID,
     data: params.date,
+    end_date: params.endDate ?? params.date,
     ora: params.time || undefined,
     importo: 0,
     tipo_trattamento: params.title,

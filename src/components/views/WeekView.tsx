@@ -115,7 +115,15 @@ export default function WeekView({
   );
 
   const getAppointmentsForDate = (date: Dayjs) => {
-    return appointments.filter((apt) => dayjs(apt.data).isSame(date, 'day'));
+    return appointments.filter((apt) => {
+      const start = dayjs(apt.data);
+      const end = apt.end_date ? dayjs(apt.end_date) : start;
+      return (
+        date.isSame(start, 'day') ||
+        date.isSame(end, 'day') ||
+        (date.isAfter(start, 'day') && date.isBefore(end, 'day'))
+      );
+    });
   };
 
   const getClientById = (clientId: string) => {
@@ -191,7 +199,10 @@ export default function WeekView({
         <div className="flex min-w-0" style={{ minWidth: 'min(100%, 28rem)' }}>
           {/* Colonna asse orario + celle vuote per allineare le ore */}
           <div className="flex-shrink-0 w-14 flex flex-col">
-            <div className="h-[72px] border-b flex flex-col justify-end pb-1" style={{ borderColor: accentSofter }}>
+            <div
+              className="h-[72px] border-b flex flex-col justify-end pb-1 sticky top-0 z-20 bg-white"
+              style={{ borderColor: accentSofter }}
+            >
               <span className="text-[10px] font-medium text-transparent select-none">0</span>
             </div>
             {HOURS.map((h) => (
@@ -212,6 +223,12 @@ export default function WeekView({
               const dayAppointments = getAppointmentsForDate(day).sort((a, b) =>
                 (a.ora || '00:00').localeCompare(b.ora || '00:00')
               );
+              const allDayAppointments = dayAppointments.filter(
+                (apt) => isPersonalAppointment(apt) && !apt.ora
+              );
+              const timedAppointments = dayAppointments.filter(
+                (apt) => !(isPersonalAppointment(apt) && !apt.ora)
+              );
 
               return (
                 <div
@@ -223,10 +240,10 @@ export default function WeekView({
                   <button
                     type="button"
                     onClick={() => onDateClick(day)}
-                    className="relative flex flex-col items-center py-2 px-0.5 border-b flex-shrink-0 min-h-[72px] justify-end"
+                    className="sticky top-0 z-10 flex flex-col items-center py-2 px-0.5 border-b flex-shrink-0 min-h-[72px] justify-end bg-white"
                     style={{
                       borderColor: accentSofter,
-                      backgroundColor: current ? accentSofter : 'transparent',
+                      backgroundColor: current ? accentSofter : surfaceColor,
                     }}
                   >
                     <span
@@ -272,7 +289,28 @@ export default function WeekView({
                     ))}
 
                     {/* Eventi per questo giorno */}
-                    {getAppointmentLayout(dayAppointments).map(({ appointment, columnIndex, totalColumns }) => {
+                    {/* Impegni personali tutto il giorno: card che occupa tutta la colonna */}
+                    {allDayAppointments.map((appointment) => {
+                      const isPastWholeDay =
+                        day.endOf('day').isBefore(now, 'day');
+                      return (
+                        <div
+                          key={appointment.id}
+                          className="absolute inset-x-1 top-2 bottom-2 z-0"
+                        >
+                          <WeekViewEventCard
+                            appointment={appointment}
+                            client={getClientById(appointment.client_id)}
+                            onClick={() => onAppointmentClick(appointment)}
+                            accentGradient={accentGradient}
+                            isPast={isPastWholeDay}
+                          />
+                        </div>
+                      );
+                    })}
+
+                    {/* Appuntamenti con orario nella timeline */}
+                    {getAppointmentLayout(timedAppointments).map(({ appointment, columnIndex, totalColumns }) => {
                       const startM = parseMinutes(appointment.ora);
                       const durationM = getDurationMinutes(appointment);
                       const top = minutesToTop(startM) + 2;
@@ -371,7 +409,8 @@ function WeekViewEventCard({
   const clientName = client ? `${client.nome} ${client.cognome}` : 'Cliente';
   const service = personal ? 'PERSONALE' : (appointment.tipo_trattamento || 'Trattamento').toUpperCase();
   const personalTitle = appointment.tipo_trattamento || 'Impegno personale';
-  const time = formatTime(appointment.ora);
+  const isAllDay = personal && !appointment.ora;
+  const time = appointment.ora ? formatTime(appointment.ora) : '';
 
   const isPastStyle = isPast && !personal;
   const pastCardStyle = {
@@ -403,7 +442,9 @@ function WeekViewEventCard({
       <p className={`font-semibold text-[11px] truncate leading-tight mt-0.5 ${titleClass}`}>
         {personal ? personalTitle : clientName}
       </p>
-      <p className={`text-[10px] leading-tight ${timeClass}`}>{time}</p>
+      <p className={`text-[10px] leading-tight ${timeClass}`}>
+        {isAllDay ? 'Tutto il giorno' : time}
+      </p>
     </button>
   );
 }

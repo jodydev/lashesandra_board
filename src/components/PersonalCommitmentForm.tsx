@@ -33,8 +33,10 @@ export default function PersonalCommitmentForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [date, setDate] = useState<Dayjs>(selectedDate ?? dayjs());
+  const [startDate, setStartDate] = useState<Dayjs>(selectedDate ?? dayjs());
+  const [endDate, setEndDate] = useState<Dayjs | null>(selectedDate ?? dayjs());
   const [time, setTime] = useState('');
+  const [allDay, setAllDay] = useState(false);
   const [title, setTitle] = useState('');
   const [note, setNote] = useState('');
 
@@ -42,8 +44,11 @@ export default function PersonalCommitmentForm({
 
   useEffect(() => {
     if (!commitment) return;
-    setDate(dayjs(commitment.data));
+    const base = dayjs(commitment.data);
+    setStartDate(base);
+    setEndDate(commitment.end_date ? dayjs(commitment.end_date) : base);
     setTime(commitment.ora ?? '');
+    setAllDay(!commitment.ora);
     setTitle(commitment.tipo_trattamento ?? '');
     // Nota: usiamo una riga di testo nel titolo se vuoi estenderlo.
     setNote('');
@@ -58,11 +63,19 @@ export default function PersonalCommitmentForm({
 
     setLoading(true);
     setError(null);
+    if (endDate && endDate.isBefore(startDate, 'day')) {
+      setError('La data di fine non può essere precedente alla data di inizio.');
+      return;
+    }
+
     try {
-      const dateForDb = formatDateForDatabase(date) || date.format('YYYY-MM-DD');
+      const startForDb = formatDateForDatabase(startDate) || startDate.format('YYYY-MM-DD');
+      const effectiveEnd = endDate ?? startDate;
+      const endForDb = formatDateForDatabase(effectiveEnd) || effectiveEnd.format('YYYY-MM-DD');
       const next = makePersonalAppointment({
         id: commitment?.id,
-        date: dateForDb,
+        date: startForDb,
+        endDate: endForDb,
         time: time || undefined,
         title: title.trim(),
         createdAt: commitment?.created_at,
@@ -78,19 +91,28 @@ export default function PersonalCommitmentForm({
 
   return (
     <div
-      className="w-full h-full min-h-screen flex flex-col bg-white relative"
+      className="min-h-screen flex flex-col min-h-0 flex-1"
       style={{ backgroundColor: appType === 'isabellenails' ? '#F7F3FA' : '#faede0' }}
     >
+      <div
+        style={{
+          height: 'env(safe-area-inset-top, 0px)',
+          minHeight: 'env(safe-area-inset-top, 0px)',
+          flexShrink: 0,
+          backgroundColor: '#FFFFFF',
+        }}
+      />
+
       <PageHeader
-        title={isEditing ? 'Modifica impegno personale' : 'Nuovo impegno personale'}
+        title={isEditing ? 'Impegno personale' : 'Impegno personale'}
         showBack
         onBack={onCancel}
         backLabel="Annulla"
-        variant="fixed"
         rightAction={{ type: 'label', label: loading ? '...' : 'Salva', formId: 'personal-commitment-form', disabled: loading }}
+        skipSafeAreaTop
       />
 
-      <div className="safe-area-content-below-header px-4 pb-6 flex-1 min-h-0 overflow-y-auto">
+      <div className="px-4 py-6 flex-1 min-h-0 overflow-y-auto">
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
             {error}
@@ -107,17 +129,58 @@ export default function PersonalCommitmentForm({
               <label className="block">
                 <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  Data
+                  Periodo
                 </span>
                 <div className="mt-2">
-                  <input
-                    type="date"
-                    value={date.format('YYYY-MM-DD')}
-                    onChange={(e) => setDate(dayjs(e.target.value))}
-                    className="w-full max-w-[320px] px-3 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-200"
-                    required
-                  />
-                  <p className="mt-1 text-xs text-gray-500">{formatDateForDisplay(date)}</p>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                    <div className="flex-1">
+                      <span className="block text-[11px] font-medium uppercase tracking-wide text-gray-500 mb-1">
+                        Dal
+                      </span>
+                      <input
+                        type="date"
+                        value={startDate.format('YYYY-MM-DD')}
+                        onChange={(e) => {
+                          const nextStart = dayjs(e.target.value);
+                          setStartDate(nextStart);
+                          setEndDate((prev) => {
+                            if (!prev || nextStart.isAfter(prev, 'day')) {
+                              return nextStart;
+                            }
+                            return prev;
+                          });
+                        }}
+                        className="w-[90%] px-3 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-200"
+                        required
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <span className="block text-[11px] font-medium uppercase tracking-wide text-gray-500 mb-1">
+                        Al
+                      </span>
+                      <input
+                        type="date"
+                        value={endDate ? endDate.format('YYYY-MM-DD') : ''}
+                        min={startDate.format('YYYY-MM-DD')}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (!raw) {
+                            setEndDate(startDate);
+                            return;
+                          }
+                          const nextEnd = dayjs(raw);
+                          setEndDate(nextEnd.isBefore(startDate, 'day') ? startDate : nextEnd);
+                        }}
+                        className="w-[90%] px-3 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-200"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {endDate && !endDate.isSame(startDate, 'day')
+                      ? `Dal ${formatDateForDisplay(startDate)} al ${formatDateForDisplay(endDate)}`
+                      : formatDateForDisplay(startDate)}
+                  </p>
                 </div>
               </label>
 
@@ -131,8 +194,24 @@ export default function PersonalCommitmentForm({
                     type="time"
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
-                    className="w-full max-w-[320px] px-3 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-200"
+                    disabled={allDay}
+                    className="w-full w-[90%] px-3 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-200 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
+                  <label className="mt-2 flex items-center gap-2 text-xs font-medium text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={allDay}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setAllDay(checked);
+                        if (checked) {
+                          setTime('');
+                        }
+                      }}
+                      className="h-4 w-4 rounded border-gray-300 text-pink-500 focus:ring-pink-300"
+                    />
+                    <span>Impegno per l&apos;intera giornata</span>
+                  </label>
                 </div>
               </label>
 
@@ -188,7 +267,8 @@ export default function PersonalCommitmentForm({
                   {title.trim() || 'Impegno personale'}
                 </p>
                 <p className="mt-1 text-xs text-gray-600">
-                  {date.format('DD MMM YYYY')}
+                  {startDate.format('DD MMM YYYY')}
+                  {endDate && !endDate.isSame(startDate, 'day') ? ` – ${endDate.format('DD MMM YYYY')}` : ''}
                   {time ? ` · ${time}` : ''}
                 </p>
               </div>

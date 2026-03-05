@@ -272,10 +272,7 @@ export default function HomePage() {
   const nextClient = nextAppointment ? getClientById(nextAppointment.client_id) : null;
 
   return (
-    <div
-      className="h-full w-full pb-10"
-      style={{ backgroundColor }}
-    >
+    <div className="safe-area-header">
       <div className="mx-auto max-w-lg px-4 h-full" >
         {/* Header: profilo + benvenuta, campanella */}
         <header className="flex items-center justify-between mb-6">

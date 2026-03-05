@@ -112,11 +112,11 @@ export default function LoginPage() {
   };
 
   if (loading) {
-    return <FullPageLoader className="min-h-[100dvh]" />;
+    return <FullPageLoader className="h-full" />;
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col text-[#1a1a1a] relative overflow-hidden pt-16">
+    <div className="h-full flex flex-col text-[#1a1a1a] relative overflow-hidden">
       {/* Background image: peach/beige beauty theme */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"

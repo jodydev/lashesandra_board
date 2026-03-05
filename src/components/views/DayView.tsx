@@ -28,7 +28,7 @@ function formatTime(ora: string | undefined) {
 }
 
 function parseMinutes(ora: string | undefined) {
-  if (!ora) return 0;
+  if (!ora) return START_HOUR * 60;
   const [h, m] = ora.split(':').map(Number);
   return h * 60 + (m || 0);
 }
@@ -77,7 +77,15 @@ export default function DayView({
   const [quickAdd, setQuickAdd] = useState<{ minutes: number; timeLabel: string } | null>(null);
 
   const getAppointmentsForDate = (date: Dayjs) => {
-    return appointments.filter((apt) => dayjs(apt.data).isSame(date, 'day'));
+    return appointments.filter((apt) => {
+      const start = dayjs(apt.data);
+      const end = apt.end_date ? dayjs(apt.end_date) : start;
+      return (
+        date.isSame(start, 'day') ||
+        date.isSame(end, 'day') ||
+        (date.isAfter(start, 'day') && date.isBefore(end, 'day'))
+      );
+    });
   };
 
   const getClientById = (clientId: string) => {
@@ -92,9 +100,19 @@ export default function DayView({
     [currentDate, appointments]
   );
 
+  const allDayAppointments = useMemo(
+    () => dayAppointments.filter((apt) => isPersonalAppointment(apt) && !apt.ora),
+    [dayAppointments]
+  );
+
+  const timedAppointments = useMemo(
+    () => dayAppointments.filter((apt) => !(isPersonalAppointment(apt) && !apt.ora)),
+    [dayAppointments]
+  );
+
   /** Per ogni appuntamento: columnIndex (0-based) e totalColumns nella sua fascia sovrapposta */
   const appointmentLayout = useMemo(() => {
-    const items = dayAppointments.map((apt) => {
+    const items = timedAppointments.map((apt) => {
       const durationM = getDurationMinutes(apt);
       return {
         appointment: apt,
@@ -130,12 +148,12 @@ export default function DayView({
       totalColumns[i] = maxCol + 1;
     }
 
-    return dayAppointments.map((apt, i) => ({
+    return timedAppointments.map((apt, i) => ({
       appointment: apt,
       columnIndex: columnIndex[i],
       totalColumns: totalColumns[i],
     }));
-  }, [dayAppointments]);
+  }, [timedAppointments]);
 
   const isToday = currentDate.isSame(dayjs(), 'day');
 
@@ -204,7 +222,7 @@ export default function DayView({
 
   return (
     <div
-      className="relative border overflow-hidden min-h-[420px] mb-40"
+      className="relative border overflow-hidden min-h-[800px] pb-32"
       style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
     >
       {/* Header: mese + frecce */}
@@ -362,7 +380,40 @@ export default function DayView({
               </span>
             </div>
           ) : (
-            appointmentLayout.map(({ appointment, columnIndex, totalColumns }) => {
+            <>
+              {/* Impegni personali "tutto il giorno" — card che occupa l'intera colonna */}
+              {allDayAppointments.map((appointment) => {
+                const isPastWholeDay =
+                  currentDate.endOf('day').isBefore(dayjs(), 'day');
+                return (
+                  <div
+                    key={appointment.id}
+                    className="absolute inset-x-2 top-2 bottom-2"
+                  >
+                    <div className="relative h-full">
+                      <div
+                        className="absolute inset-0 rounded-2xl"
+                        style={{
+                          backgroundColor: "#000000",
+                        }}
+                      />
+                      <div className="relative z-10 h-full">
+                        <DayViewCard
+                          appointment={appointment}
+                          durationMinutes={getDurationMinutes(appointment)}
+                          client={getClientById(appointment.client_id)}
+                          onClick={() => onAppointmentClick(appointment)}
+                          accentGradient={accentGradient}
+                          isPast={isPastWholeDay}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Appuntamenti con orario nella timeline */}
+            {appointmentLayout.map(({ appointment, columnIndex, totalColumns }) => {
               const startM = parseMinutes(appointment.ora);
               const durationM = getDurationMinutes(appointment);
               const top = minutesToTop(startM);
@@ -409,7 +460,8 @@ export default function DayView({
                   </div>
                 </div>
               );
-            })
+            })}
+            </>
           )}
 
           {onQuickAddSlot && quickAdd && (
@@ -462,7 +514,8 @@ function DayViewCard({
   const clientName = client ? `${client.nome} ${client.cognome}` : 'Cliente sconosciuto';
   const service = personal ? 'PERSONALE' : (appointment.tipo_trattamento || 'Trattamento').toUpperCase();
   const personalTitle = appointment.tipo_trattamento || 'Impegno personale';
-  const startTime = formatTime(appointment.ora);
+  const isAllDay = personal && !appointment.ora;
+  const startTime = appointment.ora ? formatTime(appointment.ora) : '';
   const endTime = appointment.ora
     ? formatTime(dayjs(`2000-01-01 ${appointment.ora}`).add(durationMinutes, 'minute').format('HH:mm'))
     : '';
@@ -542,8 +595,13 @@ function DayViewCard({
             </div>
           )}
         <p className={`text-sm font-bold ${timeClass}`}>
-          {startTime}
-          {endTime ? ` – ${endTime}` : ''}
+          {isAllDay
+            ? 'Tutto il giorno'
+            : <>
+                {startTime}
+                {endTime ? ` – ${endTime}` : ''}
+              </>
+          }
         </p>
       </div>
     </button>

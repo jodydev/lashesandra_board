@@ -48,6 +48,8 @@ export interface Appointment {
   id: string;
   client_id: string;
   data: string;
+  /** Solo per eventi personali: data fine periodo (inclusiva). Default uguale a data. */
+  end_date?: string;
   ora?: string;
   importo: number;
   tipo_trattamento?: string;

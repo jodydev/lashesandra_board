@@ -41,6 +41,18 @@ html, body {
   background-color: #faede0;
 }
 
+/* Disabilita safe area (usato per Home) */
+html.no-safe-area #root {
+  padding-top: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+}
+
+html.no-safe-area .safe-area-bottom {
+  padding-bottom: 0 !important;
+}
+
 /* Safe area bianca quando la pagina mostra PageHeader */
 html.page-header-visible #root {
   background-color: #ffffff;
