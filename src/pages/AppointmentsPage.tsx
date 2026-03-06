@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Dialog, DialogContent } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Calendar, 
@@ -16,9 +17,10 @@ import {
 import PageHeader from '../components/PageHeader';
 import type { Appointment, Client } from '../types';
 import { useSupabaseServices } from '../lib/supabaseService';
-import { loadPersonalAppointments } from '../lib/personalEvents';
+import { isPersonalAppointment, loadPersonalAppointments, savePersonalAppointments } from '../lib/personalEvents';
 import { useAppColors } from '../hooks/useAppColors';
 import AppointmentForm from '../components/AppointmentForm';
+import PersonalCommitmentForm from '../components/PersonalCommitmentForm';
 import { formatDate, formatCurrency } from '../lib/utils';
 import { useApp } from '../contexts/AppContext';
 
@@ -41,6 +43,7 @@ export default function AppointmentsPage() {
   const colors = useAppColors();
   const { appType } = useApp();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [personalAppointments, setPersonalAppointments] = useState<Appointment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +57,9 @@ export default function AppointmentsPage() {
   const [showFiltersOptions, setShowFiltersOptions] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'oggi' | 'questa_settimana' | 'questo_mese'>('all');
+  const [showPersonalForm, setShowPersonalForm] = useState(false);
+  const [editingPersonal, setEditingPersonal] = useState<Appointment | null>(null);
+  const [showNewEntryChooser, setShowNewEntryChooser] = useState(false);
 
   const textPrimaryColor = '#2C2C2C';
   const textSecondaryColor = '#7A7A7A';
@@ -94,6 +100,7 @@ export default function AppointmentsPage() {
       ]);
       setAppointments(appointmentsData);
       setClients(clientsData);
+      setPersonalAppointments(loadPersonalAppointments(appType));
     } catch (err) {
       setError('Errore nel caricamento degli appuntamenti');
     } finally {
@@ -107,7 +114,20 @@ export default function AppointmentsPage() {
 
   const handleAddAppointment = () => {
     setSelectedAppointment(null);
+    setPrefillNew(null);
+    setShowNewEntryChooser(true);
+  };
+
+  const openWorkAppointmentForm = () => {
+    setShowNewEntryChooser(false);
+    setSelectedAppointment(null);
     setShowForm(true);
+  };
+
+  const openPersonalCommitmentForm = () => {
+    setShowNewEntryChooser(false);
+    setEditingPersonal(null);
+    setShowPersonalForm(true);
   };
 
   const handleEditAppointment = (appointment: Appointment) => {
@@ -124,12 +144,18 @@ export default function AppointmentsPage() {
     if (!appointmentToDelete) return;
 
     try {
-      const { cancelAppointmentReminder } = await import(
-        '../lib/localNotifications'
-      );
-      await cancelAppointmentReminder(appointmentToDelete.id);
-      await appointmentService.delete(appointmentToDelete.id);
-      await loadData();
+      if (isPersonalAppointment(appointmentToDelete)) {
+        const next = personalAppointments.filter((apt) => apt.id !== appointmentToDelete.id);
+        savePersonalAppointments(appType, next);
+        setPersonalAppointments(next);
+      } else {
+        const { cancelAppointmentReminder } = await import(
+          '../lib/localNotifications'
+        );
+        await cancelAppointmentReminder(appointmentToDelete.id);
+        await appointmentService.delete(appointmentToDelete.id);
+        await loadData();
+      }
       setShowDeleteDialog(false);
       setAppointmentToDelete(null);
     } catch (err) {
@@ -206,6 +232,25 @@ export default function AppointmentsPage() {
       matchesFilter = appointmentDate >= startOfMonthRef;
     }
     
+    return matchesSearch && matchesFilter;
+  });
+
+  const filteredPersonalAppointments = personalAppointments.filter(appointment => {
+    const title = appointment.tipo_trattamento ?? '';
+    const matchesSearch =
+      title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      formatDate(appointment.data).toLowerCase().includes(searchTerm.toLowerCase());
+
+    const appointmentDate = new Date(appointment.data);
+    let matchesFilter = true;
+    if (filterType === 'oggi') {
+      matchesFilter = appointmentDate.toDateString() === todayRef.toDateString();
+    } else if (filterType === 'questa_settimana') {
+      matchesFilter = appointmentDate >= startOfWeekRef;
+    } else if (filterType === 'questo_mese') {
+      matchesFilter = appointmentDate >= startOfMonthRef;
+    }
+
     return matchesSearch && matchesFilter;
   });
 
@@ -640,10 +685,111 @@ export default function AppointmentsPage() {
               </section>
             );
           })}
+          {filteredPersonalAppointments.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span
+                  className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold"
+                  style={{ backgroundColor: accentSofter, color: textPrimaryColor }}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Impegni personali
+                  <span className="font-normal opacity-90">({filteredPersonalAppointments.length})</span>
+                </span>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                {filteredPersonalAppointments
+                  .slice()
+                  .sort((a, b) => getAppointmentSortKey(a) - getAppointmentSortKey(b))
+                  .map((appointment) => {
+                    const hasRange =
+                      Boolean(appointment.end_date) && appointment.end_date !== appointment.data;
+                    const isAllDay = !appointment.ora;
+
+                    return (
+                      <div
+                        key={appointment.id}
+                        className="group relative rounded-2xl border-2 p-4 shadow-lg sm:p-6 transition-shadow hover:shadow-xl"
+                        style={{ background: `white`, borderColor: accentSoft }}
+                      >
+                        <div className="mb-4 flex items-start justify-between">
+                          <div className="flex flex-1 min-w-0 items-center space-x-3 sm:space-x-4">
+                            <div className="relative flex-shrink-0">
+                              <div
+                                className={`flex h-12 w-12 items-center justify-center rounded-xl text-base font-semibold text-white shadow-lg sm:h-14 sm:w-14 sm:text-lg ${colors.shadowPrimary}`}
+                                style={{ background: accentGradient }}
+                              >
+                                <Sparkles className="h-5 w-5" />
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <h3
+                                className="truncate text-sm font-semibold dark:text-white sm:text-lg"
+                                style={{ color: textPrimaryColor }}
+                              >
+                                {appointment.tipo_trattamento || 'Impegno personale'}
+                              </h3>
+                              <span
+                                className="inline-flex items-center gap-1 rounded-xl px-2 py-1 text-xs font-medium sm:px-2.5"
+                                style={{ backgroundColor: accentSofter, color: textSecondaryColor }}
+                              >
+                                Impegno personale
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex flex-shrink-0 items-center space-x-1 sm:space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingPersonal(appointment);
+                                setShowPersonalForm(true);
+                              }}
+                              className="rounded-xl border bg-white/70 p-2 hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
+                              style={{ borderColor: accentSofter }}
+                            >
+                              <Edit3 className="h-3 w-3 text-gray-600 sm:h-4 sm:w-4 dark:text-gray-400" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAppointment(appointment)}
+                              className="rounded-xl border bg-white/70 p-2 hover:bg-red-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-red-900/30"
+                              style={{ borderColor: '#FECACA' }}
+                            >
+                              <Trash2 className="h-3 w-3 text-gray-600 sm:h-4 sm:w-4 dark:text-gray-400" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="mb-4 space-y-2 sm:space-y-3">
+                          <div className="flex items-center space-x-3 text-xs sm:text-sm">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 text-gray-600 shadow-inner dark:bg-gray-800 dark:text-gray-400">
+                              <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                            </div>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">
+                              {hasRange
+                                ? `Dal ${formatDate(appointment.data)} al ${appointment.end_date ? formatDate(appointment.end_date) : ''}`
+                                : formatDate(appointment.data)}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-3 text-xs sm:text-sm">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 text-gray-600 shadow-inner dark:bg-gray-800 dark:text-gray-400">
+                              <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                            </div>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">
+                              {isAllDay ? 'Tutto il giorno' : appointment.ora?.slice(0, 5)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </section>
+          )}
         </div>
 
         {/* Empty State (stile ClientList) */}
-        {filteredAppointments.length === 0 && !loading && (
+        {filteredAppointments.length === 0 && filteredPersonalAppointments.length === 0 && !loading && (
           <div
             className="rounded-2xl border p-10 text-center shadow-lg sm:p-14"
             style={{
@@ -682,9 +828,86 @@ export default function AppointmentsPage() {
             <AppointmentForm
               appointment={selectedAppointment}
               prefillNew={prefillNew ?? undefined}
-              appointmentsForOverlap={[...appointments, ...loadPersonalAppointments(appType)]}
+              appointmentsForOverlap={[...appointments, ...personalAppointments]}
               onSuccess={handleFormSuccess}
               onCancel={handleFormCancel}
+            />
+          </div>
+        )}
+
+        {/* New entry chooser per tipo appuntamento */}
+        <Dialog
+          open={showNewEntryChooser}
+          onClose={() => setShowNewEntryChooser(false)}
+          maxWidth="xs"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: { xs: 2, sm: 3 },
+              overflow: 'hidden',
+              bgcolor: 'background.paper',
+            },
+            className: 'bg-white',
+          }}
+        >
+          <DialogContent sx={{ p: 0 }}>
+            <div className="px-5 pt-5 pb-4">
+              <h2 className="text-lg font-bold" style={{ color: textPrimaryColor }}>
+                Cosa vuoi inserire?
+              </h2>
+              <p className="text-sm mt-1" style={{ color: textSecondaryColor }}>
+                Scegli se registrare un appuntamento di lavoro o un impegno personale.
+              </p>
+            </div>
+            <div className="px-5 pb-5 space-y-3">
+              <button
+                type="button"
+                onClick={openWorkAppointmentForm}
+                className="w-full px-4 py-3 rounded-2xl font-semibold text-white shadow-lg"
+                style={{ background: accentGradient }}
+              >
+                Appuntamento di lavoro
+              </button>
+              <button
+                type="button"
+                onClick={openPersonalCommitmentForm}
+                className="w-full px-4 py-3 rounded-2xl font-semibold border"
+                style={{ borderColor: accentSofter, color: textPrimaryColor, backgroundColor: surfaceColor }}
+              >
+                Impegno personale
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowNewEntryChooser(false)}
+                className="w-full px-4 py-2 rounded-2xl font-semibold"
+                style={{ color: textSecondaryColor }}
+              >
+                Annulla
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Personal Commitment Form — schermata a tutto schermo */}
+        {showPersonalForm && (
+          <div className="fixed inset-0 z-50 flex flex-col h-screen min-h-full" style={{ backgroundColor: surfaceColor }}>
+            <PersonalCommitmentForm
+              commitment={editingPersonal}
+              selectedDate={null}
+              onCancel={() => {
+                setShowPersonalForm(false);
+                setEditingPersonal(null);
+              }}
+              onSave={(apt) => {
+                setPersonalAppointments((prev: Appointment[]) => {
+                  const next = prev.some((p: Appointment) => p.id === apt.id)
+                    ? prev.map((p: Appointment) => (p.id === apt.id ? apt : p))
+                    : [apt, ...prev];
+                  savePersonalAppointments(appType, next);
+                  return next;
+                });
+                // Form mostra overlay di successo; chiusura con "Chiudi" (onCancel)
+              }}
             />
           </div>
         )}

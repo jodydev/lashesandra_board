@@ -252,19 +252,26 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
 // ─── Step components ──────────────────────────────────────────────────────────
 
 function StepClient({
-  clients, formData, setFormData, searchQuery, setSearchQuery
+  clients, formData, setFormData,
 }: {
   clients: Client[];
   formData: any;
   setFormData: (fn: any) => void;
-  searchQuery: string;
-  setSearchQuery: (s: string) => void;
 }) {
-  const filtered = clients.filter(c =>
-    `${c.nome} ${c.cognome}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.telefono?.includes(searchQuery)
-  );
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return clients;
+    return clients.filter(c => {
+      const fullName = `${c.nome ?? ''} ${c.cognome ?? ''}`.toLowerCase();
+      return (
+        fullName.includes(q) ||
+        (c.email?.toLowerCase().includes(q) ?? false) ||
+        (c.telefono?.includes(searchQuery.trim()) ?? false)
+      );
+    });
+  }, [clients, searchQuery]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -276,6 +283,7 @@ function StepClient({
           placeholder="Cerca per nome, email o telefono…"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
+          autoComplete="off"
           style={{
             width: '100%', boxSizing: 'border-box',
             height: 50, paddingLeft: 44, paddingRight: 16,
@@ -286,31 +294,49 @@ function StepClient({
         />
       </div>
 
-      {/* List */}
+      {/* List — no animation so filtering feels instant */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <AnimatePresence initial={false}>
-          {filtered.map((client, i) => (
-            <motion.div
-              key={client.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ delay: i * 0.03, duration: 0.22 }}
-            >
-              <SelectRow
-                selected={formData.client_id === client.id}
-                onClick={() => { hapticSelection(); setFormData((p: any) => ({ ...p, client_id: client.id })); }}
-                left={<Avatar name={client.nome} imageUrl={client.foto_url} />}
-                title={`${client.nome} ${client.cognome}`}
-                subtitle={[client.telefono].filter(Boolean).join(' · ')}
-              />
-            </motion.div>
-          ))}
-        </AnimatePresence>
+        {filtered.map((client) => (
+          <SelectRow
+            key={client.id}
+            selected={formData.client_id === client.id}
+            onClick={() => { hapticSelection(); setFormData((p: any) => ({ ...p, client_id: client.id })); }}
+            left={<Avatar name={client.nome} imageUrl={client.foto_url} />}
+            title={`${client.nome} ${client.cognome}`}
+            subtitle={[client.telefono].filter(Boolean).join(' · ')}
+          />
+        ))}
         {filtered.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: '#B09080' }}>
-            <User size={32} color="#D5C4BC" style={{ marginBottom: 8 }} />
-            <p style={{ fontSize: 14, fontWeight: 600 }}>Nessun cliente trovato</p>
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '32px 24px',
+              marginTop: 8,
+              borderRadius: 16,
+              border: '1.5px dashed #E8D5C8',
+              background: 'linear-gradient(180deg, #FDF9F6 0%, #FAF5F0 100%)',
+            }}
+          >
+            <div
+              style={{
+                width: 56,
+                height: 56,
+                margin: '0 auto 16px',
+                borderRadius: 14,
+                background: '#F5EDE6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <User size={28} color="#B09080" strokeWidth={1.8} />
+            </div>
+            <p style={{ fontSize: 16, fontWeight: 600, color: '#2C2C2C', marginBottom: 6 }}>
+              Nessun cliente trovato
+            </p>
+            <p style={{ fontSize: 13, color: '#7A7A7A', lineHeight: 1.4, maxWidth: 260, margin: '0 auto' }}>
+              Prova con un altro termine: nome, cognome, email o telefono
+            </p>
           </div>
         )}
       </div>
@@ -805,7 +831,6 @@ export default function AppointmentForm({
   const [isEditing, setIsEditing] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
   const [prevStep, setPrevStep] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [overlapDismissed, setOverlapDismissed] = useState(false);
   const [newChecklistLabel, setNewChecklistLabel] = useState('');
@@ -919,7 +944,6 @@ export default function AppointmentForm({
         await scheduleAppointmentReminder(created, clientName);
       }
       setShowSuccess(true);
-      setTimeout(() => onSuccess(), 1600);
     } catch {
       setError("Errore nel salvataggio dell'appuntamento");
     } finally {
@@ -930,7 +954,7 @@ export default function AppointmentForm({
   const selectedClient = clients.find(c => c.id === formData.client_id);
   const direction = activeStep > prevStep ? 1 : -1;
   const backgroundColor = appType === 'isabellenails' ? '#F7F3FA' : '#faede0';
-  const stepTitles = ['Seleziona cliente', 'Seleziona data e ora', 'Servizio e importo', 'Riepilogo'];
+  const stepTitles = ['Seleziona cliente', 'Data e ora', 'Servizio e importo', 'Riepilogo'];
 
   // ── Render ─────────────────────────────────────────────────────────────────
   // Wrapper con safe-area-top: il form può essere mostrato in overlay fixed (es. da AppointmentsPage)
@@ -954,6 +978,7 @@ export default function AppointmentForm({
       <PageHeader
         title={stepTitles[activeStep]}
         showBack
+        backLabel="Annulla"
         onBack={goBack}
         skipSafeAreaTop
       />
@@ -1047,8 +1072,6 @@ export default function AppointmentForm({
                   clients={clients}
                   formData={formData}
                   setFormData={setFormData}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
                 />
               )}
               {activeStep === 1 && (
@@ -1148,37 +1171,119 @@ export default function AppointmentForm({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             style={{
-              position: 'fixed', inset: 0, zIndex: 100,
+              position: 'fixed',
+              inset: 0,
+              zIndex: 100,
               background: '#ffffff',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
-            <motion.div
-              initial={{ scale: 0.7, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: 'spring', stiffness: 350, damping: 22 }}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '0 32px' }}
+            {/* Centered content */}
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 32px',
+              }}
             >
               <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 18, delay: 0.1 }}
+                initial={{ scale: 0.7, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 22 }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}
+              >
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 18, delay: 0.1 }}
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 40,
+                    background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 32px rgba(34,197,94,0.4)',
+                  }}
+                >
+                  <Check size={38} color="#fff" strokeWidth={3} />
+                </motion.div>
+                <p style={{ fontSize: 22, fontWeight: 900, color: '#2C2C2C', textAlign: 'center' }}>
+                  {isEditing ? 'Appuntamento aggiornato!' : 'Appuntamento salvato!'}
+                </p>
+              </motion.div>
+            </div>
+
+            {/* Buttons bar fixed at bottom */}
+            <div
+              style={{
+                flexShrink: 0,
+                padding: '16px 20px',
+                paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+                backgroundColor: '#FFF',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => onSuccess()}
                 style={{
-                  width: 80, height: 80, borderRadius: 40,
-                  background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 8px 32px rgba(34,197,94,0.4)',
+                  width: '100%',
+                  padding: '14px 24px',
+                  borderRadius: 25,
+                  border: '1.5px solid #E8D5C8',
+                  background: '#FFF',
+                  color: '#2C2C2C',
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
                 }}
               >
-                <Check size={38} color="#fff" strokeWidth={3} />
-              </motion.div>
-              <p style={{ fontSize: 22, fontWeight: 900, color: '#2C2C2C', textAlign: 'center' }}>
-                {isEditing ? 'Appuntamento aggiornato!' : 'Appuntamento salvato!'}
-              </p>
-              <p style={{ fontSize: 14, color: '#9A8880', textAlign: 'center' }}>
-                Tutto pronto ✨
-              </p>
-            </motion.div>
+                Chiudi
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSuccess(false);
+                  setFormData({
+                    client_id: '',
+                    data: selectedDate ?? dayjs(),
+                    ora: '',
+                    importo: 0,
+                    tipo_trattamento: '',
+                    duration_minutes: DEFAULT_APPOINTMENT_DURATION_MINUTES,
+                    treatment_catalog_id: null,
+                    status: 'pending',
+                    note: '',
+                    checklist: [],
+                  });
+                    setActiveStep(0);
+                    setError(null);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '14px 24px',
+                  borderRadius: 25,
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #C07850, #A06040)',
+                  color: '#fff',
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  boxShadow: '0 4px 14px rgba(192,120,80,0.35)',
+                }}
+              >
+                Prenota nuovo appuntamento
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

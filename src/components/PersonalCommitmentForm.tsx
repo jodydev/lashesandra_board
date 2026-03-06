@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/it';
-import { Calendar, Clock, Check, StickyNote } from 'lucide-react';
+import { Calendar, Clock, Check, StickyNote, Sparkles } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { useAppColors } from '../hooks/useAppColors';
 import type { Appointment } from '../types';
@@ -32,6 +33,7 @@ export default function PersonalCommitmentForm({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const [startDate, setStartDate] = useState<Dayjs>(selectedDate ?? dayjs());
   const [endDate, setEndDate] = useState<Dayjs | null>(selectedDate ?? dayjs());
@@ -65,6 +67,7 @@ export default function PersonalCommitmentForm({
     setError(null);
     if (endDate && endDate.isBefore(startDate, 'day')) {
       setError('La data di fine non può essere precedente alla data di inizio.');
+      setLoading(false);
       return;
     }
 
@@ -82,12 +85,28 @@ export default function PersonalCommitmentForm({
       });
 
       onSave(next);
+      setShowSuccess(true);
     } catch {
       setError('Errore nel salvataggio dell’impegno personale.');
     } finally {
       setLoading(false);
     }
   };
+
+  const resetFormForNew = () => {
+    setShowSuccess(false);
+    setStartDate(selectedDate ?? dayjs());
+    setEndDate(selectedDate ?? dayjs());
+    setTime('');
+    setAllDay(false);
+    setTitle('');
+    setNote('');
+    setError(null);
+  };
+
+  const surfaceColor = '#FFFFFF';
+  const textPrimaryColor = '#2C2C2C';
+  const textSecondaryColor = '#7A7A7A';
 
   return (
     <div
@@ -195,7 +214,7 @@ export default function PersonalCommitmentForm({
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
                     disabled={allDay}
-                    className="w-full w-[90%] px-3 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full w-[89.5%] px-3 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-200 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                   <label className="mt-2 flex items-center gap-2 text-xs font-medium text-gray-600">
                     <input
@@ -286,6 +305,120 @@ export default function PersonalCommitmentForm({
           </section>
         </form>
       </div>
+
+      {/* Success overlay — come AppointmentForm */}
+      <AnimatePresence>
+        {showSuccess && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 100,
+              background: surfaceColor,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 32px',
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.7, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 22 }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}
+              >
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 18, delay: 0.1 }}
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 40,
+                    background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 32px rgba(34,197,94,0.4)',
+                  }}
+                >
+                  <Check size={38} color="#fff" strokeWidth={3} />
+                </motion.div>
+                <p style={{ fontSize: 22, fontWeight: 900, color: textPrimaryColor, textAlign: 'center' }}>
+                  {isEditing ? 'Impegno aggiornato!' : 'Impegno salvato!'}
+                </p>
+                <p style={{ fontSize: 14, color: textSecondaryColor, textAlign: 'center' }}>
+                  Tutto pronto ✨
+                </p>
+              </motion.div>
+            </div>
+
+            <div
+              style={{
+                flexShrink: 0,
+                padding: '16px 20px',
+                paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+                borderTop: '1px solid #F0E8E2',
+                backgroundColor: surfaceColor,
+              }}
+            >
+              <button
+                type="button"
+                onClick={onCancel}
+                style={{
+                  width: '100%',
+                  padding: '14px 24px',
+                  borderRadius: 14,
+                  border: '1.5px solid #E8D5C8',
+                  background: surfaceColor,
+                  color: textPrimaryColor,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                Chiudi
+              </button>
+              <button
+                type="button"
+                onClick={resetFormForNew}
+                style={{
+                  width: '100%',
+                  padding: '14px 24px',
+                  borderRadius: 14,
+                  border: 'none',
+                  background: accentGradient,
+                  color: '#fff',
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  boxShadow: '0 4px 14px rgba(192,120,80,0.35)',
+                }}
+              >
+                <span className="inline-flex items-center justify-center gap-2">
+                  <Sparkles className="w-5 h-5" />
+                  Nuovo impegno
+                </span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

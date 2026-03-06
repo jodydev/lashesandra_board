@@ -114,7 +114,7 @@ export default function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appType]);
 
-  const { stats, nextAppointment } = useMemo(() => {
+  const { stats, todayUpcoming } = useMemo(() => {
     const now = dayjs();
     const currentMonth = now;
     const previousMonth = currentMonth.subtract(1, 'month');
@@ -178,7 +178,9 @@ export default function HomePage() {
         if (!da.isSame(db, 'day')) return da.valueOf() - db.valueOf();
         return (a.ora || '00:00').localeCompare(b.ora || '00:00');
       });
-    const next = upcoming[0] || null;
+    const todayOnly = upcoming.filter((apt: Appointment) =>
+      dayjs(apt.data).isSame(now, 'day')
+    );
 
     return {
       stats: {
@@ -190,7 +192,7 @@ export default function HomePage() {
         clientsTrend,
         currentMonthClients,
       },
-      nextAppointment: next,
+      todayUpcoming: todayOnly,
     };
   }, [appointments, clients]);
 
@@ -268,8 +270,6 @@ export default function HomePage() {
       </div>
     );
   }
-
-  const nextClient = nextAppointment ? getClientById(nextAppointment.client_id) : null;
 
   return (
     <div className="safe-area-header">
@@ -461,42 +461,50 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Prossimo appuntamento */}
+        {/* Appuntamenti di oggi */}
         <section className="mb-6">
-          <h2 className="text-base font-bold mb-3" style={{ color: textPrimaryColor }}>Prossimo Appuntamento</h2>
-          {nextAppointment && nextClient ? (
-            <div
-              className="rounded-xl p-4 shadow-md border flex items-center gap-4"
-              style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
-            >
-              <div
-                className="flex-shrink-0 flex flex-col items-center justify-center rounded-xl px-3 py-2.5 text-white font-bold min-w-[56px]"
-                style={{ background: accentGradient }}
-              >
-                <span className="text-[10px] uppercase leading-tight opacity-95">
-                  {dayjs(nextAppointment.data).format('MMM')}
-                </span>
-                <span className="text-xl leading-none mt-0.5">
-                  {dayjs(nextAppointment.data).format('DD')}
-                </span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold truncate" style={{ color: textPrimaryColor }}>
-                  {nextClient.nome} {nextClient.cognome}
-                </p>
-                <p className="text-sm truncate" style={{ color: textSecondaryColor }}>
-                  {nextAppointment.tipo_trattamento || 'Trattamento'} •{' '}
-                  {nextAppointment.ora ? nextAppointment.ora.slice(0, 5) : '--:--'}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => navigate(`${appPrefix}/appointments`)}
-                className="flex-shrink-0 rounded-xl px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition"
-                style={{ backgroundColor: accentDark }}
-              >
-                DETTAGLI
-              </button>
+          <h2 className="text-base font-bold mb-3" style={{ color: textPrimaryColor }}>Appuntamenti di oggi</h2>
+          {todayUpcoming.length > 0 ? (
+            <div className="space-y-3">
+              {todayUpcoming.map((apt) => {
+                const client = getClientById(apt.client_id);
+                return (
+                  <div
+                    key={apt.id}
+                    className="rounded-xl p-4 shadow-md border flex items-center gap-4"
+                    style={{ backgroundColor: surfaceColor, borderColor: accentSofter }}
+                  >
+                    <div
+                      className="flex-shrink-0 flex flex-col items-center justify-center rounded-xl px-3 py-2.5 text-white font-bold min-w-[56px]"
+                      style={{ background: accentGradient }}
+                    >
+                      <span className="text-[10px] uppercase leading-tight opacity-95">
+                        {dayjs(apt.data).format('MMM')}
+                      </span>
+                      <span className="text-xl leading-none mt-0.5">
+                        {dayjs(apt.data).format('DD')}
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold truncate" style={{ color: textPrimaryColor }}>
+                        {client ? `${client.nome} ${client.cognome}` : 'Cliente non trovato'}
+                      </p>
+                      <p className="text-sm truncate" style={{ color: textSecondaryColor }}>
+                        {apt.tipo_trattamento || 'Trattamento'} •{' '}
+                        {apt.ora ? apt.ora.slice(0, 5) : '--:--'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`${appPrefix}/appointments`)}
+                      className="flex-shrink-0 rounded-xl px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition"
+                      style={{ backgroundColor: accentDark }}
+                    >
+                      DETTAGLI
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div

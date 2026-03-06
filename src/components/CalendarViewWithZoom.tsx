@@ -552,8 +552,7 @@ export default function CalendarViewWithZoom() {
                   savePersonalAppointments(appType, next);
                   return next;
                 });
-                setShowPersonalForm(false);
-                setEditingPersonal(null);
+                // Form mostra overlay di successo; chiusura con "Chiudi" (onCancel)
               }}
             />
           </div>

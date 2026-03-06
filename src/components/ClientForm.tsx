@@ -4,7 +4,7 @@ import { formatDateForDatabase, parseDateFromDatabase } from '../lib/utils';
 import { useApp } from '../contexts/AppContext';
 import { useAppColors } from '../hooks/useAppColors';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Phone, Mail, Camera, Bell, Check, Trash2 } from 'lucide-react';
+import { User, Phone, Mail, Camera, Bell, Trash2, UserPlus, Users, AlertTriangle } from 'lucide-react';
 import PageHeader from './PageHeader';
 import { LoaderContent } from './FullPageLoader';
 import dayjs from 'dayjs';
@@ -52,6 +52,8 @@ export default function ClientForm({ clientId, onRequestDelete }: ClientFormProp
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   /** File selezionato da caricare al prossimo salvataggio (non ancora su Storage). */
   const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
+  /** Modale: esiste già un cliente con stesso nome e cognome, chiedi se creare comunque. */
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
 
   useEffect(() => {
     if (clientId) {
@@ -87,6 +89,32 @@ export default function ClientForm({ clientId, onRequestDelete }: ClientFormProp
     }
   };
 
+  const performCreate = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const clientData = {
+        ...formData,
+        data_ultimo_appuntamento: formatDateForDatabase(formData.data_ultimo_appuntamento) || undefined,
+        importo: formData.importo ? Number(formData.importo) : undefined,
+        foto_url: formData.foto_url || undefined,
+      };
+      const created = await clientService.create(clientData);
+      let savedId = created.id;
+      if (pendingPhotoFile) {
+        const publicUrl = await storageService.uploadClientAvatar(savedId, pendingPhotoFile);
+        await clientService.update(savedId, { foto_url: publicUrl });
+        setPendingPhotoFile(null);
+      }
+      navigate(-1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore nel salvataggio del cliente');
+      console.error('performCreate', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!formData.nome.trim() || !formData.cognome.trim()) {
@@ -97,35 +125,56 @@ export default function ClientForm({ clientId, onRequestDelete }: ClientFormProp
       setError("L'importo deve essere un numero maggiore di 0");
       return;
     }
-    try {
-      setLoading(true);
-      setError(null);
-      const clientData = {
-        ...formData,
-        data_ultimo_appuntamento: formatDateForDatabase(formData.data_ultimo_appuntamento) || undefined,
-        importo: formData.importo ? Number(formData.importo) : undefined,
-        foto_url: formData.foto_url || undefined,
-      };
-      let savedId: string;
-      if (isEditing && clientId) {
+    if (isEditing && clientId) {
+      try {
+        setLoading(true);
+        setError(null);
+        const clientData = {
+          ...formData,
+          data_ultimo_appuntamento: formatDateForDatabase(formData.data_ultimo_appuntamento) || undefined,
+          importo: formData.importo ? Number(formData.importo) : undefined,
+          foto_url: formData.foto_url || undefined,
+        };
         await clientService.update(clientId, clientData);
-        savedId = clientId;
-      } else {
-        const created = await clientService.create(clientData);
-        savedId = created.id;
+        let savedId = clientId;
+        if (pendingPhotoFile) {
+          const publicUrl = await storageService.uploadClientAvatar(savedId, pendingPhotoFile);
+          await clientService.update(savedId, { foto_url: publicUrl });
+          setPendingPhotoFile(null);
+        }
+        navigate(-1);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Errore nel salvataggio del cliente');
+        console.error('handleSubmit', err);
+      } finally {
+        setLoading(false);
       }
-      if (pendingPhotoFile) {
-        const publicUrl = await storageService.uploadClientAvatar(savedId, pendingPhotoFile);
-        await clientService.update(savedId, { foto_url: publicUrl });
-        setPendingPhotoFile(null);
-      }
-      navigate(-1);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Errore nel salvataggio del cliente');
-      console.error('handleSubmit', err);
-    } finally {
-      setLoading(false);
+      return;
     }
+    // Nuovo cliente: verifica duplicati nome + cognome
+    try {
+      const allClients = await clientService.getAll();
+      const nomeNorm = formData.nome.trim().toLowerCase();
+      const cognomeNorm = formData.cognome.trim().toLowerCase();
+      const hasDuplicate = allClients.some(
+        (c) =>
+          (c.nome ?? '').trim().toLowerCase() === nomeNorm &&
+          (c.cognome ?? '').trim().toLowerCase() === cognomeNorm
+      );
+      if (hasDuplicate) {
+        setShowDuplicateModal(true);
+        return;
+      }
+      await performCreate();
+    } catch (err) {
+      setError('Impossibile verificare i clienti esistenti. Riprova.');
+      console.error('handleSubmit duplicate check', err);
+    }
+  };
+
+  const handleDuplicateCreateAnyway = () => {
+    setShowDuplicateModal(false);
+    performCreate();
   };
 
   const handlePhotoClick = () => {
@@ -252,6 +301,44 @@ export default function ClientForm({ clientId, onRequestDelete }: ClientFormProp
             </div>
           </section>
 
+          {/* TIPO CLIENTE: nuovo / abituale (default nuovo) */}
+          <section className="mb-6">
+            <h2 className="text-xs font-medium uppercase tracking-wide mb-3" style={{ color: textSecondaryColor }}>
+              Tipo cliente
+            </h2>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setFormData((prev) => ({ ...prev, tipo_cliente: 'nuovo' }))}
+                disabled={loading}
+                className="flex-1 py-10 flex items-center justify-center gap-2  px-4 rounded-xl border-2 font-semibold transition disabled:opacity-50"
+                style={{
+                  borderColor: formData.tipo_cliente === 'nuovo' ? accentColor : accentSoft,
+                  backgroundColor: formData.tipo_cliente === 'nuovo' ? accentSofter : 'transparent',
+                  color: formData.tipo_cliente === 'nuovo' ? accentColor : textSecondaryColor,
+                }}
+              >
+                Nuovo
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData((prev) => ({ ...prev, tipo_cliente: 'abituale' }))}
+                disabled={loading}
+                className="flex-1 py-10 flex items-center justify-center gap-2  px-4 rounded-xl border-2 font-semibold transition disabled:opacity-50"
+                style={{
+                  borderColor: formData.tipo_cliente === 'abituale' ? accentColor : accentSoft,
+                  backgroundColor: formData.tipo_cliente === 'abituale' ? accentSofter : 'transparent',
+                  color: formData.tipo_cliente === 'abituale' ? accentColor : textSecondaryColor,
+                }}
+              >
+                Abituale
+              </button>
+            </div>
+            <p className="mt-2 text-xs" style={{ color: textSecondaryColor }}>
+              {formData.tipo_cliente === 'nuovo' ? 'Prima volta o cliente occasionale.' : 'Cliente che torna regolarmente.'}
+            </p>
+          </section>
+
           {/* CONTATTI */}
           <section className="mb-6">
             <h2 className="text-xs font-medium uppercase tracking-wide mb-3" style={{ color: textSecondaryColor }}>
@@ -356,12 +443,68 @@ export default function ClientForm({ clientId, onRequestDelete }: ClientFormProp
             </>
           ) : (
             <>
-              <Check className="w-5 h-5" />
               Salva Cliente
             </>
           )}
         </button>
       </div>
+
+      {/* Modale: cliente già presente con stesso nome e cognome */}
+      <AnimatePresence>
+        {showDuplicateModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+            onClick={() => setShowDuplicateModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="rounded-2xl shadow-xl max-w-sm w-full p-5"
+              style={{ backgroundColor: surfaceColor, borderColor: accentSofter, borderWidth: 1 }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: '#FEF3C7' }}
+                >
+                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                </div>
+                <h3 className="text-lg font-bold" style={{ color: textPrimaryColor }}>
+                  Cliente già registrato
+                </h3>
+              </div>
+              <p className="text-sm mb-5" style={{ color: textSecondaryColor }}>
+                Esiste già un cliente con nome e cognome <strong style={{ color: textPrimaryColor }}>{formData.nome.trim()} {formData.cognome.trim()}</strong>. Vuoi creare comunque un nuovo profilo?
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={handleDuplicateCreateAnyway}
+                  disabled={loading}
+                  className="w-full py-3 rounded-xl font-semibold text-white disabled:opacity-50"
+                  style={{ background: accentGradient }}
+                >
+                  Crea comunque
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowDuplicateModal(false)}
+                  className="w-full py-3 rounded-xl font-semibold border"
+                  style={{ borderColor: accentSoft, color: textPrimaryColor, backgroundColor: accentSofter }}
+                >
+                  Annulla
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
