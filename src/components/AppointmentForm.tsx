@@ -596,7 +596,7 @@ function StepTreatment({
 }
 
 function StepConfirm({
-  formData, setFormData, selectedClient, goToStep, newChecklistLabel, setNewChecklistLabel
+  formData, setFormData, selectedClient, goToStep, newChecklistLabel, setNewChecklistLabel, isEditing
 }: {
   formData: any;
   setFormData: (fn: any) => void;
@@ -604,6 +604,7 @@ function StepConfirm({
   goToStep: (s: number) => void;
   newChecklistLabel: string;
   setNewChecklistLabel: (s: string) => void;
+  isEditing?: boolean;
 }) {
   const addChecklist = () => {
     const label = newChecklistLabel.trim();
@@ -653,13 +654,15 @@ function StepConfirm({
               )}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => goToStep(0)}
-            style={{ padding: 8, borderRadius: 10, border: '1.5px solid #EDE0D8', background: '#FDF4EF', cursor: 'pointer' }}
-          >
-            <Pencil size={14} color="#C07850" />
-          </button>
+          {!isEditing && (
+            <button
+              type="button"
+              onClick={() => goToStep(0)}
+              style={{ padding: 8, borderRadius: 10, border: '1.5px solid #EDE0D8', background: '#FDF4EF', cursor: 'pointer' }}
+            >
+              <Pencil size={14} color="#C07850" />
+            </button>
+          )}
         </div>
       </SectionCard>
 
@@ -865,6 +868,8 @@ export default function AppointmentForm({
       checklist: list,
     });
     setIsEditing(true);
+    // In modifica si salta lo step cliente: si parte da "Quando" (indice 1)
+    setActiveStep(1);
   }, [appointment]);
 
   useEffect(() => {
@@ -910,7 +915,12 @@ export default function AppointmentForm({
     setActiveStep(step);
   };
   const goNext = () => { if (canProceed()) goToStep(activeStep + 1); };
-  const goBack = () => { if (activeStep > 0) goToStep(activeStep - 1); else onCancel(); };
+  const goBack = () => {
+    if (activeStep > 0) {
+      if (isEditing && activeStep === 1) onCancel();
+      else goToStep(activeStep - 1);
+    } else onCancel();
+  };
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
@@ -1093,6 +1103,7 @@ export default function AppointmentForm({
                   goToStep={goToStep}
                   newChecklistLabel={newChecklistLabel}
                   setNewChecklistLabel={setNewChecklistLabel}
+                  isEditing={isEditing}
                 />
               )}
             </motion.div>
